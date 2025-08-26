@@ -16,6 +16,10 @@ const MovieDetailPage: React.FC = () => {
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Popup state
+  const [selectedCinemaForPopup, setSelectedCinemaForPopup] = useState<{ name: string, address: string, city: string, postalCode: string, url: string } | null>(null);
+  const [showCinemaPopup, setShowCinemaPopup] = useState(false);
 
   // Generate unique colors for each cinema
   const getCinemaColors = () => {
@@ -222,9 +226,11 @@ const MovieDetailPage: React.FC = () => {
           // For single movies, also extract variants and set them
           const singleMovie = movieGroup[0];
           const variants = extractVariants(singleMovie.title);
+          const cleanTitle = getBaseTitle(singleMovie.title);
           console.log('Single movie variants for', singleMovie.title, ':', variants);
           setMovie({
             ...singleMovie,
+            title: cleanTitle, // Use cleaned title without variants
             variants: variants
           });
         } else {
@@ -343,6 +349,29 @@ const MovieDetailPage: React.FC = () => {
         ? prev.filter(v => v !== variant)
         : [...prev, variant]
     );
+  };
+
+  // Handle cinema badge click to show popup
+  const handleCinemaClick = (cinemaName: string) => {
+    const cinema = movie?.cinemas.find(c => c.name === cinemaName);
+    if (cinema) {
+      setSelectedCinemaForPopup({
+        name: cinema.name,
+        address: cinema.address,
+        city: cinema.city,
+        postalCode: cinema.postalCode,
+        url: cinema.url
+      });
+      setShowCinemaPopup(true);
+    }
+  };
+
+  // Close popup when clicking outside
+  const handlePopupOutsideClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setShowCinemaPopup(false);
+      setSelectedCinemaForPopup(null);
+    }
   };
 
   // Reset all filters
@@ -641,50 +670,19 @@ const MovieDetailPage: React.FC = () => {
               });
               
               return Array.from(uniqueCinemas).sort().map(cinemaName => (
-                <span
+                <button
                   key={cinemaName}
-                  className={`px-2 py-1 rounded-md text-xs font-medium border ${cinemaColors[cinemaName]}`}
+                  onClick={() => handleCinemaClick(cinemaName)}
+                  className={`px-2 py-1 rounded-md text-xs font-medium border ${cinemaColors[cinemaName]} cursor-pointer hover:opacity-80 transition-opacity`}
                 >
                   {cinemaName}
-                </span>
+                </button>
               ));
             })()}
           </div>
         </div>
         
-        {/* Cinema Details Section */}
-        {movie.cinemas.length > 0 && (
-          <div className="px-6 py-4 bg-white border-b border-gray-200">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">Cinema Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {movie.cinemas.map(cinema => (
-                <div key={cinema.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <h5 className="font-medium text-gray-900 mb-2">{cinema.name}</h5>
-                  {cinema.address && (
-                    <p className="text-sm text-gray-600 mb-1">
-                      <span className="font-medium">Address:</span> {cinema.address}
-                    </p>
-                  )}
-                  {cinema.postalCode && cinema.city && (
-                    <p className="text-sm text-gray-600 mb-1">
-                      <span className="font-medium">Location:</span> {cinema.postalCode} {cinema.city}
-                    </p>
-                  )}
-                  {cinema.url && (
-                    <a
-                      href={cinema.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-cinema-600 hover:text-cinema-700 underline"
-                    >
-                      Visit Website
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+
         
         {/* Showtimes Table */}
         <div className="overflow-x-auto">
@@ -886,6 +884,59 @@ const MovieDetailPage: React.FC = () => {
           </table>
         </div>
       </div>
+      
+      {/* Cinema Popup */}
+      {showCinemaPopup && selectedCinemaForPopup && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={handlePopupOutsideClick}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">{selectedCinemaForPopup.name}</h3>
+              <button
+                onClick={() => {
+                  setShowCinemaPopup(false);
+                  setSelectedCinemaForPopup(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {selectedCinemaForPopup.address && (
+                <div className="flex items-start">
+                  <span className="font-medium text-gray-700 w-20">Address:</span>
+                  <span className="text-gray-600">{selectedCinemaForPopup.address}</span>
+                </div>
+              )}
+              
+              {selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city && (
+                <div className="flex items-start">
+                  <span className="font-medium text-gray-700 w-20">Location:</span>
+                  <span className="text-gray-600">{selectedCinemaForPopup.postalCode} {selectedCinemaForPopup.city}</span>
+                </div>
+              )}
+              
+              {selectedCinemaForPopup.url && (
+                <div className="pt-2">
+                  <a
+                    href={selectedCinemaForPopup.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-4 py-2 bg-cinema-600 text-white text-sm rounded-md hover:bg-cinema-700 transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Visit Website
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
