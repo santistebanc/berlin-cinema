@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { BerlinCinemaScraper } from '../../berlin-cinema-api/src/services/scraper';
+import { BerlinCinemaScraper } from '../src/services/scraper';
 
 // Initialize scraper (will be created per request in production)
 let scraper: BerlinCinemaScraper | null = null;
