@@ -909,11 +909,18 @@ const MovieDetailPage: React.FC = () => {
               {(selectedCinemaForPopup.address || (selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city)) && (
                 <div className="flex items-start">
                   <span className="font-medium text-gray-700 w-20">Address:</span>
-                  <span className="text-gray-600">
+                  <a
+                    href={`https://www.google.com/maps/search/${encodeURIComponent(
+                      `${selectedCinemaForPopup.address || ''} ${selectedCinemaForPopup.postalCode || ''} ${selectedCinemaForPopup.city || ''} Berlin`
+                    ).trim()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-600 hover:text-cinema-600 underline cursor-pointer transition-colors"
+                  >
                     {selectedCinemaForPopup.address}
                     {selectedCinemaForPopup.address && selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city && ', '}
                     {selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city && `${selectedCinemaForPopup.postalCode} ${selectedCinemaForPopup.city}`}
-                  </span>
+                  </a>
                 </div>
               )}
               
