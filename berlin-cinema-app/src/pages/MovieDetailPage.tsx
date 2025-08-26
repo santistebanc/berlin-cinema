@@ -219,7 +219,14 @@ const MovieDetailPage: React.FC = () => {
       
       if (movieGroup && movieGroup.length > 0) {
         if (movieGroup.length === 1) {
-          setMovie(movieGroup[0]);
+          // For single movies, also extract variants and set them
+          const singleMovie = movieGroup[0];
+          const variants = extractVariants(singleMovie.title);
+          console.log('Single movie variants for', singleMovie.title, ':', variants);
+          setMovie({
+            ...singleMovie,
+            variants: variants
+          });
         } else {
           // Merge multiple versions of the same movie
           const baseMovie = movieGroup[0];
@@ -253,6 +260,7 @@ const MovieDetailPage: React.FC = () => {
           const allVariants = new Set<string>();
           movieGroup.forEach(movie => {
             const variants = extractVariants(movie.title);
+            console.log('Variants for movie', movie.title, ':', variants);
             variants.forEach(variant => allVariants.add(variant));
           });
           
