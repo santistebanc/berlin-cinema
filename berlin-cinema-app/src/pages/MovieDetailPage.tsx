@@ -186,8 +186,15 @@ const MovieDetailPage: React.FC = () => {
     const matches = title.match(allVariantsPattern);
     
     if (matches) {
-      // Remove parentheses from each variant
-      const cleanVariants = matches.map(match => match.replace(/^\(|\)$/g, ''));
+      // Remove parentheses from each variant and clean up specific variants
+      const cleanVariants = matches.map(match => {
+        let variant = match.replace(/^\(|\)$/g, '');
+        // Replace "OV w/ sub" with just "sub"
+        if (variant.toLowerCase() === 'ov w/ sub') {
+          variant = 'sub';
+        }
+        return variant;
+      });
       variants.push(...cleanVariants);
     }
     

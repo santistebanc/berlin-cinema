@@ -44,8 +44,15 @@ const HomePage: React.FC = () => {
       console.log('Extracting variants from title:', title);
       if (matches) {
         console.log('Found all variants:', matches);
-        // Remove parentheses from each variant
-        const cleanVariants = matches.map(match => match.replace(/^\(|\)$/g, ''));
+        // Remove parentheses from each variant and clean up specific variants
+        const cleanVariants = matches.map(match => {
+          let variant = match.replace(/^\(|\)$/g, '');
+          // Replace "OV w/ sub" with just "sub"
+          if (variant.toLowerCase() === 'ov w/ sub') {
+            variant = 'sub';
+          }
+          return variant;
+        });
         console.log('Clean variants (no parentheses):', cleanVariants);
         variants.push(...cleanVariants);
       }
