@@ -75,7 +75,12 @@ const HomePage: React.FC = () => {
     
     return Object.values(movieGroups).map(group => {
       if (group.length === 1) {
-        return group[0];
+        // Clean the title for single movies too
+        const baseMovie = group[0];
+        return {
+          ...baseMovie,
+          title: getBaseTitle(baseMovie.title)
+        };
       }
       
       // Debug logging
