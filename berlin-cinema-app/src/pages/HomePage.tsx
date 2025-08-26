@@ -53,13 +53,22 @@ const HomePage: React.FC = () => {
     
     console.log('Processing movies for merging:', movies.map(m => ({ title: m.title, baseTitle: getBaseTitle(m.title) })));
     
+    // Group movies by their base title (without variants)
     movies.forEach(movie => {
       const baseTitle = getBaseTitle(movie.title);
+      console.log(`Grouping movie "${movie.title}" (ID: ${movie.id}) under base title: "${baseTitle}"`);
+      
       if (!movieGroups[baseTitle]) {
         movieGroups[baseTitle] = [];
       }
       movieGroups[baseTitle].push(movie);
     });
+    
+    console.log('Movie groups:', Object.keys(movieGroups).map(key => ({
+      baseTitle: key,
+      count: movieGroups[key].length,
+      movies: movieGroups[key].map(m => ({ title: m.title, id: m.id }))
+    })));
     
     return Object.values(movieGroups).map(group => {
       if (group.length === 1) {
@@ -124,12 +133,14 @@ const HomePage: React.FC = () => {
       // Collect all unique variants from all movies in the group
       const allVariants = new Set<string>();
       group.forEach(movie => {
+        console.log(`Processing movie "${movie.title}" for variants`);
         const variants = extractVariants(movie.title);
+        console.log(`  Extracted variants:`, variants);
         variants.forEach(variant => allVariants.add(variant));
       });
       
       // Debug logging for variants
-      console.log('Extracted variants for', getBaseTitle(baseMovie.title), ':', Array.from(allVariants));
+      console.log('All collected variants for', getBaseTitle(baseMovie.title), ':', Array.from(allVariants));
 
       const mergedMovie: Movie & { cinemas: typeof mergedCinemas } = {
         ...baseMovie,
