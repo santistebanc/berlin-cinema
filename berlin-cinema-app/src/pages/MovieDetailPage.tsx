@@ -911,7 +911,7 @@ const MovieDetailPage: React.FC = () => {
                   <span className="font-medium text-gray-700 w-20">Address:</span>
                   <a
                     href={`https://www.google.com/maps/search/${encodeURIComponent(
-                      `${selectedCinemaForPopup.address || ''} ${selectedCinemaForPopup.postalCode || ''} ${selectedCinemaForPopup.city || ''} Berlin`
+                      `${selectedCinemaForPopup.name} ${selectedCinemaForPopup.address || ''} ${selectedCinemaForPopup.postalCode || ''} ${selectedCinemaForPopup.city || ''} Berlin`
                     ).trim()}`}
                     target="_blank"
                     rel="noopener noreferrer"
