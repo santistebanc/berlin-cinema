@@ -1,47 +1,36 @@
 export interface Movie {
   id: string;
   title: string;
-  language: string;
-  year?: string;
-  country?: string;
-  director?: string;
-  cast?: string[];
-  fsk?: string;
-  imageUrl?: string;
+  year: number;
+  country: string;
+  director: string;
+  cast: string[];
+  posterUrl: string;
   trailerUrl?: string;
   reviewUrl?: string;
+  language: string; // OV, OmU, etc.
+  fskRating: number; // German age rating
   cinemas: Cinema[];
-  variants?: string[];
 }
 
 export interface Cinema {
   id: string;
   name: string;
-  address?: string;
-  city?: string;
-  postalCode?: string;
-  url?: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  url: string;
   showtimes: Showtime[];
 }
 
 export interface Showtime {
   date: string;
-  time: string;
-  language: string;
-  variants?: string[];
+  times: string[];
+  dayOfWeek: string;
 }
 
 export interface ScrapingResult {
   movies: Movie[];
-  cinemas: CinemaInfo[];
-  lastUpdated: string;
-}
-
-export interface CinemaInfo {
-  id: string;
-  name: string;
-  address?: string;
-  city?: string;
-  postalCode?: string;
-  url?: string;
+  totalMovies: number;
+  scrapedAt: string;
 }
