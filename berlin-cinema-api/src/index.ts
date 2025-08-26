@@ -115,6 +115,39 @@ app.get('/api/cinemas', (req, res) => {
   res.json({ cinemas });
 });
 
+// Cache management endpoints
+app.get('/api/cache/status', (req, res) => {
+  try {
+    const status = scraper.getCacheStatus();
+    res.json({
+      message: 'Cache status retrieved successfully',
+      ...status
+    });
+  } catch (error) {
+    console.error('Error getting cache status:', error);
+    res.status(500).json({ 
+      error: 'Failed to get cache status',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.post('/api/cache/clear', (req, res) => {
+  try {
+    scraper.clearCache();
+    res.json({ 
+      message: 'Cache cleared successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    res.status(500).json({ 
+      error: 'Failed to clear cache',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', err);
