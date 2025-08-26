@@ -15,6 +15,7 @@ const MovieDetailPage: React.FC = () => {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [selectedCinemas, setSelectedCinemas] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
   // Generate unique colors for each cinema
@@ -79,11 +80,14 @@ const MovieDetailPage: React.FC = () => {
 
   // Get available languages, cinemas, and dates for filters
   const getAvailableFilters = () => {
-    if (!movie) return { languages: [], cinemas: [], dates: [] };
+    if (!movie) return { languages: [], cinemas: [], dates: [], variants: [] };
+    
+    console.log('Getting available filters for movie:', movie.title, 'with variants:', movie.variants);
     
     const languages = new Set<string>();
     const cinemas = new Set<string>();
     const dates = new Set<string>();
+    const variants = new Set<string>();
     
     if (movie.cinemas.length === 1 && movie.cinemas[0].name === 'All Cinemas') {
       // Merged movie - extract from timeInfo
@@ -94,6 +98,10 @@ const MovieDetailPage: React.FC = () => {
             timeSlots.forEach((showing: any) => {
               languages.add(showing.language);
               cinemas.add(showing.cinema);
+              if (showing.variants) {
+                console.log('Found showing variants:', showing.variants);
+                showing.variants.forEach((variant: string) => variants.add(variant));
+              }
             });
           });
         }
@@ -109,20 +117,33 @@ const MovieDetailPage: React.FC = () => {
       languages.add(movie.language);
     }
     
-    return {
+    // Add movie variants if available
+    if (movie.variants) {
+      console.log('Adding movie variants to filters:', movie.variants);
+      movie.variants.forEach(variant => variants.add(variant));
+    }
+    
+    const result = {
       languages: Array.from(languages).sort(),
       cinemas: Array.from(cinemas).sort(),
-      dates: Array.from(dates).sort()
+      dates: Array.from(dates).sort(),
+      variants: Array.from(variants).sort()
     };
+    
+    console.log('Final filter result:', result);
+    return result;
   };
 
   // Initialize filters when movie data loads
   useEffect(() => {
     if (movie) {
-      const { languages, cinemas, dates } = getAvailableFilters();
+      console.log('Movie loaded with variants:', movie.variants);
+      const { languages, cinemas, dates, variants } = getAvailableFilters();
+      console.log('Available filters:', { languages, cinemas, dates, variants });
       setSelectedLanguages(languages);
       setSelectedCinemas(cinemas);
       setSelectedDates(dates);
+      setSelectedVariants(variants);
     }
   }, [movie]);
 
@@ -142,16 +163,36 @@ const MovieDetailPage: React.FC = () => {
       const movieGroups: { [baseTitle: string]: Movie[] } = {};
       
       // Helper function to get base title (remove language suffixes)
-      const getBaseTitle = (title: string) => {
-        return title
-          .replace(/\s*\(OV\s*w\/\s*sub\)/i, '')
-          .replace(/\s*\(OV\)/i, '')
-          .replace(/\s*\(OmU\)/i, '')
-          .replace(/\s*\(OV\/OmU\)/i, '')
-          .replace(/\s*\(Original\s*Version\)/i, '')
-          .replace(/\s*\(Original\s*Version\s*w\/\s*sub\)/i, '')
-          .trim();
-      };
+        const getBaseTitle = (title: string) => {
+    return title
+      .replace(/\s*\(OV\s*w\/\s*sub\)/i, '')
+      .replace(/\s*\(OV\)/i, '')
+      .replace(/\s*\(OmU\)/i, '')
+      .replace(/\s*\(OV\/OmU\)/i, '')
+      .replace(/\s*\(Original\s*Version\)/i, '')
+      .replace(/\s*\(Original\s*Version\s*w\/\s*sub\)/i, '')
+      .replace(/\s*\(Imax\)/i, '')
+      .replace(/\s*\(EXPN\)/i, '')
+      .replace(/\s*\(3D\)/i, '')
+      .replace(/\s*\(4DX\)/i, '')
+      .replace(/\s*\(Dolby\s*Atmos\)/i, '')
+      .replace(/\s*\(Premium\s*Large\s*Format\)/i, '')
+      .trim();
+  };
+
+  const extractVariants = (title: string) => {
+    const variants: string[] = [];
+    
+    // More flexible pattern to catch all variants in parentheses
+    const allVariantsPattern = /\([^)]+\)/g;
+    const matches = title.match(allVariantsPattern);
+    
+    if (matches) {
+      variants.push(...matches);
+    }
+    
+    return variants;
+  };
       
       allMovies.forEach(movie => {
         const baseTitle = getBaseTitle(movie.title);
@@ -252,26 +293,39 @@ const MovieDetailPage: React.FC = () => {
     );
   };
 
-  const toggleDate = (date: string) => {
-    setSelectedDates(prev => 
-      prev.includes(date) 
+    const toggleDate = (date: string) => {
+    setSelectedDates(prev =>
+      prev.includes(date)
         ? prev.filter(d => d !== date)
         : [...prev, date]
     );
   };
 
+  const toggleVariant = (variant: string) => {
+    setSelectedVariants(prev =>
+      prev.includes(variant)
+        ? prev.filter(v => v !== variant)
+        : [...prev, variant]
+    );
+  };
+
   // Reset all filters
   const resetFilters = () => {
-    const { languages, cinemas, dates } = getAvailableFilters();
+    const { languages, cinemas, dates, variants } = getAvailableFilters();
     setSelectedLanguages(languages);
     setSelectedCinemas(cinemas);
     setSelectedDates(dates);
+    setSelectedVariants(variants);
   };
 
   // Check if a showing should be displayed based on filters
-  const shouldShowShowing = (showing: any) => {
-    return selectedLanguages.includes(showing.language) && 
-           selectedCinemas.includes(showing.cinema);
+    const shouldShowShowing = (showing: any) => {
+    const languageMatch = selectedLanguages.includes(showing.language);
+    const cinemaMatch = selectedCinemas.includes(showing.cinema);
+    const variantMatch = !showing.variants || showing.variants.length === 0 || 
+                        showing.variants.some((variant: string) => selectedVariants.includes(variant));
+    
+    return languageMatch && cinemaMatch && variantMatch;
   };
 
   // Check if a date should be displayed
@@ -305,7 +359,7 @@ const MovieDetailPage: React.FC = () => {
     );
   }
 
-  const { languages, cinemas, dates } = getAvailableFilters();
+  const { languages, cinemas, dates, variants } = getAvailableFilters();
 
   return (
     <div className="w-full px-4 space-y-8">
@@ -459,6 +513,32 @@ const MovieDetailPage: React.FC = () => {
                       })}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Variant Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Variants {movie.variants ? `(${movie.variants.length})` : '(none)'}
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {movie.variants && movie.variants.length > 0 ? (
+                    movie.variants.map(variant => (
+                      <button
+                        key={variant}
+                        onClick={() => toggleVariant(variant)}
+                        className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
+                          selectedVariants.includes(variant)
+                            ? 'bg-purple-100 text-purple-800 border-purple-300'
+                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {variant}
+                      </button>
+                    ))
+                  ) : (
+                    <span className="text-gray-500 text-sm">No variants available</span>
+                  )}
                 </div>
               </div>
               
@@ -628,18 +708,34 @@ const MovieDetailPage: React.FC = () => {
                                               return <span className="text-gray-300">-</span>;
                                             }
                                             
+                                            // Debug logging for showings
+                                            console.log('Filtered showings for time', time, ':', filteredShowings);
+                                            
                                             // Always show all showings vertically stacked
                                             return (
                                               <div className="space-y-2">
                                                 {filteredShowings.map((showing: any, idx: number) => (
                                                   <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
-                                                    <div className="flex items-center justify-center space-x-2">
-                                                      <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
-                                                        {showing.language}
-                                                      </span>
-                                                                                <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
-                            {showing.cinema}
-                          </span>
+                                                    <div className="flex flex-col items-center space-y-1">
+                                                      <div className="flex items-center justify-center space-x-2">
+                                                        <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
+                                                          {showing.language}
+                                                        </span>
+                                                        <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
+                                                          {showing.cinema}
+                                                        </span>
+                                                      </div>
+                                                      {showing.variants && showing.variants.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-1 justify-center">
+                                                          {showing.variants.map((variant: string, vIdx: number) => (
+                                                            <span key={vIdx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                                                              {variant}
+                                                            </span>
+                                                          ))}
+                                                        </div>
+                                                      ) : (
+                                                        <span className="text-xs text-gray-400">No variants</span>
+                                                      )}
                                                     </div>
                                                   </div>
                                                 ))}
@@ -655,12 +751,23 @@ const MovieDetailPage: React.FC = () => {
                                           
                                           return (
                                             <div className="space-y-1">
-                                              <div className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
-                                                {movie.language.split('/')[0]}
+                                              <div className="flex items-center justify-center space-x-2">
+                                                <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
+                                                  {movie.language.split('/')[0]}
+                                                </span>
+                                                <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
+                                                  {cinema.name}
+                                                </span>
                                               </div>
-                                                                                          <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
-                                              {cinema.name}
-                                            </span>
+                                              {movie.variants && movie.variants.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 justify-center">
+                                                  {movie.variants.map((variant: string, vIdx: number) => (
+                                                    <span key={vIdx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                                                      {variant}
+                                                    </span>
+                                                  ))}
+                                                </div>
+                                              )}
                                             </div>
                                           );
                                         }

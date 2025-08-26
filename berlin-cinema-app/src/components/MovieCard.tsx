@@ -51,9 +51,25 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           </span>
         </div>
         
+        {/* Variant Badges */}
+        {movie.variants && movie.variants.length > 0 && (
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {movie.variants.slice(0, 2).map((variant, idx) => (
+              <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                {variant}
+              </span>
+            ))}
+            {movie.variants.length > 2 && (
+              <span className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                +{movie.variants.length - 2}
+              </span>
+            )}
+          </div>
+        )}
+        
         {/* FSK Rating */}
         {movie.fskRating > 0 && (
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 left-2" style={{ left: movie.variants && movie.variants.length > 0 ? '4rem' : '0.5rem' }}>
             <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-800 text-white">
               FSK {movie.fskRating}
             </span>

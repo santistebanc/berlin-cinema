@@ -15,7 +15,7 @@ const HomePage: React.FC = () => {
   const getMergedMovies = () => {
     const movieGroups: { [baseTitle: string]: Movie[] } = {};
     
-    // Helper function to get base title (remove language suffixes)
+    // Helper function to get base title (remove all variants and language suffixes)
     const getBaseTitle = (title: string) => {
       return title
         .replace(/\s*\(OV\s*w\/\s*sub\)/i, '')
@@ -24,8 +24,34 @@ const HomePage: React.FC = () => {
         .replace(/\s*\(OV\/OmU\)/i, '')
         .replace(/\s*\(Original\s*Version\)/i, '')
         .replace(/\s*\(Original\s*Version\s*w\/\s*sub\)/i, '')
+        .replace(/\s*\(Imax\)/i, '')
+        .replace(/\s*\(EXPN\)/i, '')
+        .replace(/\s*\(3D\)/i, '')
+        .replace(/\s*\(4DX\)/i, '')
+        .replace(/\s*\(Dolby\s*Atmos\)/i, '')
+        .replace(/\s*\(Premium\s*Large\s*Format\)/i, '')
         .trim();
     };
+
+    // Helper function to extract variant tags
+    const extractVariants = (title: string) => {
+      const variants: string[] = [];
+      
+      // More flexible pattern to catch all variants in parentheses
+      const allVariantsPattern = /\([^)]+\)/g;
+      const matches = title.match(allVariantsPattern);
+      
+      console.log('Extracting variants from title:', title);
+      if (matches) {
+        console.log('Found all variants:', matches);
+        variants.push(...matches);
+      }
+      console.log('Extracted variants:', variants);
+      
+      return variants;
+    };
+    
+    console.log('Processing movies for merging:', movies.map(m => ({ title: m.title, baseTitle: getBaseTitle(m.title) })));
     
     movies.forEach(movie => {
       const baseTitle = getBaseTitle(movie.title);
@@ -51,7 +77,7 @@ const HomePage: React.FC = () => {
       const baseMovie = group[0];
       
       // Create a map to track all showtimes by date and time, regardless of cinema
-      const showtimeMap: { [date: string]: { [time: string]: { cinema: string, language: string, originalMovie: Movie }[] } } = {};
+      const showtimeMap: { [date: string]: { [time: string]: { cinema: string, language: string, variants: string[], originalMovie: Movie }[] } } = {};
       
       group.forEach(movie => {
         movie.cinemas.forEach(cinema => {
@@ -67,6 +93,7 @@ const HomePage: React.FC = () => {
               showtimeMap[showtime.date][time].push({
                 cinema: cinema.name,
                 language: movie.language,
+                variants: extractVariants(movie.title),
                 originalMovie: movie
               });
             });
@@ -94,13 +121,30 @@ const HomePage: React.FC = () => {
         }))
       }];
       
+      // Collect all unique variants from all movies in the group
+      const allVariants = new Set<string>();
+      group.forEach(movie => {
+        const variants = extractVariants(movie.title);
+        variants.forEach(variant => allVariants.add(variant));
+      });
+      
+      // Debug logging for variants
+      console.log('Extracted variants for', getBaseTitle(baseMovie.title), ':', Array.from(allVariants));
+
       const mergedMovie: Movie & { cinemas: typeof mergedCinemas } = {
         ...baseMovie,
         title: getBaseTitle(baseMovie.title), // Use clean title
         id: group.map(m => m.id).join('-'),
         language: group.map(m => m.language).join('/'),
+        variants: Array.from(allVariants).sort(), // Store all variants
         cinemas: mergedCinemas
       };
+      
+      console.log('Created merged movie:', {
+        title: mergedMovie.title,
+        variants: mergedMovie.variants,
+        language: mergedMovie.language
+      });
       
       return mergedMovie;
     });
@@ -115,6 +159,7 @@ const HomePage: React.FC = () => {
       setLoading(true);
       const moviesResult = await movieApi.getAllMovies();
       
+      console.log('Raw movies from API:', moviesResult.movies);
       setMovies(moviesResult.movies);
       setError(null);
     } catch (err) {
@@ -186,12 +231,28 @@ const HomePage: React.FC = () => {
                     }}
                   />
                   
-                  {/* Language Badge */}
-                  <div className="absolute top-2 right-2">
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-cinema-600 text-white">
-                      {movie.language}
-                    </span>
-                  </div>
+                                      {/* Language Badge */}
+                    <div className="absolute top-2 right-2">
+                      <span className="px-2 py-1 rounded-md text-xs font-medium bg-cinema-600 text-white">
+                        {movie.language}
+                      </span>
+                    </div>
+                    
+                    {/* Variant Badges */}
+                    {movie.variants && movie.variants.length > 0 && (
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {movie.variants.slice(0, 2).map((variant, idx) => (
+                          <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                            {variant}
+                          </span>
+                        ))}
+                        {movie.variants.length > 2 && (
+                          <span className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                            +{movie.variants.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
                 </div>
                 
                 {/* Movie Info */}

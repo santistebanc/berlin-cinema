@@ -12,6 +12,7 @@ export interface Movie {
   language: string;
   fskRating: number;
   cinemas: Cinema[];
+  variants?: string[]; // Store variant tags like (Imax), (EXPN), etc.
 }
 
 export interface Cinema {
