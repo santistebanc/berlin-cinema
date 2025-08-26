@@ -240,17 +240,29 @@ const HomePage: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      console.log('Calling movieApi.getAllMovies()...');
+      
       const moviesResult = await movieApi.getAllMovies();
       
+      console.log('Full API response:', moviesResult);
       console.log('Raw movies from API:', moviesResult.movies);
+      console.log('Movies array length:', moviesResult.movies?.length || 'undefined');
+      
+      if (!moviesResult.movies || moviesResult.movies.length === 0) {
+        console.error('No movies found in API response');
+        setError('No movies data received from API');
+        return;
+      }
+      
       const mergedMovies = getMergedMovies(moviesResult.movies);
       console.log('Merged movies with variants:', mergedMovies);
+      console.log('Merged movies length:', mergedMovies.length);
       
       setMovies(mergedMovies);
       setError(null);
     } catch (err) {
-      setError('Failed to load movies. Please try again later.');
       console.error('Error loading data:', err);
+      setError(`Failed to load movies: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
