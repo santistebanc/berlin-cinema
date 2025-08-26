@@ -26,7 +26,7 @@ const MovieList: React.FC<MovieListProps> = ({ movies, onMovieSelect }) => {
                 </h3>
               </button>
               
-              <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+              <span className={`px-2 py-1 rounded-md text-xs font-medium flex-shrink-0 ${
                 movie.language === 'OV' 
                   ? 'bg-blue-100 text-blue-800' 
                   : 'bg-green-100 text-green-800'
@@ -69,15 +69,15 @@ const MovieList: React.FC<MovieListProps> = ({ movies, onMovieSelect }) => {
                   {movie.cinemas.slice(0, 2).map((cinema) => (
                     <span
                       key={cinema.id}
-                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md"
                     >
                       {cinema.name}
                     </span>
                   ))}
                   {movie.cinemas.length > 2 && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                      +{movie.cinemas.length - 2} more
-                    </span>
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                  +{movie.cinemas.length - 2} more
+                </span>
                   )}
                 </div>
               </div>
