@@ -53,19 +53,15 @@ const HomePage: React.FC = () => {
     
     console.log('Processing movies for merging:', movies.map(m => ({ title: m.title, baseTitle: getBaseTitle(m.title) })));
     
-    // Group movies by their base title AND variants (not just base title)
+    // Group movies by their base title (without variants)
     movies.forEach(movie => {
       const baseTitle = getBaseTitle(movie.title);
-      const variants = extractVariants(movie.title);
-      const variantKey = variants.length > 0 ? variants.sort().join('|') : 'no-variant';
-      const groupKey = `${baseTitle}|${variantKey}`;
+      console.log(`Grouping movie "${movie.title}" (ID: ${movie.id}) under base title: "${baseTitle}"`);
       
-      console.log(`Grouping movie "${movie.title}" (ID: ${movie.id}) under key: "${groupKey}" (base: "${baseTitle}", variants: [${variants.join(', ')}])`);
-      
-      if (!movieGroups[groupKey]) {
-        movieGroups[groupKey] = [];
+      if (!movieGroups[baseTitle]) {
+        movieGroups[baseTitle] = [];
       }
-      movieGroups[groupKey].push(movie);
+      movieGroups[baseTitle].push(movie);
     });
     
     console.log('Movie groups:', Object.keys(movieGroups).map(key => ({
@@ -150,7 +146,7 @@ const HomePage: React.FC = () => {
         ...baseMovie,
         title: getBaseTitle(baseMovie.title), // Use clean title
         id: group.map(m => m.id).join('-'),
-        language: Array.from(allVariants).sort().join(' / '), // Use variants as the main identifier instead of OV/OmU
+        language: group.map(m => m.language).join('/'),
         variants: Array.from(allVariants).sort(), // Store all variants
         cinemas: mergedCinemas
       };
@@ -175,7 +171,10 @@ const HomePage: React.FC = () => {
       const moviesResult = await movieApi.getAllMovies();
       
       console.log('Raw movies from API:', moviesResult.movies);
-      setMovies(moviesResult.movies);
+      const mergedMovies = getMergedMovies();
+      console.log('Merged movies with variants:', mergedMovies);
+      
+      setMovies(mergedMovies);
       setError(null);
     } catch (err) {
       setError('Failed to load movies. Please try again later.');
