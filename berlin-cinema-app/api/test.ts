@@ -57,15 +57,23 @@ export default async function handler(
 
     const $ = cheerio.load(response.data);
     
-    // Test basic selectors
-    const itemContainers = $('.itemContainer');
-    const itemTitles = $('.itemTitle a');
-    const itemLanguages = $('.itemLanguage');
+    // Test multiple possible selectors to find the right ones
+    const itemContainers = $('.itemContainer, .movie-item, .film-item, article, [data-movie_id]');
+    const itemTitles = $('.itemTitle a, h2 a, h3 a, .title a, .movie-title a, [data-movie_id] h2, [data-movie_id] h3');
+    const itemLanguages = $('.itemLanguage, [data-search_of_value], .language, .ov-badge, .version-badge');
+    
+    // Also check for common patterns
+    const allDivs = $('div');
+    const allLinks = $('a');
+    const allHeaders = $('h1, h2, h3, h4');
     
     console.log('Found elements:');
     console.log('- itemContainers:', itemContainers.length);
     console.log('- itemTitles:', itemTitles.length);
     console.log('- itemLanguages:', itemLanguages.length);
+    console.log('- allDivs:', allDivs.length);
+    console.log('- allLinks:', allLinks.length);
+    console.log('- allHeaders:', allHeaders.length);
 
     // Try to extract some basic info
     const sampleTitles: string[] = [];
@@ -76,6 +84,14 @@ export default async function handler(
       }
     });
 
+    // Let's inspect the first few containers to see the actual HTML structure
+    const firstContainer = itemContainers.first();
+    const firstContainerHtml = firstContainer.html()?.substring(0, 500) || 'No HTML found';
+    
+    // Also check for any text that looks like movie titles
+    const allText = $('body').text();
+    const movieTitlePatterns = allText.match(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g)?.slice(0, 10) || [];
+    
     const result = {
       status: 'success',
       responseStatus: response.status,
@@ -83,9 +99,14 @@ export default async function handler(
       elementsFound: {
         itemContainers: itemContainers.length,
         itemTitles: itemTitles.length,
-        itemLanguages: itemLanguages.length
+        itemLanguages: itemLanguages.length,
+        allDivs: allDivs.length,
+        allLinks: allLinks.length,
+        allHeaders: allHeaders.length
       },
       sampleTitles,
+      firstContainerHtml,
+      movieTitlePatterns,
       timestamp: new Date().toISOString()
     };
 
