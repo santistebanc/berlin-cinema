@@ -15,18 +15,6 @@ export const movieApi = {
     const response = await api.get('/movies');
     return response.data;
   },
-
-  // Get movies by cinema
-  async getMoviesByCinema(cinemaId: string): Promise<ScrapingResult> {
-    const response = await api.get(`/movies/cinema/${encodeURIComponent(cinemaId)}`);
-    return response.data;
-  },
-
-  // Get movies by date
-  async getMoviesByDate(date: string): Promise<ScrapingResult> {
-    const response = await api.get(`/movies/date/${encodeURIComponent(date)}`);
-    return response.data;
-  },
 };
 
 

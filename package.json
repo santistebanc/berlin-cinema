@@ -1,39 +1,48 @@
 {
-  "name": "berlin-cinema",
+  "name": "berlin-cinema-app",
   "version": "1.0.0",
-  "description": "Berlin Cinema OV Movies - API and Frontend",
+  "description": "Frontend app for Berlin Cinema API",
   "private": true,
-  "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
-    "dev:api": "cd berlin-cinema-api && npm run dev",
-    "dev:frontend": "cd berlin-cinema-app && npm run dev",
-    "build": "npm run build:api && npm run build:frontend",
-    "build:api": "cd berlin-cinema-api && npm run build",
-    "build:frontend": "cd berlin-cinema-app && npm run build",
-    "start": "concurrently \"npm run start:api\" \"npm run start:frontend\"",
-    "start:api": "cd berlin-cinema-api && npm start",
-    "start:frontend": "cd berlin-cinema-app && npm run preview",
-    "install:all": "npm install && cd berlin-cinema-api && npm install && cd ../berlin-cinema-app && npm install",
-    "clean": "cd berlin-cinema-api && rm -rf dist && cd ../berlin-cinema-app && rm -rf dist",
-    "test": "echo \"No tests configured yet\"",
-    "lint": "echo \"No linting configured yet\""
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "clsx": "^2.0.0",
+    "lucide-react": "^0.263.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.1",
+    "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/node": "^20.8.0",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vercel/node": "^3.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "autoprefixer": "^10.4.14",
+    "express": "^4.21.2",
+    "postcss": "^8.4.27",
+    "tailwindcss": "^3.3.3",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.5"
   },
-  "keywords": [
-    "cinema",
-    "berlin",
-    "movies",
-    "ov",
-    "api",
-    "react",
-    "typescript"
-  ],
-  "author": "Your Name",
-  "license": "MIT",
-  "workspaces": [
-    "berlin-cinema-api",
-    "berlin-cinema-app"
-  ]
+  "scripts": {
+    "dev": "vite",
+    "dev:fullstack": "vercel dev",
+    "dev:api": "node dev-server.js",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }
