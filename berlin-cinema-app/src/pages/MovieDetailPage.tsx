@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, ExternalLink, Filter, X } from 'lucide-react';
+import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar } from 'lucide-react';
 import { movieApi } from '../services/api';
 import { Movie } from '../types';
 
@@ -402,6 +402,53 @@ const MovieDetailPage: React.FC = () => {
             <div className="flex-1 min-w-0">
               <h1 className="text-3xl font-bold text-gray-900 mb-3">{movie.title}</h1>
               
+              {/* Movie Details */}
+              <div className="mb-4 space-y-2">
+                {/* Movie ID and Language */}
+                <div className="flex items-center text-sm text-gray-500 space-x-4">
+                  {movie.id && (
+                    <span>ID: {movie.id}</span>
+                  )}
+                  {movie.language && (
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                      {movie.language}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Year and Country */}
+                {(movie.year > 0 || movie.country) && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    {movie.country && (
+                      <span className="mr-3">
+                        <Globe className="h-4 w-4 inline mr-1" />
+                        {movie.country}
+                      </span>
+                    )}
+                    {movie.year > 0 && (
+                      <span>
+                        <Calendar className="h-4 w-4 inline mr-1" />
+                        {movie.year}
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                {/* Director */}
+                {movie.director && (
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium text-gray-700">Director:</span> {movie.director}
+                  </div>
+                )}
+                
+                {/* Cast */}
+                {movie.cast && movie.cast.length > 0 && (
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium text-gray-700">Cast:</span> {movie.cast.join(', ')}
+                  </div>
+                )}
+              </div>
+              
               {/* Badges and Links */}
               <div className="flex items-center space-x-3 mb-4">
                 {/* Variants Badge */}
@@ -579,6 +626,40 @@ const MovieDetailPage: React.FC = () => {
             })()}
           </div>
         </div>
+        
+        {/* Cinema Details Section */}
+        {movie.cinemas.length > 1 && (
+          <div className="px-6 py-4 bg-white border-b border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">Cinema Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {movie.cinemas.map(cinema => (
+                <div key={cinema.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <h5 className="font-medium text-gray-900 mb-2">{cinema.name}</h5>
+                  {cinema.address && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Address:</span> {cinema.address}
+                    </p>
+                  )}
+                  {cinema.postalCode && cinema.city && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Location:</span> {cinema.postalCode} {cinema.city}
+                    </p>
+                  )}
+                  {cinema.url && (
+                    <a
+                      href={cinema.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-cinema-600 hover:text-cinema-700 underline"
+                    >
+                      Visit Website
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Showtimes Table */}
         <div className="overflow-x-auto">
