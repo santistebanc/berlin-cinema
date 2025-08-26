@@ -822,9 +822,12 @@ const MovieDetailPage: React.FC = () => {
                                                 {filteredShowings.map((showing: any, idx: number) => (
                                                   <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
                                                     <div className="flex items-center justify-center gap-2">
-                                                      <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
+                                                      <button
+                                                        onClick={() => handleCinemaClick(showing.cinema)}
+                                                        className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity`}
+                                                      >
                                                         {showing.cinema}
-                                                      </span>
+                                                      </button>
                                                       {showing.variants && showing.variants.length > 0 ? (
                                                         <div className="flex flex-wrap gap-1">
                                                           {showing.variants.map((variant: string, vIdx: number) => (
@@ -851,9 +854,12 @@ const MovieDetailPage: React.FC = () => {
                                           
                                           return (
                                             <div className="flex items-center justify-center gap-2">
-                                              <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
+                                              <button
+                                                onClick={() => handleCinemaClick(cinema.name)}
+                                                className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]} cursor-pointer hover:opacity-80 transition-opacity`}
+                                              >
                                                 {cinema.name}
-                                              </span>
+                                              </button>
                                               {movie.variants && movie.variants.length > 0 && (
                                                 <div className="flex flex-wrap gap-1">
                                                   {movie.variants.map((variant: string, vIdx: number) => (
