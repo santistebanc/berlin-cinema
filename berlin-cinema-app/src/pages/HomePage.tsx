@@ -9,7 +9,41 @@ const HomePage: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+
+  // Fuzzy search function
+  const fuzzySearch = (query: string, movies: Movie[]): Movie[] => {
+    if (!query.trim()) return movies;
+    
+    const searchTerm = query.toLowerCase().trim();
+    
+    return movies.filter(movie => {
+      // Search in title
+      if (movie.title.toLowerCase().includes(searchTerm)) return true;
+      
+      // Search in director
+      if (movie.director && movie.director.toLowerCase().includes(searchTerm)) return true;
+      
+      // Search in cast
+      if (movie.cast && movie.cast.some(actor => 
+        actor.toLowerCase().includes(searchTerm)
+      )) return true;
+      
+      // Search in variants
+      if (movie.variants && movie.variants.some(variant => 
+        variant.toLowerCase().includes(searchTerm)
+      )) return true;
+      
+      // Search in country
+      if (movie.country && movie.country.toLowerCase().includes(searchTerm)) return true;
+      
+      return false;
+    });
+  };
+
+  // Get filtered movies based on search
+  const filteredMovies = fuzzySearch(searchQuery, movies);
 
   // Merge movies with same title but different language versions
     const getMergedMovies = (rawMovies: Movie[]) => {
@@ -228,21 +262,71 @@ const HomePage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Select a Movie</h2>
-          <span className="text-gray-600">{movies.length} movies available</span>
+          <span className="text-gray-600">{filteredMovies.length} of {movies.length} movies</span>
+        </div>
+        
+        {/* Search Input */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <input
+              type="text"
+              placeholder="Search movies, directors, actors, variants..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cinema-500 focus:border-cinema-500 focus:outline-none transition-colors"
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          
+          {/* Search Tips */}
+          {!searchQuery && (
+            <p className="text-sm text-gray-500 mt-2">
+              💡 Search by movie title, director, actor, variant (Imax, EXPN), or country
+            </p>
+          )}
+          
+          {/* Search Results Summary */}
+          {searchQuery && (
+            <div className="mt-2 text-sm text-gray-600">
+              {filteredMovies.length === movies.length ? (
+                <span className="text-green-600">✓ Showing all movies</span>
+              ) : (
+                <span className="text-blue-600">
+                  🔍 Found {filteredMovies.length} movie{filteredMovies.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                </span>
+              )}
+            </div>
+          )}
         </div>
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cinema-600"></div>
           </div>
-        ) : movies.length === 0 ? (
+        ) : filteredMovies.length === 0 ? (
           <div className="text-center py-8">
             <Film className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No movies found.</p>
+            <p className="text-gray-600">
+              {searchQuery ? `No movies found matching "${searchQuery}"` : 'No movies found.'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {movies.map((movie) => (
+            {filteredMovies.map((movie) => (
               <div
                 key={movie.id}
                 onClick={() => handleMovieClick(movie)}
