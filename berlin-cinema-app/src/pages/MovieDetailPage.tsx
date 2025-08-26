@@ -192,7 +192,9 @@ const MovieDetailPage: React.FC = () => {
     const matches = title.match(allVariantsPattern);
     
     if (matches) {
-      variants.push(...matches);
+      // Remove parentheses from each variant
+      const cleanVariants = matches.map(match => match.replace(/^\(|\)$/g, ''));
+      variants.push(...cleanVariants);
     }
     
     return variants;

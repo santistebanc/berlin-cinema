@@ -44,7 +44,10 @@ const HomePage: React.FC = () => {
       console.log('Extracting variants from title:', title);
       if (matches) {
         console.log('Found all variants:', matches);
-        variants.push(...matches);
+        // Remove parentheses from each variant
+        const cleanVariants = matches.map(match => match.replace(/^\(|\)$/g, ''));
+        console.log('Clean variants (no parentheses):', cleanVariants);
+        variants.push(...cleanVariants);
       }
       console.log('Extracted variants:', variants);
       
