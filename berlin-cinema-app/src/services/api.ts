@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Movie, ScrapingResult, CinemaInfo } from '../types';
+import { Movie, ScrapingResult } from '../types';
 
 // Use local API routes for fullstack deployment
 const API_BASE_URL = '/api';
@@ -29,13 +29,7 @@ export const movieApi = {
   },
 };
 
-export const cinemaApi = {
-  // Get all cinemas
-  async getAllCinemas(): Promise<{ cinemas: CinemaInfo[] }> {
-    const response = await api.get('/cinemas');
-    return response.data;
-  },
-};
+
 
 export const healthApi = {
   // Health check
