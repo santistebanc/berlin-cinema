@@ -717,14 +717,12 @@ const MovieDetailPage: React.FC = () => {
                                               <div className="space-y-2">
                                                 {filteredShowings.map((showing: any, idx: number) => (
                                                   <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
-                                                    <div className="flex flex-col items-center space-y-1">
-                                                      <div className="flex items-center justify-center">
-                                                        <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
-                                                          {showing.cinema}
-                                                        </span>
-                                                      </div>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                      <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
+                                                        {showing.cinema}
+                                                      </span>
                                                       {showing.variants && showing.variants.length > 0 ? (
-                                                        <div className="flex flex-wrap gap-1 justify-center">
+                                                        <div className="flex flex-wrap gap-1">
                                                           {showing.variants.map((variant: string, vIdx: number) => (
                                                             <span key={vIdx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
                                                               {variant}
@@ -748,14 +746,12 @@ const MovieDetailPage: React.FC = () => {
                                           }
                                           
                                           return (
-                                            <div className="space-y-1">
-                                              <div className="flex items-center justify-center">
-                                                <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
-                                                  {cinema.name}
-                                                </span>
-                                              </div>
+                                            <div className="flex items-center justify-center gap-2">
+                                              <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
+                                                {cinema.name}
+                                              </span>
                                               {movie.variants && movie.variants.length > 0 && (
-                                                <div className="flex flex-wrap gap-1 justify-center">
+                                                <div className="flex flex-wrap gap-1">
                                                   {movie.variants.map((variant: string, vIdx: number) => (
                                                     <span key={vIdx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
                                                       {variant}
