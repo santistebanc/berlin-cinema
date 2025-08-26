@@ -41,16 +41,16 @@ export class BerlinCinemaScraper {
       // Extract movies
       $('.itemContainer').each((_, element: CheerioElement) => {
         const movieId = $(element).attr('data-movie_id');
-        const title = $(element).find('.itemTitle a').text().trim();
-        const language = $(element).find('.itemLanguage').text().trim();
-        const year = $(element).find('.itemYear').text().trim();
-        const country = $(element).find('.itemCountry').text().trim();
-        const director = $(element).find('.itemDirector').text().trim();
-        const cast = $(element).find('.itemCast').text().trim().split(',').map(s => s.trim()).filter(Boolean);
-        const fsk = $(element).find('.itemFSK').text().trim();
-        const imageUrl = $(element).find('.itemImage img').attr('src');
-        const trailerUrl = $(element).find('.itemTrailer a').attr('href');
-        const reviewUrl = $(element).find('.itemReview a').attr('href');
+        const title = $(element).find('h2 a').text().trim();
+        const language = $(element).attr('data-search_of_value') || '';
+        const year = $(element).find('.oneline dd.not_bold').first().text().trim();
+        const country = $(element).find('.oneline dd.not_bold').first().text().trim();
+        const director = $(element).find('.oneline dd').eq(1).text().trim();
+        const cast = $(element).find('.oneline dd').eq(2).text().trim().split(',').map(s => s.trim()).filter(Boolean);
+        const fsk = $(element).attr('data-search_fsk_value') || '';
+        const imageUrl = $(element).find('figure img').attr('src');
+        const trailerUrl = $(element).find('.subfilminfo.trailer a').attr('href');
+        const reviewUrl = $(element).find('.subfilminfo.critic a').attr('href');
 
         if (movieId && title) {
           const movie: Movie = {
@@ -70,23 +70,23 @@ export class BerlinCinemaScraper {
           };
 
           // Extract cinema information
-          $(element).find('.itemCinemas .cinema').each((_, cinemaElement: CheerioElement) => {
-            const cinemaId = $(cinemaElement).attr('data-cinema_id');
-            const cinemaName = $(cinemaElement).find('.cinemaName').text().trim();
-            const cinemaAddress = $(cinemaElement).find('.cinemaAddress').text().trim();
-            const cinemaCity = $(cinemaElement).find('.cinemaCity').text().trim();
-            const cinemaPostalCode = $(cinemaElement).find('.cinemaPostalCode').text().trim();
-            const cinemaUrl = $(cinemaElement).find('.cinemaUrl').attr('href');
+          $(element).find('article.cinema').each((_, cinemaElement: CheerioElement) => {
+            const cinemaName = $(cinemaElement).find('address a').text().trim();
+            const cinemaAddress = $(cinemaElement).find('address').text().trim().replace(cinemaName, '').trim();
+            const cinemaUrl = $(cinemaElement).find('address a').attr('href');
+            
+            // Generate a unique ID for the cinema
+            const cinemaId = `cinema_${cinemaName.replace(/\s+/g, '_').toLowerCase()}`;
 
-            if (cinemaId && cinemaName) {
+            if (cinemaName) {
               // Add cinema to global list if not exists
               if (!cinemaMap.has(cinemaId)) {
                 const cinemaInfo: CinemaInfo = {
                   id: cinemaId,
                   name: cinemaName,
                   address: cinemaAddress,
-                  city: cinemaCity,
-                  postalCode: cinemaPostalCode,
+                  city: 'Berlin',
+                  postalCode: '',
                   url: cinemaUrl
                 };
                 cinemaMap.set(cinemaId, cinemaInfo);
@@ -95,18 +95,18 @@ export class BerlinCinemaScraper {
 
               // Extract showtimes for this cinema
               const showtimes: Showtime[] = [];
-              $(cinemaElement).find('.showtime').each((_, showtimeElement: CheerioElement) => {
-                const date = $(showtimeElement).find('.showtimeDate').text().trim();
-                const time = $(showtimeElement).find('.showtimeTime').text().trim();
-                const showtimeLanguage = $(showtimeElement).find('.showtimeLanguage').text().trim();
-                const variants = $(showtimeElement).find('.showtimeVariants').text().trim().split(',').map(s => s.trim()).filter(Boolean);
+              $(cinemaElement).find('table.vorstellung tbody tr td.wird_gezeigt').each((_, showtimeElement: CheerioElement) => {
+                const time = $(showtimeElement).text().trim();
+                const columnIndex = $(showtimeElement).index();
+                const headerRow = $(cinemaElement).find('table.vorstellung thead tr th');
+                const date = headerRow.eq(columnIndex).text().trim();
 
                 if (date && time) {
                   showtimes.push({
                     date,
                     time,
-                    language: showtimeLanguage || language,
-                    variants
+                    language: language,
+                    variants: []
                   });
                 }
               });
@@ -116,8 +116,8 @@ export class BerlinCinemaScraper {
                 id: cinemaId,
                 name: cinemaName,
                 address: cinemaAddress,
-                city: cinemaCity,
-                postalCode: cinemaPostalCode,
+                city: 'Berlin',
+                postalCode: '',
                 url: cinemaUrl,
                 showtimes
               };
