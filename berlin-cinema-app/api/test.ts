@@ -25,13 +25,32 @@ export default async function handler(
 
     console.log('Test API called - testing direct scraping...');
 
-    // Test direct scraping
-    const response = await axios.get('https://www.critic.de/ov-movies-berlin/', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      },
-      timeout: 30000
-    });
+    // Test direct scraping with POST request (same as the working curl command)
+    const response = await axios.post('https://www.critic.de/ov-movies-berlin/',
+      'tx_criticde_pi5%5Bovsearch_cinema%5D=&tx_criticde_pi5%5Bovsearch_cinema_show%5D=&ovsearch_movie_ajax=&tx_criticde_pi5%5Bovsearch_movie%5D=&tx_criticde_pi5%5Bovsearch_district%5D=&tx_criticde_pi5%5Bovsearch_date%5D=&tx_criticde_pi5%5Bovsearch_of%5D=1&tx_criticde_pi5%5Bovsearch_omu%5D=1&tx_criticde_pi5%5Bsubmit_button%5D=search&tx_criticde_pi5%5Bsubmit%5D=&tx_criticde_pi5%5Bovsearch_days%5D=',
+      {
+        headers: {
+          'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'accept-language': 'en-GB,en;q=0.5',
+          'cache-control': 'no-cache',
+          'content-type': 'application/x-www-form-urlencoded',
+          'origin': 'https://www.critic.de',
+          'pragma': 'no-cache',
+          'referer': 'https://www.critic.de/ov-movies-berlin/',
+          'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"Windows"',
+          'sec-fetch-dest': 'document',
+          'sec-fetch-mode': 'navigate',
+          'sec-fetch-site': 'same-origin',
+          'sec-fetch-user': '?1',
+          'sec-gpc': '1',
+          'upgrade-insecure-requests': '1',
+          'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+        },
+        timeout: 30000
+      }
+    );
 
     console.log('Response received, status:', response.status);
     console.log('Response size:', response.data.length);
@@ -40,17 +59,13 @@ export default async function handler(
     
     // Test basic selectors
     const itemContainers = $('.itemContainer');
-    const itemTitles = $('h2 a');
-    const itemLanguages = $('[data-search_of_value]');
-    const cinemas = $('article.cinema');
-    const showtimes = $('td.wird_gezeigt');
+    const itemTitles = $('.itemTitle a');
+    const itemLanguages = $('.itemLanguage');
     
     console.log('Found elements:');
     console.log('- itemContainers:', itemContainers.length);
     console.log('- itemTitles:', itemTitles.length);
     console.log('- itemLanguages:', itemLanguages.length);
-    console.log('- cinemas:', cinemas.length);
-    console.log('- showtimes:', showtimes.length);
 
     // Try to extract some basic info
     const sampleTitles: string[] = [];
@@ -68,9 +83,7 @@ export default async function handler(
       elementsFound: {
         itemContainers: itemContainers.length,
         itemTitles: itemTitles.length,
-        itemLanguages: itemLanguages.length,
-        cinemas: cinemas.length,
-        showtimes: showtimes.length
+        itemLanguages: itemLanguages.length
       },
       sampleTitles,
       timestamp: new Date().toISOString()
