@@ -906,17 +906,14 @@ const MovieDetailPage: React.FC = () => {
             </div>
             
             <div className="space-y-3">
-              {selectedCinemaForPopup.address && (
+              {(selectedCinemaForPopup.address || (selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city)) && (
                 <div className="flex items-start">
                   <span className="font-medium text-gray-700 w-20">Address:</span>
-                  <span className="text-gray-600">{selectedCinemaForPopup.address}</span>
-                </div>
-              )}
-              
-              {selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city && (
-                <div className="flex items-start">
-                  <span className="font-medium text-gray-700 w-20">Location:</span>
-                  <span className="text-gray-600">{selectedCinemaForPopup.postalCode} {selectedCinemaForPopup.city}</span>
+                  <span className="text-gray-600">
+                    {selectedCinemaForPopup.address}
+                    {selectedCinemaForPopup.address && selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city && ', '}
+                    {selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city && `${selectedCinemaForPopup.postalCode} ${selectedCinemaForPopup.city}`}
+                  </span>
                 </div>
               )}
               
