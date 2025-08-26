@@ -44,17 +44,19 @@ const MovieDetailPage: React.FC = () => {
     let colorIndex = 0;
     
     // For merged movies, we need to get all unique cinema names from the timeInfo
-    if (movie.cinemas.length === 1 && movie.cinemas[0].name === 'All Cinemas') {
+    if (movie.cinemas.length > 0 && (movie.cinemas[0] as any).timeInfo) {
       // This is a merged movie, collect all cinema names from showtimes
       const allCinemaNames = new Set<string>();
-      movie.cinemas[0].showtimes.forEach(showtime => {
-        if ((showtime as any).timeInfo) {
-          Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
-            timeSlots.forEach((showing: any) => {
-              allCinemaNames.add(showing.cinema);
+      movie.cinemas.forEach(cinema => {
+        cinema.showtimes.forEach(showtime => {
+          if ((showtime as any).timeInfo) {
+            Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
+              timeSlots.forEach((showing: any) => {
+                allCinemaNames.add(showing.cinema);
+              });
             });
-          });
-        }
+          }
+        });
       });
       
       // Assign colors to all unique cinema names
@@ -87,21 +89,23 @@ const MovieDetailPage: React.FC = () => {
     const dates = new Set<string>();
     const variants = new Set<string>();
     
-    if (movie.cinemas.length === 1 && movie.cinemas[0].name === 'All Cinemas') {
+    if (movie.cinemas.length > 0 && (movie.cinemas[0] as any).timeInfo) {
       // Merged movie - extract from timeInfo
-      movie.cinemas[0].showtimes.forEach(showtime => {
-        dates.add(showtime.date);
-        if ((showtime as any).timeInfo) {
-          Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
-            timeSlots.forEach((showing: any) => {
-              cinemas.add(showing.cinema);
-              if (showing.variants) {
-                console.log('Found showing variants:', showing.variants);
-                showing.variants.forEach((variant: string) => variants.add(variant));
-              }
+      movie.cinemas.forEach(cinema => {
+        cinema.showtimes.forEach(showtime => {
+          dates.add(showtime.date);
+          if ((showtime as any).timeInfo) {
+            Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
+              timeSlots.forEach((showing: any) => {
+                cinemas.add(showing.cinema);
+                if (showing.variants) {
+                  console.log('Found showing variants:', showing.variants);
+                  showing.variants.forEach((variant: string) => variants.add(variant));
+                }
+              });
             });
-          });
-        }
+          }
+        });
       });
     } else {
       // Regular movie
@@ -254,14 +258,27 @@ const MovieDetailPage: React.FC = () => {
           
           console.log('Collected variants for merged movie:', Array.from(allVariants));
           
-          // Convert the map back to the expected format
-          const mergedCinemas = [{
-            id: 'merged',
-            name: 'All Cinemas',
-            address: '',
-            city: '',
-            postalCode: '',
-            url: '',
+          // Collect all unique cinemas from the movie group
+          const allCinemas = new Map<string, { id: string, name: string, address: string, city: string, postalCode: string, url: string }>();
+          
+          movieGroup.forEach(movie => {
+            movie.cinemas.forEach(cinema => {
+              if (!allCinemas.has(cinema.name)) {
+                allCinemas.set(cinema.name, {
+                  id: cinema.id,
+                  name: cinema.name,
+                  address: cinema.address,
+                  city: cinema.city,
+                  postalCode: cinema.postalCode,
+                  url: cinema.url
+                });
+              }
+            });
+          });
+          
+          // Convert the map back to the expected format, preserving individual cinemas
+          const mergedCinemas = Array.from(allCinemas.values()).map(cinema => ({
+            ...cinema,
             showtimes: Object.entries(showtimeMap).map(([date, times]) => ({
               date,
               times: Object.keys(times),
@@ -269,7 +286,7 @@ const MovieDetailPage: React.FC = () => {
               // Store the complete info for each time
               timeInfo: times
             }))
-          }];
+          }));
           
           const mergedMovie: Movie & { cinemas: typeof mergedCinemas } = {
             ...baseMovie,
@@ -628,7 +645,7 @@ const MovieDetailPage: React.FC = () => {
         </div>
         
         {/* Cinema Details Section */}
-        {movie.cinemas.length > 1 && (
+        {movie.cinemas.length > 0 && (
           <div className="px-6 py-4 bg-white border-b border-gray-200">
             <h4 className="text-lg font-semibold text-gray-900 mb-3">Cinema Information</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
