@@ -397,10 +397,20 @@ const MovieDetailPage: React.FC = () => {
               
               {/* Badges and Links */}
               <div className="flex items-center space-x-3 mb-4">
-                {/* Language Version Badge */}
-                <span className="px-3 py-1 rounded-md text-sm font-medium bg-cinema-100 text-cinema-800 border border-cinema-200">
-                  {movie.language}
-                </span>
+                {/* Variants Badge */}
+                {movie.variants && movie.variants.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {movie.variants.map((variant, idx) => (
+                      <span key={idx} className="px-3 py-1 rounded-md text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                        {variant}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                    No variants
+                  </span>
+                )}
                 
                 {movie.fskRating > 0 && (
                   <span className="px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
@@ -701,10 +711,7 @@ const MovieDetailPage: React.FC = () => {
                                                 {filteredShowings.map((showing: any, idx: number) => (
                                                   <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
                                                     <div className="flex flex-col items-center space-y-1">
-                                                      <div className="flex items-center justify-center space-x-2">
-                                                        <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
-                                                          {showing.language}
-                                                        </span>
+                                                      <div className="flex items-center justify-center">
                                                         <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
                                                           {showing.cinema}
                                                         </span>
@@ -735,10 +742,7 @@ const MovieDetailPage: React.FC = () => {
                                           
                                           return (
                                             <div className="space-y-1">
-                                              <div className="flex items-center justify-center space-x-2">
-                                                <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
-                                                  {movie.language.split('/')[0]}
-                                                </span>
+                                              <div className="flex items-center justify-center">
                                                 <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
                                                   {cinema.name}
                                                 </span>
