@@ -248,21 +248,7 @@ const HomePage: React.FC = () => {
                     }}
                   />
                   
-                                        {/* Variant Badges - Right Side Only */}
-                    {movie.variants && movie.variants.length > 0 && (
-                      <div className="absolute top-2 right-2 flex flex-col gap-1">
-                        {movie.variants.slice(0, 2).map((variant, idx) => (
-                          <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
-                            {variant}
-                          </span>
-                        ))}
-                        {movie.variants.length > 2 && (
-                          <span className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
-                            +{movie.variants.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    
                 </div>
                 
                 {/* Movie Info */}
@@ -270,6 +256,22 @@ const HomePage: React.FC = () => {
                   <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2">
                     {movie.title}
                   </h3>
+                  
+                  {/* Variant Badges */}
+                  {movie.variants && movie.variants.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {movie.variants.slice(0, 3).map((variant, idx) => (
+                        <span key={idx} className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                          {variant}
+                        </span>
+                      ))}
+                      {movie.variants.length > 3 && (
+                        <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                          +{movie.variants.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   
                   {/* FSK Rating */}
                   {movie.fskRating > 0 && (
