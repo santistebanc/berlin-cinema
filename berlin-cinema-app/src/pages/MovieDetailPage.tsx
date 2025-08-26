@@ -12,7 +12,7 @@ const MovieDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Filter states
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+
   const [selectedCinemas, setSelectedCinemas] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
@@ -80,11 +80,10 @@ const MovieDetailPage: React.FC = () => {
 
   // Get available languages, cinemas, and dates for filters
   const getAvailableFilters = () => {
-    if (!movie) return { languages: [], cinemas: [], dates: [], variants: [] };
+    if (!movie) return { cinemas: [], dates: [], variants: [] };
     
     console.log('Getting available filters for movie:', movie.title, 'with variants:', movie.variants);
     
-    const languages = new Set<string>();
     const cinemas = new Set<string>();
     const dates = new Set<string>();
     const variants = new Set<string>();
@@ -96,7 +95,6 @@ const MovieDetailPage: React.FC = () => {
         if ((showtime as any).timeInfo) {
           Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
             timeSlots.forEach((showing: any) => {
-              languages.add(showing.language);
               cinemas.add(showing.cinema);
               if (showing.variants) {
                 console.log('Found showing variants:', showing.variants);
@@ -114,7 +112,6 @@ const MovieDetailPage: React.FC = () => {
           dates.add(showtime.date);
         });
       });
-      languages.add(movie.language);
     }
     
     // Add movie variants if available
@@ -124,7 +121,6 @@ const MovieDetailPage: React.FC = () => {
     }
     
     const result = {
-      languages: Array.from(languages).sort(),
       cinemas: Array.from(cinemas).sort(),
       dates: Array.from(dates).sort(),
       variants: Array.from(variants).sort()
@@ -138,9 +134,8 @@ const MovieDetailPage: React.FC = () => {
   useEffect(() => {
     if (movie) {
       console.log('Movie loaded with variants:', movie.variants);
-      const { languages, cinemas, dates, variants } = getAvailableFilters();
-      console.log('Available filters:', { languages, cinemas, dates, variants });
-      setSelectedLanguages(languages);
+      const { cinemas, dates, variants } = getAvailableFilters();
+      console.log('Available filters:', { cinemas, dates, variants });
       setSelectedCinemas(cinemas);
       setSelectedDates(dates);
       setSelectedVariants(variants);
@@ -277,13 +272,7 @@ const MovieDetailPage: React.FC = () => {
   };
 
   // Filter toggle functions
-  const toggleLanguage = (language: string) => {
-    setSelectedLanguages(prev => 
-      prev.includes(language) 
-        ? prev.filter(l => l !== language)
-        : [...prev, language]
-    );
-  };
+  
 
   const toggleCinema = (cinema: string) => {
     setSelectedCinemas(prev => 
@@ -311,21 +300,19 @@ const MovieDetailPage: React.FC = () => {
 
   // Reset all filters
   const resetFilters = () => {
-    const { languages, cinemas, dates, variants } = getAvailableFilters();
-    setSelectedLanguages(languages);
+    const { cinemas, dates, variants } = getAvailableFilters();
     setSelectedCinemas(cinemas);
     setSelectedDates(dates);
     setSelectedVariants(variants);
   };
 
   // Check if a showing should be displayed based on filters
-    const shouldShowShowing = (showing: any) => {
-    const languageMatch = selectedLanguages.includes(showing.language);
+  const shouldShowShowing = (showing: any) => {
     const cinemaMatch = selectedCinemas.includes(showing.cinema);
     const variantMatch = !showing.variants || showing.variants.length === 0 || 
                         showing.variants.some((variant: string) => selectedVariants.includes(variant));
     
-    return languageMatch && cinemaMatch && variantMatch;
+    return cinemaMatch && variantMatch;
   };
 
   // Check if a date should be displayed
@@ -359,7 +346,7 @@ const MovieDetailPage: React.FC = () => {
     );
   }
 
-  const { languages, cinemas, dates, variants } = getAvailableFilters();
+  const { cinemas, dates, variants } = getAvailableFilters();
 
   return (
     <div className="w-full px-4 space-y-8">
@@ -395,10 +382,20 @@ const MovieDetailPage: React.FC = () => {
               
               {/* Badges and Links */}
               <div className="flex items-center space-x-3 mb-4">
-                {/* Language Version Badge */}
-                <span className="px-3 py-1 rounded-md text-sm font-medium bg-cinema-100 text-cinema-800 border border-cinema-200">
-                  {movie.language}
-                </span>
+                {/* Variants Badge */}
+                {movie.variants && movie.variants.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {movie.variants.map((variant, idx) => (
+                      <span key={idx} className="px-3 py-1 rounded-md text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                        {variant}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                    No variants
+                  </span>
+                )}
                 
                 {movie.fskRating > 0 && (
                   <span className="px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
@@ -452,25 +449,7 @@ const MovieDetailPage: React.FC = () => {
           
           {showFilters && (
             <div className="space-y-4">
-              {/* Language Filters */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Language Versions</h4>
-                <div className="flex flex-wrap gap-2">
-                  {languages.map(language => (
-                    <button
-                      key={language}
-                      onClick={() => toggleLanguage(language)}
-                      className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
-                        selectedLanguages.includes(language)
-                          ? 'bg-cinema-100 text-cinema-800 border-cinema-300'
-                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {language}
-                    </button>
-                  ))}
-                </div>
-              </div>
+
               
               {/* Cinema Filters */}
               <div>
@@ -718,9 +697,6 @@ const MovieDetailPage: React.FC = () => {
                                                   <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
                                                     <div className="flex flex-col items-center space-y-1">
                                                       <div className="flex items-center justify-center space-x-2">
-                                                        <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
-                                                          {showing.language}
-                                                        </span>
                                                         <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
                                                           {showing.cinema}
                                                         </span>

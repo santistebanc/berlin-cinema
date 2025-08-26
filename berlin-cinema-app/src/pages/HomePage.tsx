@@ -53,15 +53,19 @@ const HomePage: React.FC = () => {
     
     console.log('Processing movies for merging:', movies.map(m => ({ title: m.title, baseTitle: getBaseTitle(m.title) })));
     
-    // Group movies by their base title (without variants)
+    // Group movies by their base title AND variants (not just base title)
     movies.forEach(movie => {
       const baseTitle = getBaseTitle(movie.title);
-      console.log(`Grouping movie "${movie.title}" (ID: ${movie.id}) under base title: "${baseTitle}"`);
+      const variants = extractVariants(movie.title);
+      const variantKey = variants.length > 0 ? variants.sort().join('|') : 'no-variant';
+      const groupKey = `${baseTitle}|${variantKey}`;
       
-      if (!movieGroups[baseTitle]) {
-        movieGroups[baseTitle] = [];
+      console.log(`Grouping movie "${movie.title}" (ID: ${movie.id}) under key: "${groupKey}" (base: "${baseTitle}", variants: [${variants.join(', ')}])`);
+      
+      if (!movieGroups[groupKey]) {
+        movieGroups[groupKey] = [];
       }
-      movieGroups[baseTitle].push(movie);
+      movieGroups[groupKey].push(movie);
     });
     
     console.log('Movie groups:', Object.keys(movieGroups).map(key => ({
@@ -146,7 +150,7 @@ const HomePage: React.FC = () => {
         ...baseMovie,
         title: getBaseTitle(baseMovie.title), // Use clean title
         id: group.map(m => m.id).join('-'),
-        language: group.map(m => m.language).join('/'),
+        language: Array.from(allVariants).sort().join(' / '), // Use variants as the main identifier instead of OV/OmU
         variants: Array.from(allVariants).sort(), // Store all variants
         cinemas: mergedCinemas
       };
