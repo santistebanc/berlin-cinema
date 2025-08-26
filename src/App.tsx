@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import MovieDetailPage from './pages/MovieDetailPage';
-import CinemaPage from './pages/CinemaPage';
 
 const App: React.FC = () => {
   return (
