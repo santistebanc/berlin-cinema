@@ -40,13 +40,17 @@ export default async function handler(
     
     // Test basic selectors
     const itemContainers = $('.itemContainer');
-    const itemTitles = $('.itemTitle a');
-    const itemLanguages = $('.itemLanguage');
+    const itemTitles = $('h2 a');
+    const itemLanguages = $('[data-search_of_value]');
+    const cinemas = $('article.cinema');
+    const showtimes = $('td.wird_gezeigt');
     
     console.log('Found elements:');
     console.log('- itemContainers:', itemContainers.length);
     console.log('- itemTitles:', itemTitles.length);
     console.log('- itemLanguages:', itemLanguages.length);
+    console.log('- cinemas:', cinemas.length);
+    console.log('- showtimes:', showtimes.length);
 
     // Try to extract some basic info
     const sampleTitles: string[] = [];
@@ -64,7 +68,9 @@ export default async function handler(
       elementsFound: {
         itemContainers: itemContainers.length,
         itemTitles: itemTitles.length,
-        itemLanguages: itemLanguages.length
+        itemLanguages: itemLanguages.length,
+        cinemas: cinemas.length,
+        showtimes: showtimes.length
       },
       sampleTitles,
       timestamp: new Date().toISOString()
