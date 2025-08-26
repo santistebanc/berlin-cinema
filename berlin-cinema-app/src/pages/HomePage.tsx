@@ -248,16 +248,25 @@ const HomePage: React.FC = () => {
                     }}
                   />
                   
-                                      {/* Language Badge */}
-                    <div className="absolute top-2 right-2">
-                      <span className="px-2 py-1 rounded-md text-xs font-medium bg-cinema-600 text-white">
-                        {movie.language}
-                      </span>
-                    </div>
-                    
-                    {/* Variant Badges */}
+                                        {/* Variant Badges - Left Side */}
                     {movie.variants && movie.variants.length > 0 && (
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {movie.variants.slice(0, 2).map((variant, idx) => (
+                          <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                            {variant}
+                          </span>
+                        ))}
+                        {movie.variants.length > 2 && (
+                          <span className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                            +{movie.variants.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Variant Badges - Right Side */}
+                    {movie.variants && movie.variants.length > 0 && (
+                      <div className="absolute top-2 right-2 flex flex-col gap-1">
                         {movie.variants.slice(0, 2).map((variant, idx) => (
                           <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
                             {variant}
