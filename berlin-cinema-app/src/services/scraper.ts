@@ -57,19 +57,33 @@ export class BerlinCinemaScraper {
       const cinemas: CinemaInfo[] = [];
       const cinemaMap = new Map<string, CinemaInfo>();
 
-      // Extract movies
-      $('.itemContainer').each((_, element: CheerioElement) => {
-        const movieId = $(element).attr('data-movie_id');
-        const title = $(element).find('.itemTitle a').text().trim();
-        const language = $(element).find('.itemLanguage').text().trim();
-        const year = $(element).find('.itemYear').text().trim();
-        const country = $(element).find('.itemCountry').text().trim();
-        const director = $(element).find('.itemDirector').text().trim();
-        const cast = $(element).find('.itemCast').text().trim().split(',').map(s => s.trim()).filter(Boolean);
-        const fsk = $(element).find('.itemFSK').text().trim();
-        const imageUrl = $(element).find('.itemImage img').attr('src');
-        const trailerUrl = $(element).find('.itemTrailer a').attr('href');
-        const reviewUrl = $(element).find('.itemReview a').attr('href');
+      // Extract movies using the correct selectors
+      $('.placard-left-container').each((_, element: CheerioElement) => {
+        // Extract title from the link title attribute
+        const titleLink = $(element).find('a[title*="Kinoprogramm"]');
+        const title = titleLink.attr('title')?.replace(' - Kinoprogramm', '') || '';
+        
+        // Extract movie ID from the URL
+        const movieUrl = titleLink.attr('href') || '';
+        const movieId = movieUrl.match(/\/movie\/[^\/]+\/(\d+)\//)?.[1] || '';
+        
+        // Extract image URL
+        const imageUrl = $(element).find('img').attr('src');
+        
+        // Extract trailer URL
+        const trailerUrl = $(element).find('.subfilminfo.trailer a').attr('href');
+        
+        // Extract language/version from title (OV, OmU, etc.)
+        const languageMatch = title.match(/\((OV|OmU|OV w\/ sub|Original Version)\)/i);
+        const language = languageMatch ? languageMatch[1] : '';
+        
+        // For now, set some default values since the structure is different
+        const year = '';
+        const country = '';
+        const director = '';
+        const cast: string[] = [];
+        const fsk = '';
+        const reviewUrl = '';
 
         if (movieId && title) {
           const movie: Movie = {
@@ -88,62 +102,22 @@ export class BerlinCinemaScraper {
             variants: []
           };
 
-          // Extract cinema information
-          $(element).find('.itemCinemas .cinema').each((_, cinemaElement: CheerioElement) => {
-            const cinemaId = $(cinemaElement).attr('data-cinema_id');
-            const cinemaName = $(cinemaElement).find('.cinemaName').text().trim();
-            const cinemaAddress = $(cinemaElement).find('.cinemaAddress').text().trim();
-            const cinemaCity = $(cinemaElement).find('.cinemaCity').text().trim();
-            const cinemaPostalCode = $(cinemaElement).find('.cinemaPostalCode').text().trim();
-            const cinemaUrl = $(cinemaElement).find('.cinemaUrl').attr('href');
+          // For now, create a basic cinema structure since the detailed cinema data
+          // is not immediately visible in the current HTML structure
+          // We'll need to investigate further to find where cinema and showtime data is located
+          
+          // Create a placeholder cinema entry
+          const cinema: Cinema = {
+            id: movieId,
+            name: 'Cinema Information',
+            address: '',
+            city: '',
+            postalCode: '',
+            url: '',
+            showtimes: []
+          };
 
-            if (cinemaId && cinemaName) {
-              // Add cinema to global list if not exists
-              if (!cinemaMap.has(cinemaId)) {
-                const cinemaInfo: CinemaInfo = {
-                  id: cinemaId,
-                  name: cinemaName,
-                  address: cinemaAddress,
-                  city: cinemaCity,
-                  postalCode: cinemaPostalCode,
-                  url: cinemaUrl
-                };
-                cinemaMap.set(cinemaId, cinemaInfo);
-                cinemas.push(cinemaInfo);
-              }
-
-              // Extract showtimes for this cinema
-              const showtimes: Showtime[] = [];
-              $(cinemaElement).find('.showtime').each((_, showtimeElement: CheerioElement) => {
-                const date = $(showtimeElement).find('.showtimeDate').text().trim();
-                const time = $(showtimeElement).find('.showtimeTime').text().trim();
-                const showtimeLanguage = $(showtimeElement).find('.showtimeLanguage').text().trim();
-                const variants = $(showtimeElement).find('.showtimeVariants').text().trim().split(',').map(s => s.trim()).filter(Boolean);
-
-                if (date && time) {
-                  showtimes.push({
-                    date,
-                    time,
-                    language: showtimeLanguage || language,
-                    variants
-                  });
-                }
-              });
-
-              // Add cinema with showtimes to movie
-              const cinema: Cinema = {
-                id: cinemaId,
-                name: cinemaName,
-                address: cinemaAddress,
-                city: cinemaCity,
-                postalCode: cinemaPostalCode,
-                url: cinemaUrl,
-                showtimes
-              };
-
-              movie.cinemas.push(cinema);
-            }
-          });
+          movie.cinemas.push(cinema);
 
           movies.push(movie);
         }
