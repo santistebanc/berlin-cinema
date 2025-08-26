@@ -12,7 +12,7 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   // Merge movies with same title but different language versions
-  const getMergedMovies = () => {
+    const getMergedMovies = (rawMovies: Movie[]) => {
     const movieGroups: { [baseTitle: string]: Movie[] } = {};
     
     // Helper function to get base title (remove all variants and language suffixes)
@@ -54,10 +54,10 @@ const HomePage: React.FC = () => {
       return variants;
     };
     
-    console.log('Processing movies for merging:', movies.map(m => ({ title: m.title, baseTitle: getBaseTitle(m.title) })));
+    console.log('Processing movies for merging:', rawMovies.map(m => ({ title: m.title, baseTitle: getBaseTitle(m.title) })));
     
     // Group movies by their base title (without variants)
-    movies.forEach(movie => {
+    rawMovies.forEach(movie => {
       const baseTitle = getBaseTitle(movie.title);
       console.log(`Grouping movie "${movie.title}" (ID: ${movie.id}) under base title: "${baseTitle}"`);
       
@@ -144,7 +144,7 @@ const HomePage: React.FC = () => {
       
       // Debug logging for variants
       console.log('All collected variants for', getBaseTitle(baseMovie.title), ':', Array.from(allVariants));
-
+      
       const mergedMovie: Movie & { cinemas: typeof mergedCinemas } = {
         ...baseMovie,
         title: getBaseTitle(baseMovie.title), // Use clean title
@@ -174,7 +174,7 @@ const HomePage: React.FC = () => {
       const moviesResult = await movieApi.getAllMovies();
       
       console.log('Raw movies from API:', moviesResult.movies);
-      const mergedMovies = getMergedMovies();
+      const mergedMovies = getMergedMovies(moviesResult.movies);
       console.log('Merged movies with variants:', mergedMovies);
       
       setMovies(mergedMovies);
@@ -216,7 +216,7 @@ const HomePage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Select a Movie</h2>
-          <span className="text-gray-600">{getMergedMovies().length} movies available</span>
+          <span className="text-gray-600">{movies.length} movies available</span>
         </div>
         
         {loading ? (
@@ -230,7 +230,7 @@ const HomePage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {getMergedMovies().map((movie) => (
+            {movies.map((movie) => (
               <div
                 key={movie.id}
                 onClick={() => handleMovieClick(movie)}
