@@ -42,8 +42,31 @@ const HomePage: React.FC = () => {
     });
   };
 
+  // Calculate total showtimes for a movie
+  const getTotalShowtimes = (movie: Movie): number => {
+    let total = 0;
+    movie.cinemas.forEach(cinema => {
+      cinema.showtimes.forEach(showtime => {
+        total += showtime.times.length;
+      });
+    });
+    return total;
+  };
+
+  // Sort movies by total showtimes (descending)
+  const sortMoviesByShowtimes = (movies: Movie[]): Movie[] => {
+    return [...movies].sort((a, b) => {
+      const aShowtimes = getTotalShowtimes(a);
+      const bShowtimes = getTotalShowtimes(b);
+      return bShowtimes - aShowtimes; // Descending order (most showtimes first)
+    });
+  };
+
   // Get filtered movies based on search
   const filteredMovies = fuzzySearch(searchQuery, movies);
+  
+  // Sort filtered movies by showtimes
+  const sortedFilteredMovies = sortMoviesByShowtimes(filteredMovies);
 
   // Merge movies with same title but different language versions
     const getMergedMovies = (rawMovies: Movie[]) => {
@@ -262,7 +285,7 @@ const HomePage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Select a Movie</h2>
-          <span className="text-gray-600">{filteredMovies.length} of {movies.length} movies</span>
+          <span className="text-gray-600">{sortedFilteredMovies.length} of {movies.length} movies (ordered by showtimes)</span>
         </div>
         
         {/* Search Input */}
@@ -302,11 +325,11 @@ const HomePage: React.FC = () => {
           {/* Search Results Summary */}
           {searchQuery && (
             <div className="mt-2 text-sm text-gray-600">
-              {filteredMovies.length === movies.length ? (
+              {sortedFilteredMovies.length === movies.length ? (
                 <span className="text-green-600">✓ Showing all movies</span>
               ) : (
                 <span className="text-blue-600">
-                  🔍 Found {filteredMovies.length} movie{filteredMovies.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                  🔍 Found {sortedFilteredMovies.length} movie{filteredMovies.length !== 1 ? 's' : ''} matching "{searchQuery}"
                 </span>
               )}
             </div>
@@ -317,7 +340,7 @@ const HomePage: React.FC = () => {
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cinema-600"></div>
           </div>
-        ) : filteredMovies.length === 0 ? (
+        ) : sortedFilteredMovies.length === 0 ? (
           <div className="text-center py-8">
             <Film className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">
@@ -326,7 +349,7 @@ const HomePage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filteredMovies.map((movie) => (
+            {sortedFilteredMovies.map((movie) => (
               <div
                 key={movie.id}
                 onClick={() => handleMovieClick(movie)}
@@ -375,6 +398,13 @@ const HomePage: React.FC = () => {
                       FSK {movie.fskRating}
                     </span>
                   )}
+                  
+                  {/* Showtimes Count */}
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <span className="text-xs text-gray-600">
+                      🎬 {getTotalShowtimes(movie)} showtime{getTotalShowtimes(movie) !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
