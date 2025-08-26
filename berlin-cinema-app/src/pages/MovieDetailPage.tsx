@@ -1,0 +1,689 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Play, ExternalLink, Filter, X } from 'lucide-react';
+import { movieApi } from '../services/api';
+import { Movie } from '../types';
+
+const MovieDetailPage: React.FC = () => {
+  const { title } = useParams<{ title: string }>();
+  const navigate = useNavigate();
+  const [movie, setMovie] = useState<Movie | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Filter states
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [selectedCinemas, setSelectedCinemas] = useState<string[]>([]);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Generate unique colors for each cinema
+  const getCinemaColors = () => {
+    if (!movie) return {};
+    
+    const cinemaColors: { [key: string]: string } = {};
+    const colors = [
+      'bg-red-100 text-red-800 border-red-200',
+      'bg-blue-100 text-blue-800 border-blue-200',
+      'bg-green-100 text-green-800 border-green-200',
+      'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'bg-purple-100 text-purple-800 border-purple-200',
+      'bg-pink-100 text-pink-800 border-pink-200',
+      'bg-indigo-100 text-indigo-800 border-indigo-200',
+      'bg-teal-100 text-teal-800 border-teal-200',
+      'bg-orange-100 text-orange-800 border-orange-200',
+      'bg-cyan-100 text-cyan-800 border-cyan-200',
+      'bg-lime-100 text-lime-800 border-lime-200',
+      'bg-amber-100 text-amber-800 border-amber-200',
+      'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'bg-violet-100 text-violet-800 border-violet-200',
+      'bg-rose-100 text-rose-800 border-rose-200',
+      'bg-sky-100 text-sky-800 border-sky-200'
+    ];
+    
+    let colorIndex = 0;
+    
+    // For merged movies, we need to get all unique cinema names from the timeInfo
+    if (movie.cinemas.length === 1 && movie.cinemas[0].name === 'All Cinemas') {
+      // This is a merged movie, collect all cinema names from showtimes
+      const allCinemaNames = new Set<string>();
+      movie.cinemas[0].showtimes.forEach(showtime => {
+        if ((showtime as any).timeInfo) {
+          Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
+            timeSlots.forEach((showing: any) => {
+              allCinemaNames.add(showing.cinema);
+            });
+          });
+        }
+      });
+      
+      // Assign colors to all unique cinema names
+      Array.from(allCinemaNames).sort().forEach(cinemaName => {
+        if (!cinemaColors[cinemaName]) {
+          cinemaColors[cinemaName] = colors[colorIndex % colors.length];
+          colorIndex++;
+        }
+      });
+    } else {
+      // Regular movie, use cinemas array
+      movie.cinemas.forEach(cinema => {
+        if (!cinemaColors[cinema.name]) {
+          cinemaColors[cinema.name] = colors[colorIndex % colors.length];
+          colorIndex++;
+        }
+      });
+    }
+    
+    return cinemaColors;
+  };
+
+  // Get available languages, cinemas, and dates for filters
+  const getAvailableFilters = () => {
+    if (!movie) return { languages: [], cinemas: [], dates: [] };
+    
+    const languages = new Set<string>();
+    const cinemas = new Set<string>();
+    const dates = new Set<string>();
+    
+    if (movie.cinemas.length === 1 && movie.cinemas[0].name === 'All Cinemas') {
+      // Merged movie - extract from timeInfo
+      movie.cinemas[0].showtimes.forEach(showtime => {
+        dates.add(showtime.date);
+        if ((showtime as any).timeInfo) {
+          Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
+            timeSlots.forEach((showing: any) => {
+              languages.add(showing.language);
+              cinemas.add(showing.cinema);
+            });
+          });
+        }
+      });
+    } else {
+      // Regular movie
+      movie.cinemas.forEach(cinema => {
+        cinemas.add(cinema.name);
+        cinema.showtimes.forEach(showtime => {
+          dates.add(showtime.date);
+        });
+      });
+      languages.add(movie.language);
+    }
+    
+    return {
+      languages: Array.from(languages).sort(),
+      cinemas: Array.from(cinemas).sort(),
+      dates: Array.from(dates).sort()
+    };
+  };
+
+  // Initialize filters when movie data loads
+  useEffect(() => {
+    if (movie) {
+      const { languages, cinemas, dates } = getAvailableFilters();
+      setSelectedLanguages(languages);
+      setSelectedCinemas(cinemas);
+      setSelectedDates(dates);
+    }
+  }, [movie]);
+
+  useEffect(() => {
+    if (title) {
+      loadMovieData(decodeURIComponent(title));
+    }
+  }, [title]);
+
+  const loadMovieData = async (movieTitle: string) => {
+    try {
+      setLoading(true);
+      const moviesResult = await movieApi.getAllMovies();
+      
+      // Find the movie by title (handle merged movies)
+      const allMovies = moviesResult.movies;
+      const movieGroups: { [baseTitle: string]: Movie[] } = {};
+      
+      // Helper function to get base title (remove language suffixes)
+      const getBaseTitle = (title: string) => {
+        return title
+          .replace(/\s*\(OV\s*w\/\s*sub\)/i, '')
+          .replace(/\s*\(OV\)/i, '')
+          .replace(/\s*\(OmU\)/i, '')
+          .replace(/\s*\(OV\/OmU\)/i, '')
+          .replace(/\s*\(Original\s*Version\)/i, '')
+          .replace(/\s*\(Original\s*Version\s*w\/\s*sub\)/i, '')
+          .trim();
+      };
+      
+      allMovies.forEach(movie => {
+        const baseTitle = getBaseTitle(movie.title);
+        if (!movieGroups[baseTitle]) {
+          movieGroups[baseTitle] = [];
+        }
+        movieGroups[baseTitle].push(movie);
+      });
+      
+      // Find the movie group that matches the requested title
+      const targetBaseTitle = getBaseTitle(movieTitle);
+      const movieGroup = movieGroups[targetBaseTitle];
+      
+      if (movieGroup && movieGroup.length > 0) {
+        if (movieGroup.length === 1) {
+          setMovie(movieGroup[0]);
+        } else {
+          // Merge multiple versions of the same movie
+          const baseMovie = movieGroup[0];
+          
+          // Create a map to track all showtimes by date and time, regardless of cinema
+          const showtimeMap: { [date: string]: { [time: string]: { cinema: string, language: string, originalMovie: Movie }[] } } = {};
+          
+          movieGroup.forEach(movie => {
+            movie.cinemas.forEach(cinema => {
+              cinema.showtimes.forEach(showtime => {
+                if (!showtimeMap[showtime.date]) {
+                  showtimeMap[showtime.date] = {};
+                }
+                
+                showtime.times.forEach(time => {
+                  if (!showtimeMap[showtime.date][time]) {
+                    showtimeMap[showtime.date][time] = [];
+                  }
+                  showtimeMap[showtime.date][time].push({
+                    cinema: cinema.name,
+                    language: movie.language,
+                    originalMovie: movie
+                  });
+                });
+              });
+            });
+          });
+          
+          // Convert the map back to the expected format
+          const mergedCinemas = [{
+            id: 'merged',
+            name: 'All Cinemas',
+            address: '',
+            city: '',
+            postalCode: '',
+            url: '',
+            showtimes: Object.entries(showtimeMap).map(([date, times]) => ({
+              date,
+              times: Object.keys(times),
+              dayOfWeek: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+              // Store the complete info for each time
+              timeInfo: times
+            }))
+          }];
+          
+          const mergedMovie: Movie & { cinemas: typeof mergedCinemas } = {
+            ...baseMovie,
+            title: targetBaseTitle, // Use clean title
+            id: movieGroup.map(m => m.id).join('-'),
+            language: movieGroup.map(m => m.language).join('/'),
+            cinemas: mergedCinemas
+          };
+          
+          setMovie(mergedMovie);
+        }
+        setError(null);
+      } else {
+        setError('Movie not found');
+      }
+    } catch (err) {
+      setError('Failed to load movie information');
+      console.error('Error loading movie data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter toggle functions
+  const toggleLanguage = (language: string) => {
+    setSelectedLanguages(prev => 
+      prev.includes(language) 
+        ? prev.filter(l => l !== language)
+        : [...prev, language]
+    );
+  };
+
+  const toggleCinema = (cinema: string) => {
+    setSelectedCinemas(prev => 
+      prev.includes(cinema) 
+        ? prev.filter(c => c !== cinema)
+        : [...prev, cinema]
+    );
+  };
+
+  const toggleDate = (date: string) => {
+    setSelectedDates(prev => 
+      prev.includes(date) 
+        ? prev.filter(d => d !== date)
+        : [...prev, date]
+    );
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    const { languages, cinemas, dates } = getAvailableFilters();
+    setSelectedLanguages(languages);
+    setSelectedCinemas(cinemas);
+    setSelectedDates(dates);
+  };
+
+  // Check if a showing should be displayed based on filters
+  const shouldShowShowing = (showing: any) => {
+    return selectedLanguages.includes(showing.language) && 
+           selectedCinemas.includes(showing.cinema);
+  };
+
+  // Check if a date should be displayed
+  const shouldShowDate = (date: string) => {
+    return selectedDates.includes(date);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cinema-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading movie information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !movie) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Movie Not Found</h2>
+        <p className="text-gray-600 mb-6">{error || 'The requested movie could not be found.'}</p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-4 py-2 bg-cinema-600 text-white rounded-lg hover:bg-cinema-700 transition-colors"
+        >
+          ← Back to Movies
+        </button>
+      </div>
+    );
+  }
+
+  const { languages, cinemas, dates } = getAvailableFilters();
+
+  return (
+    <div className="w-full px-4 space-y-8">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/')}
+        className="inline-flex items-center text-cinema-600 hover:text-cinema-700 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Movies
+      </button>
+
+      {/* Movie Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-start space-x-4">
+            {/* Movie Poster */}
+            <div className="flex-shrink-0">
+              <img
+                src={movie.posterUrl}
+                alt={movie.title}
+                className="w-20 h-30 object-cover rounded-lg"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjY0IiB5PSI5NiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4=';
+                }}
+              />
+            </div>
+            
+            {/* Movie Info */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">{movie.title}</h1>
+              
+              {/* Badges and Links */}
+              <div className="flex items-center space-x-3 mb-4">
+                {/* Language Version Badge */}
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-cinema-100 text-cinema-800 border border-cinema-200">
+                  {movie.language}
+                </span>
+                
+                {movie.fskRating > 0 && (
+                  <span className="px-2 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                    FSK {movie.fskRating}
+                  </span>
+                )}
+              </div>
+              
+              {/* Action Links */}
+              <div className="flex items-center space-x-3">
+                {movie.trailerUrl && (
+                  <a
+                    href={movie.trailerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-4 py-2 bg-cinema-600 text-white text-sm rounded-md hover:bg-cinema-700 transition-colors"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Trailer
+                  </a>
+                )}
+                
+                {movie.reviewUrl && (
+                  <a
+                    href={movie.reviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Review
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Filters Section */}
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              {showFilters ? 'Hide' : 'Show'} Filters
+            </button>
+          </div>
+          
+          {showFilters && (
+            <div className="space-y-4">
+              {/* Language Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Language Versions</h4>
+                <div className="flex flex-wrap gap-2">
+                  {languages.map(language => (
+                    <button
+                      key={language}
+                      onClick={() => toggleLanguage(language)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                        selectedLanguages.includes(language)
+                          ? 'bg-cinema-100 text-cinema-800 border-cinema-300'
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {language}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Cinema Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Cinemas</h4>
+                <div className="flex flex-wrap gap-2">
+                  {cinemas.map(cinema => (
+                    <button
+                      key={cinema}
+                      onClick={() => toggleCinema(cinema)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                        selectedCinemas.includes(cinema)
+                          ? `${getCinemaColors()[cinema]}`
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {cinema}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Date Filters */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Dates</h4>
+                <div className="flex flex-wrap gap-2">
+                  {dates.map(date => (
+                    <button
+                      key={date}
+                      onClick={() => toggleDate(date)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                        selectedDates.includes(date)
+                          ? 'bg-blue-100 text-blue-800 border-blue-300'
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {new Date(date).toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Reset Button */}
+              <div className="pt-2">
+                <button
+                  onClick={resetFilters}
+                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reset All Filters
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Cinema Legend */}
+        <div className="px-6 py-3 bg-gray-100 border-b border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Cinemas:</h4>
+          <div className="flex flex-wrap gap-2">
+            {(() => {
+              const cinemaColors = getCinemaColors();
+              const uniqueCinemas = new Set<string>();
+              movie.cinemas.forEach(cinema => {
+                uniqueCinemas.add(cinema.name);
+              });
+              
+              return Array.from(uniqueCinemas).sort().map(cinemaName => (
+                <span
+                  key={cinemaName}
+                  className={`px-2 py-1 rounded-full text-xs font-medium border ${cinemaColors[cinemaName]}`}
+                >
+                  {cinemaName}
+                </span>
+              ));
+            })()}
+          </div>
+        </div>
+        
+        {/* Showtimes Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-100">
+                <th className="text-left p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 min-w-[100px]">
+                  Time
+                </th>
+                {(() => {
+                  // Get all unique dates from all movies, but only show selected dates
+                  const allDates = new Set<string>();
+                  movie.cinemas.forEach(cinema => {
+                    cinema.showtimes.forEach(showtime => {
+                      allDates.add(showtime.date);
+                    });
+                  });
+                  return Array.from(allDates).sort()
+                    .filter(date => shouldShowDate(date)) // Only show selected dates
+                    .map((date, dateIndex) => (
+                      <th key={date} className="text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200">
+                        {new Date(date).toLocaleDateString('en-US', { 
+                          weekday: 'short', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </th>
+                    ));
+                })()}
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                // Get all unique times for this movie across all dates
+                const allTimes = new Set<string>();
+                movie.cinemas.forEach(cinema => {
+                  cinema.showtimes.forEach(showtime => {
+                    showtime.times.forEach(time => {
+                      allTimes.add(time);
+                    });
+                  });
+                });
+                const sortedTimes = Array.from(allTimes).sort();
+                
+                return sortedTimes
+                  .filter(time => {
+                    // Check if this time slot has any content after filtering
+                    const allDates = new Set<string>();
+                    movie.cinemas.forEach(cinema => {
+                      cinema.showtimes.forEach(showtime => {
+                        allDates.add(showtime.date);
+                      });
+                    });
+                    const sortedDates = Array.from(allDates).sort();
+                    
+                    // Check if any date at this time has content
+                    return sortedDates
+                      .filter(date => shouldShowDate(date))
+                      .some(date => {
+                        const cinema = movie.cinemas.find(c => {
+                          const showtime = c.showtimes.find(s => s.date === date);
+                          return showtime && showtime.times.includes(time);
+                        });
+                        
+                        if (!cinema) return false;
+                        
+                        const showtime = cinema.showtimes.find(s => s.date === date);
+                        if (!showtime || !showtime.times.includes(time)) return false;
+                        
+                        // Check if there are any showings after filtering
+                        const timeInfo = (showtime as any).timeInfo?.[time];
+                        if (timeInfo && timeInfo.length > 0) {
+                          return timeInfo.some(shouldShowShowing);
+                        }
+                        
+                        // Fallback for non-merged movies
+                        return shouldShowShowing({ 
+                          language: movie.language.split('/')[0], 
+                          cinema: cinema.name 
+                        });
+                      });
+                  })
+                  .map(time => (
+                    <tr key={time} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200">
+                        {time}
+                      </td>
+                      {(() => {
+                        // Get all unique dates from all movies
+                        const allDates = new Set<string>();
+                        movie.cinemas.forEach(cinema => {
+                          cinema.showtimes.forEach(showtime => {
+                            allDates.add(showtime.date);
+                          });
+                        });
+                        const sortedDates = Array.from(allDates).sort();
+                        
+                        return sortedDates
+                          .filter(date => shouldShowDate(date)) // Only show selected dates
+                          .map((date, dateIndex) => {
+                            // Find if this movie is playing at this time on this date
+                            const cinema = movie.cinemas.find(c => {
+                              const showtime = c.showtimes.find(s => s.date === date);
+                              return showtime && showtime.times.includes(time);
+                            });
+                            
+                            // Add border-r to all date columns except the last one
+                            const isLastDate = dateIndex === sortedDates.filter(d => shouldShowDate(d)).length - 1;
+                            
+                            return (
+                              <td key={date} className={`p-3 text-center text-sm ${!isLastDate ? 'border-r border-gray-200' : ''}`}>
+                                {cinema ? (
+                                  <div className="space-y-2">
+                                    {/* All Showings for this Time/Date */}
+                                    <div className="space-y-2">
+                                      {(() => {
+                                        // Find which showings are playing at this time/date
+                                        const showtime = cinema.showtimes.find(s => s.date === date);
+                                        if (showtime && showtime.times.includes(time)) {
+                                          // Use the stored complete information from the merged movie
+                                          const timeInfo = (showtime as any).timeInfo?.[time];
+                                          
+                                          if (timeInfo && timeInfo.length > 0) {
+                                            // Filter showings based on selected languages and cinemas
+                                            const filteredShowings = timeInfo.filter(shouldShowShowing);
+                                            
+                                            if (filteredShowings.length === 0) {
+                                              return <span className="text-gray-300">-</span>;
+                                            }
+                                            
+                                            // Always show all showings vertically stacked
+                                            return (
+                                              <div className="space-y-2">
+                                                {filteredShowings.map((showing: any, idx: number) => (
+                                                  <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
+                                                    <div className="flex items-center justify-center space-x-2">
+                                                      <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
+                                                        {showing.language}
+                                                      </span>
+                                                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
+                                                        {showing.cinema}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          // Fallback to original logic if timeInfo not available
+                                          // Check if this showing should be displayed
+                                          if (!shouldShowShowing({ language: movie.language.split('/')[0], cinema: cinema.name })) {
+                                            return <span className="text-gray-300">-</span>;
+                                          }
+                                          
+                                          return (
+                                            <div className="space-y-1">
+                                              <div className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
+                                                {movie.language.split('/')[0]}
+                                              </div>
+                                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
+                                                {cinema.name}
+                                              </span>
+                                            </div>
+                                          );
+                                        }
+                                        return <span className="text-gray-300">-</span>;
+                                      })()}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-300">-</span>
+                                )}
+                              </td>
+                            );
+                          });
+                      })()}
+                    </tr>
+                  ));
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MovieDetailPage;
