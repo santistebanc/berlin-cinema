@@ -218,7 +218,7 @@ const MovieDetailPage: React.FC = () => {
           const baseMovie = movieGroup[0];
           
           // Create a map to track all showtimes by date and time, regardless of cinema
-          const showtimeMap: { [date: string]: { [time: string]: { cinema: string, language: string, originalMovie: Movie }[] } } = {};
+          const showtimeMap: { [date: string]: { [time: string]: { cinema: string, language: string, variants: string[], originalMovie: Movie }[] } } = {};
           
           movieGroup.forEach(movie => {
             movie.cinemas.forEach(cinema => {
@@ -234,12 +234,22 @@ const MovieDetailPage: React.FC = () => {
                   showtimeMap[showtime.date][time].push({
                     cinema: cinema.name,
                     language: movie.language,
+                    variants: extractVariants(movie.title),
                     originalMovie: movie
                   });
                 });
               });
             });
           });
+          
+          // Collect all unique variants from all movies in the group
+          const allVariants = new Set<string>();
+          movieGroup.forEach(movie => {
+            const variants = extractVariants(movie.title);
+            variants.forEach(variant => allVariants.add(variant));
+          });
+          
+          console.log('Collected variants for merged movie:', Array.from(allVariants));
           
           // Convert the map back to the expected format
           const mergedCinemas = [{
@@ -263,6 +273,7 @@ const MovieDetailPage: React.FC = () => {
             title: targetBaseTitle, // Use clean title
             id: movieGroup.map(m => m.id).join('-'),
             language: movieGroup.map(m => m.language).join('/'),
+            variants: Array.from(allVariants).sort(), // Store all variants
             cinemas: mergedCinemas
           };
           
