@@ -188,7 +188,7 @@ const HomePage: React.FC = () => {
                   
                   {/* Language Badge */}
                   <div className="absolute top-2 right-2">
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-cinema-600 text-white">
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-cinema-600 text-white">
                       {movie.language}
                     </span>
                   </div>

@@ -37,7 +37,7 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
         
         {/* Quick Info Badges */}
         <div className="flex items-center space-x-3 mb-4">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+          <span className={`px-3 py-1 rounded-md text-sm font-medium ${
             movie.language === 'OV' 
               ? 'bg-blue-100 text-blue-800' 
               : 'bg-green-100 text-green-800'
@@ -46,9 +46,9 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
           </span>
           
           {movie.fskRating > 0 && (
-            <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-              FSK {movie.fskRating}
-            </span>
+                    <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
+          FSK {movie.fskRating}
+        </span>
           )}
           
           <span className="text-sm text-gray-600">

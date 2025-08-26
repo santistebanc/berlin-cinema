@@ -342,12 +342,12 @@ const MovieDetailPage: React.FC = () => {
               {/* Badges and Links */}
               <div className="flex items-center space-x-3 mb-4">
                 {/* Language Version Badge */}
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-cinema-100 text-cinema-800 border border-cinema-200">
+                <span className="px-3 py-1 rounded-md text-sm font-medium bg-cinema-100 text-cinema-800 border border-cinema-200">
                   {movie.language}
                 </span>
                 
                 {movie.fskRating > 0 && (
-                  <span className="px-2 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                  <span className="px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
                     FSK {movie.fskRating}
                   </span>
                 )}
@@ -406,7 +406,7 @@ const MovieDetailPage: React.FC = () => {
                     <button
                       key={language}
                       onClick={() => toggleLanguage(language)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                      className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
                         selectedLanguages.includes(language)
                           ? 'bg-cinema-100 text-cinema-800 border-cinema-300'
                           : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
@@ -426,7 +426,7 @@ const MovieDetailPage: React.FC = () => {
                     <button
                       key={cinema}
                       onClick={() => toggleCinema(cinema)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                      className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
                         selectedCinemas.includes(cinema)
                           ? `${getCinemaColors()[cinema]}`
                           : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
@@ -446,7 +446,7 @@ const MovieDetailPage: React.FC = () => {
                     <button
                       key={date}
                       onClick={() => toggleDate(date)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                      className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
                         selectedDates.includes(date)
                           ? 'bg-blue-100 text-blue-800 border-blue-300'
                           : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
@@ -490,7 +490,7 @@ const MovieDetailPage: React.FC = () => {
               return Array.from(uniqueCinemas).sort().map(cinemaName => (
                 <span
                   key={cinemaName}
-                  className={`px-2 py-1 rounded-full text-xs font-medium border ${cinemaColors[cinemaName]}`}
+                  className={`px-2 py-1 rounded-md text-xs font-medium border ${cinemaColors[cinemaName]}`}
                 >
                   {cinemaName}
                 </span>
@@ -637,9 +637,9 @@ const MovieDetailPage: React.FC = () => {
                                                       <span className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
                                                         {showing.language}
                                                       </span>
-                                                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
-                                                        {showing.cinema}
-                                                      </span>
+                                                                                <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]}`}>
+                            {showing.cinema}
+                          </span>
                                                     </div>
                                                   </div>
                                                 ))}
@@ -658,9 +658,9 @@ const MovieDetailPage: React.FC = () => {
                                               <div className="text-xs font-bold text-cinema-700 uppercase tracking-wide">
                                                 {movie.language.split('/')[0]}
                                               </div>
-                                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
-                                                {cinema.name}
-                                              </span>
+                                                                                          <span className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]}`}>
+                                              {cinema.name}
+                                            </span>
                                             </div>
                                           );
                                         }

@@ -42,7 +42,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         
         {/* Language Badge */}
         <div className="absolute top-2 right-2">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-2 py-1 rounded-md text-xs font-medium ${
             movie.language === 'OV' 
               ? 'bg-blue-500 text-white' 
               : 'bg-green-500 text-white'
@@ -54,7 +54,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
         {/* FSK Rating */}
         {movie.fskRating > 0 && (
           <div className="absolute top-2 left-2">
-            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-800 text-white">
+            <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-800 text-white">
               FSK {movie.fskRating}
             </span>
           </div>
@@ -109,13 +109,13 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
               {movie.cinemas.slice(0, 3).map((cinema) => (
                 <span
                   key={cinema.id}
-                  className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                  className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md"
                 >
                   {cinema.name}
                 </span>
               ))}
               {movie.cinemas.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
                   +{movie.cinemas.length - 3} more
                 </span>
               )}
