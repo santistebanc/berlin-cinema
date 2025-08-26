@@ -7,6 +7,10 @@ type CheerioElement = any;
 
 export class BerlinCinemaScraper {
   private readonly baseUrl = 'https://www.critic.de/ov-movies-berlin/';
+  private cache: { data: ScrapingResult | null; lastFetched: Date | null } = {
+    data: null,
+    lastFetched: null
+  };
   private readonly headers = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'accept-language': 'en-GB,en;q=0.5',
@@ -27,8 +31,29 @@ export class BerlinCinemaScraper {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
   };
 
+  private isCacheValid(): boolean {
+    if (!this.cache.data || !this.cache.lastFetched) {
+      return false;
+    }
+    
+    const now = new Date();
+    const lastFetched = new Date(this.cache.lastFetched);
+    
+    // Check if it's the same day
+    return now.getDate() === lastFetched.getDate() &&
+           now.getMonth() === lastFetched.getMonth() &&
+           now.getFullYear() === lastFetched.getFullYear();
+  }
+
   async scrapeMovies(filters?: any): Promise<ScrapingResult> {
+    // Check if we have valid cached data
+    if (this.isCacheValid()) {
+      console.log('Using cached movie data from today');
+      return this.cache.data!;
+    }
+
     try {
+      console.log('Fetching fresh movie data from website');
       const data = this.buildFormData(filters);
       const response = await axios.post(this.baseUrl, data, { headers: this.headers });
       
@@ -43,15 +68,38 @@ export class BerlinCinemaScraper {
         }
       });
 
-      return {
+      const result = {
         movies,
         totalMovies: movies.length,
         scrapedAt: new Date().toISOString()
       };
+
+      // Update cache
+      this.cache.data = result;
+      this.cache.lastFetched = new Date();
+      
+      console.log(`Cached ${movies.length} movies for today`);
+      return result;
     } catch (error) {
       console.error('Error scraping movies:', error);
       throw new Error('Failed to scrape movie data');
     }
+  }
+
+  // Method to manually clear cache (useful for testing or force refresh)
+  clearCache(): void {
+    this.cache.data = null;
+    this.cache.lastFetched = null;
+    console.log('Cache cleared');
+  }
+
+  // Method to get cache status
+  getCacheStatus(): { hasData: boolean; lastFetched: string | null; isValid: boolean } {
+    return {
+      hasData: !!this.cache.data,
+      lastFetched: this.cache.lastFetched?.toISOString() || null,
+      isValid: this.isCacheValid()
+    };
   }
 
   private buildFormData(filters?: any): string {
