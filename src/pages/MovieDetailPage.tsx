@@ -128,64 +128,14 @@ const MovieDetailPage: React.FC = () => {
       console.log('Total movies received:', moviesResult.movies.length);
       console.log('Looking for movie with title:', movieTitle);
       
-      // Find the movie by title (handle merged movies)
+      // Backend now provides merged movies, so just find by title
       const allMovies = moviesResult.movies;
-      const movieGroups: { [baseTitle: string]: Movie[] } = {};
       
-      // Helper function to get base title (remove language suffixes)
-        const getBaseTitle = (title: string) => {
-    return title
-      .replace(/\s*\(OV\s*w\/\s*sub\)/i, '')
-      .replace(/\s*\(OV\)/i, '')
-      .replace(/\s*\(OmU\)/i, '')
-      .replace(/\s*\(OV\/OmU\)/i, '')
-      .replace(/\s*\(Original\s*Version\)/i, '')
-      .replace(/\s*\(Original\s*Version\s*w\/\s*sub\)/i, '')
-      .replace(/\s*\(Imax\)/i, '')
-      .replace(/\s*\(EXPN\)/i, '')
-      .replace(/\s*\(3D\)/i, '')
-      .replace(/\s*\(4DX\)/i, '')
-      .replace(/\s*\(Dolby\s*Atmos\)/i, '')
-      .replace(/\s*\(Premium\s*Large\s*Format\)/i, '')
-      .trim();
-  };
-
-  const extractVariants = (title: string) => {
-    const variants: string[] = [];
-    
-    // More flexible pattern to catch all variants in parentheses
-    const allVariantsPattern = /\([^)]+\)/g;
-    const matches = title.match(allVariantsPattern);
-    
-    if (matches) {
-      // Remove parentheses from each variant and clean up specific variants
-      const cleanVariants = matches.map(match => {
-        let variant = match.replace(/^\(|\)$/g, '');
-        // Replace "OV w/ sub" with just "sub"
-        if (variant.toLowerCase() === 'ov w/ sub') {
-          variant = 'sub';
-        }
-        return variant;
-      });
-      variants.push(...cleanVariants);
-    }
-    
-    return variants;
-  };
+      const foundMovie = allMovies.find(movie => 
+        movie.title.toLowerCase() === movieTitle.toLowerCase()
+      );
       
-      allMovies.forEach(movie => {
-        const baseTitle = getBaseTitle(movie.title);
-        if (!movieGroups[baseTitle]) {
-          movieGroups[baseTitle] = [];
-        }
-        movieGroups[baseTitle].push(movie);
-      });
-      
-      // Find the movie group that matches the requested title
-      const targetBaseTitle = getBaseTitle(movieTitle);
-      const movieGroup = movieGroups[targetBaseTitle];
-      
-      if (movieGroup && movieGroup.length > 0) {
+      if (foundMovie) {
         if (movieGroup.length === 1) {
           // For single movies, also extract variants and set them
           const singleMovie = movieGroup[0];
@@ -329,9 +279,11 @@ const MovieDetailPage: React.FC = () => {
           };
           
           setMovie(mergedMovie);
-        }
+        console.log('Found movie:', foundMovie);
+        setMovie(foundMovie);
         setError(null);
       } else {
+        console.log('Movie not found. Available titles:', allMovies.map(m => m.title));
         setError('Movie not found');
       }
     } catch (err) {
