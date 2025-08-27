@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Film } from 'lucide-react';
 import { movieApi } from '../services/api';
@@ -11,8 +11,31 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  // Fuzzy search function
+
+
+  // Calculate total showtimes for a movie
+  const getTotalShowtimes = (movie: Movie): number => {
+    let total = 0;
+    movie.cinemas.forEach(cinema => {
+      cinema.showtimes.forEach(showtime => {
+        total += showtime.times.length;
+      });
+    });
+    return total;
+  };
+
+  // Sort movies by total showtimes (descending)
+  const sortMoviesByShowtimes = (movies: Movie[]): Movie[] => {
+    return [...movies].sort((a, b) => {
+      const aShowtimes = getTotalShowtimes(a);
+      const bShowtimes = getTotalShowtimes(b);
+      return bShowtimes - aShowtimes; // Descending order (most showtimes first)
+    });
+  };
+
+  // Fuzzy search function for filtering movies
   const fuzzySearch = (query: string, movies: Movie[]): Movie[] => {
     if (!query.trim()) return movies;
     
@@ -42,27 +65,7 @@ const HomePage: React.FC = () => {
     });
   };
 
-  // Calculate total showtimes for a movie
-  const getTotalShowtimes = (movie: Movie): number => {
-    let total = 0;
-    movie.cinemas.forEach(cinema => {
-      cinema.showtimes.forEach(showtime => {
-        total += showtime.times.length;
-      });
-    });
-    return total;
-  };
-
-  // Sort movies by total showtimes (descending)
-  const sortMoviesByShowtimes = (movies: Movie[]): Movie[] => {
-    return [...movies].sort((a, b) => {
-      const aShowtimes = getTotalShowtimes(a);
-      const bShowtimes = getTotalShowtimes(b);
-      return bShowtimes - aShowtimes; // Descending order (most showtimes first)
-    });
-  };
-
-  // Get filtered movies based on search
+  // Get filtered movies based on search query
   const filteredMovies = fuzzySearch(searchQuery, movies);
   
   // Sort filtered movies by showtimes
@@ -153,12 +156,53 @@ const HomePage: React.FC = () => {
               if (!showtimeMap[showtime.date][time]) {
                 showtimeMap[showtime.date][time] = [];
               }
-              showtimeMap[showtime.date][time].push({
-                cinema: cinema.name,
-                language: movie.language,
-                variants: extractVariants(movie.title),
-                originalMovie: movie
-              });
+              
+              // Check if this exact cinema + variant combination already exists for this time slot
+              const newVariants = extractVariants(movie.title);
+              
+              // Debug: Log what we're trying to add
+              console.log(`Trying to add: cinema=${cinema.name}, language=${movie.language}, variants=${JSON.stringify(newVariants)}`);
+              
+              // More strict duplicate checking: check if the same cinema already exists for this time slot
+              // regardless of language, since we're merging movies and want to avoid duplicate cinemas
+              const existingEntry = showtimeMap[showtime.date][time].find(
+                entry => {
+                  const cinemaMatch = entry.cinema === cinema.name;
+                  
+                  // If cinema matches, check if variants are the same or if one is a subset of the other
+                  if (cinemaMatch) {
+                    const existingVariants = entry.variants.sort();
+                    const newVariantsSorted = newVariants.sort();
+                    
+                    // Check if variants are identical or if new variants are a subset of existing ones
+                    const variantsIdentical = JSON.stringify(existingVariants) === JSON.stringify(newVariantsSorted);
+                    const newIsSubset = newVariantsSorted.every(v => existingVariants.includes(v));
+                    const existingIsSubset = existingVariants.every(v => newVariantsSorted.includes(v));
+                    
+                    // Debug: Log comparison details
+                    console.log(`Found cinema match: existing variants=${JSON.stringify(existingVariants)}, new variants=${JSON.stringify(newVariantsSorted)}`);
+                    console.log(`variantsIdentical=${variantsIdentical}, newIsSubset=${newIsSubset}, existingIsSubset=${existingIsSubset}`);
+                    
+                    // If variants are identical or one is a subset of the other, consider it a duplicate
+                    return variantsIdentical || newIsSubset || existingIsSubset;
+                  }
+                  
+                  return false;
+                }
+              );
+              
+              if (!existingEntry) {
+                // Only add if this exact combination doesn't exist
+                console.log(`Adding new entry for ${cinema.name} at ${time}`);
+                showtimeMap[showtime.date][time].push({
+                  cinema: cinema.name,
+                  language: movie.language,
+                  variants: newVariants,
+                  originalMovie: movie
+                });
+              } else {
+                console.log(`Skipping duplicate entry for ${cinema.name} at ${time}`);
+              }
             });
           });
         });
@@ -174,13 +218,25 @@ const HomePage: React.FC = () => {
         city: '',
         postalCode: '',
         url: '',
-        showtimes: Object.entries(showtimeMap).map(([date, times]) => ({
-          date,
-          times: Object.keys(times),
-          dayOfWeek: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-          // Store the complete info for each time
-          timeInfo: times
-        }))
+        showtimes: Object.entries(showtimeMap).map(([date, times]) => {
+          // Ensure times are properly split (safety check for concatenated times)
+          const timeKeys = Object.keys(times);
+          const cleanTimes = timeKeys.flatMap(timeKey => {
+            // If a time key contains multiple times (e.g., "10:3013:00"), split them
+            if (timeKey.match(/\d{1,2}:\d{2}\d{1,2}:\d{2}/)) {
+              return timeKey.match(/\d{1,2}:\d{2}/g) || [];
+            }
+            return [timeKey];
+          });
+          
+          return {
+            date,
+            times: cleanTimes,
+            dayOfWeek: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+            // Store the complete info for each time
+            timeInfo: times
+          };
+        })
       }];
       
       // Collect all unique variants from all movies in the group
@@ -208,6 +264,16 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Read search query from URL and update when it changes
+  useEffect(() => {
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    } else {
+      setSearchQuery('');
+    }
+  }, [searchParams]);
 
   const loadInitialData = async () => {
     try {
@@ -237,6 +303,8 @@ const HomePage: React.FC = () => {
     navigate(`/movie/${encodeURIComponent(movie.title)}`);
   };
 
+
+
   if (loading && movies.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -260,55 +328,39 @@ const HomePage: React.FC = () => {
       {/* Movie Selection Menu */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Select a Movie</h2>
-          <span className="text-gray-600">{sortedFilteredMovies.length} of {movies.length} movies (ordered by showtimes)</span>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {searchQuery ? `Search Results for "${searchQuery}"` : 'Select a Movie'}
+          </h2>
+          <span className="text-gray-600">
+            {searchQuery 
+              ? `Found ${sortedFilteredMovies.length} movie${sortedFilteredMovies.length !== 1 ? 's' : ''} matching "${searchQuery}"`
+              : `${sortedFilteredMovies.length} of ${movies.length} movies (ordered by showtimes)`
+            }
+          </span>
         </div>
         
-        {/* Search Input */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <input
-              type="text"
-              placeholder="Search movies, directors, actors, variants..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cinema-500 focus:border-cinema-500 focus:outline-none transition-colors"
-            />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-400 text-lg">🔍</span>
-            </div>
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-          
-          {/* Search Tips */}
-          {!searchQuery && (
-            <p className="text-sm text-gray-500 mt-2">
-              💡 Search by movie title, director, actor, variant (Imax, EXPN), or country
-            </p>
-          )}
-          
-          {/* Search Results Summary */}
-          {searchQuery && (
-            <div className="mt-2 text-sm text-gray-600">
-              {sortedFilteredMovies.length === movies.length ? (
-                <span className="text-green-600">✓ Showing all movies</span>
-              ) : (
-                <span className="text-blue-600">
-                  🔍 Found {sortedFilteredMovies.length} movie{filteredMovies.length !== 1 ? 's' : ''} matching "{searchQuery}"
+        {/* Search Results Summary */}
+        {searchQuery && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-blue-600">🔍</span>
+                <span className="text-blue-800">
+                  Showing results for: <strong>"{searchQuery}"</strong>
                 </span>
-              )}
+              </div>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  navigate('/', { replace: true });
+                }}
+                className="text-blue-600 hover:text-blue-800 text-sm underline"
+              >
+                Clear search
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -318,8 +370,22 @@ const HomePage: React.FC = () => {
           <div className="text-center py-8">
             <Film className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">
-              {searchQuery ? `No movies found matching "${searchQuery}"` : 'No movies found.'}
+              {searchQuery 
+                ? `No movies found matching "${searchQuery}". Try a different search term.`
+                : 'No movies found.'
+              }
             </p>
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  navigate('/', { replace: true });
+                }}
+                className="mt-4 px-4 py-2 bg-cinema-600 text-white rounded-lg hover:bg-cinema-700 transition-colors"
+              >
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -332,13 +398,12 @@ const HomePage: React.FC = () => {
                 {/* Movie Poster */}
                 <div className="relative">
                   <img
-                    src={movie.posterUrl}
+                    src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg=='}
                     alt={movie.title}
                     className="w-full h-32 object-cover rounded-t-lg"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="192" viewBox="0 0 128 192"><rect width="128" height="192" fill="#f3f4f6"/><text x="64" y="96" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">🎬</text><text x="64" y="120" font-family="Arial, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">${movie.title}</text></svg>`;
-                      target.src = `data:image/svg+xml,${encodeURIComponent(fallbackSvg)}`;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg==';
                     }}
                   />
                   
@@ -354,16 +419,11 @@ const HomePage: React.FC = () => {
                   {/* Variant Badges */}
                   {movie.variants && movie.variants.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {movie.variants.slice(0, 3).map((variant, idx) => (
-                        <span key={idx} className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+                      {movie.variants.map((variant, idx) => (
+                        <span key={idx} className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
                           {variant}
                         </span>
                       ))}
-                      {movie.variants.length > 3 && (
-                        <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
-                          +{movie.variants.length - 3}
-                        </span>
-                      )}
                     </div>
                   )}
                   
