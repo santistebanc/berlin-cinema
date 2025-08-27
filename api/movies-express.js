@@ -229,7 +229,7 @@ class BerlinCinemaScraper {
         }
         
         // Extract real cinema and showtime data
-        const cinemas = [];
+        const movieShowings = [];
         $item.find('article.cinema').each((j, cinemaEl) => {
           const $cinema = $(cinemaEl);
           
@@ -250,8 +250,7 @@ class BerlinCinemaScraper {
           const postalCode = cityPostalParts[0] || '';
           const city = cityPostalParts.slice(1).join(' ') || 'Berlin';
           
-          // Extract showtimes from the table
-          const showtimes = [];
+          // Extract individual showings from the table
           const $table = $cinema.find('table.vorstellung');
           
           if ($table.length > 0) {
@@ -269,53 +268,42 @@ class BerlinCinemaScraper {
                 if (cellText && $cell.hasClass('wird_gezeigt')) {
                   // Parse the date from header
                   const dateHeader = $headers.eq(cellIndex).text().trim();
+                  const parsedDate = this.parseDate(dateHeader);
+                  const dayOfWeek = this.getDayOfWeek(dateHeader);
                   
                   // Parse times (can be multiple times separated by <br>)
                   const times = cellText.split('\n').map(time => time.trim()).filter(time => time);
                   
-                                     if (times.length > 0) {
-                     // Find or create showtime entry for this date
-                     let showtimeEntry = showtimes.find(entry => entry.originalDate === dateHeader);
-                     if (!showtimeEntry) {
-                       showtimeEntry = {
-                         date: this.parseDate(dateHeader),
-                         originalDate: dateHeader,
-                         times: [],
-                         dayOfWeek: this.getDayOfWeek(dateHeader)
-                       };
-                       showtimes.push(showtimeEntry);
-                     }
-                     
-                     // Add times to the entry
-                     showtimeEntry.times.push(...times);
-                   }
+                  if (times.length > 0) {
+                    // Create individual showing for each time
+                    times.forEach(time => {
+                      movieShowings.push({
+                        date: parsedDate,
+                        originalDate: dateHeader,
+                        time: time,
+                        dayOfWeek: dayOfWeek,
+                        cinema: cinemaName,
+                        address: address,
+                        city: city,
+                        postalCode: postalCode,
+                        url: cinemaUrl ? (cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`) : null
+                      });
+                    });
+                  }
                 }
               });
             });
           }
           
-          // Create cinema object
-          const cinema = {
-            id: `cinema-${movieId}-${j}`,
-            name: cinemaName,
-            address: address,
-            city: city,
-            postalCode: postalCode,
-            url: cinemaUrl ? (cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`) : null,
-            showtimes: showtimes
-          };
-          
           // Debug logging for URL construction
           if (cinemaUrl) {
             console.log(`Cinema URL debug - ${cinemaName}:`);
             console.log(`  Original: ${cinemaUrl}`);
-            console.log(`  Final: ${cinema.url}`);
+            console.log(`  Final: ${cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`}`);
           }
-          
-          cinemas.push(cinema);
         });
         
-        // Create movie object with real data
+        // Create movie object with individual showings
         const movie = {
           id: movieId || `movie-${i}`,
           title: title,
@@ -327,7 +315,7 @@ class BerlinCinemaScraper {
           variants: variants,
           posterUrl: posterUrl || null,
           url: movieUrl.startsWith('http') ? movieUrl : `https://www.critic.de${movieUrl}`,
-          cinemas: cinemas,
+          showings: movieShowings, // Individual showings instead of cinemas
           metadata: {
             searchOfValue: searchOfValue,
             searchFskValue: searchFskValue,
@@ -428,7 +416,7 @@ class BerlinCinemaScraper {
           ...movie,
           title: baseTitle,
           variants: new Set(),
-          cinemas: []
+          showings: [] // Changed from cinemas to showings
         };
         movieMap.set(baseTitle, mergedMovie);
       }
@@ -440,26 +428,34 @@ class BerlinCinemaScraper {
         movie.variants.forEach(variant => mergedMovie.variants.add(variant));
       }
       
-      // Merge cinemas and showtimes
-      movie.cinemas.forEach(cinema => {
-        const existingCinema = mergedMovie.cinemas.find(c => c.name === cinema.name);
+      // Merge showings
+      movie.showings.forEach(showing => {
+        const existingShowing = mergedMovie.showings.find(s => s.date === showing.date && s.time === showing.time);
         
-        if (existingCinema) {
-          // Merge showtimes for existing cinema
-          cinema.showtimes.forEach(showtime => {
-            const existingShowtime = existingCinema.showtimes.find(s => s.date === showtime.date);
-            
-            if (existingShowtime) {
-              // Merge times for existing date
-              existingShowtime.times = [...new Set([...existingShowtime.times, ...showtime.times])];
-            } else {
-              // Add new showtime
-              existingCinema.showtimes.push(showtime);
-            }
-          });
+        if (existingShowing) {
+          // Merge cinema and variant info if they exist
+          if (showing.cinema) existingShowing.cinema = showing.cinema;
+          if (showing.address) existingShowing.address = showing.address;
+          if (showing.city) existingShowing.city = showing.city;
+          if (showing.postalCode) existingShowing.postalCode = showing.postalCode;
+          if (showing.url) existingShowing.url = showing.url;
+          if (showing.dayOfWeek) existingShowing.dayOfWeek = showing.dayOfWeek;
         } else {
-          // Add new cinema
-          mergedMovie.cinemas.push(cinema);
+                  // Add new showing with movie-specific data
+        const enhancedShowing = {
+          ...showing,
+          title: movie.title,
+          director: movie.director,
+          cast: movie.cast,
+          country: movie.country,
+          year: movie.year,
+          language: movie.language,
+          variants: movie.variants,
+          posterUrl: movie.posterUrl,
+          movieUrl: movie.url,
+          metadata: movie.metadata
+        };
+        mergedMovie.showings.push(enhancedShowing);
         }
       });
     });
@@ -469,38 +465,35 @@ class BerlinCinemaScraper {
       // Convert variants Set to array
       movie.variants = Array.from(movie.variants);
       
-      // Process cinemas to add complete showtime data for frontend
-      movie.cinemas.forEach(cinema => {
-        cinema.showtimes.forEach(showtime => {
-          // Create complete showtime entries with all necessary information
-          showtime.showtimeEntries = [];
-          showtime.times.forEach(time => {
-            showtime.showtimeEntries.push({
-              date: showtime.date,
-              time: time,
-              cinema: cinema.name,
-              variants: movie.variants,
-              address: cinema.address,
-              city: cinema.city,
-              postalCode: cinema.postalCode,
-              url: cinema.url,
-              // Add any additional metadata that might be useful
-              dayOfWeek: showtime.dayOfWeek || new Date(showtime.date).toLocaleDateString('en-US', { weekday: 'short' })
-            });
-          });
-          
-          // Keep the old timeInfo for backward compatibility, but enhance it
-          showtime.timeInfo = {};
-          showtime.times.forEach(time => {
-            showtime.timeInfo[time] = [{
-              cinema: cinema.name,
-              variants: movie.variants,
-              address: cinema.address,
-              city: cinema.city,
-              postalCode: cinema.postalCode,
-              url: cinema.url
-            }];
-          });
+      // Process showings to add complete showtime data for frontend
+      movie.showings.forEach(showing => {
+        // Create complete showtime entries with all necessary information
+        showing.showtimeEntries = [];
+        showing.times = [showing.time]; // Assuming a single time for now, as per new structure
+        showing.showtimeEntries.push({
+          date: showing.date,
+          time: showing.time,
+          cinema: showing.cinema,
+          variants: movie.variants,
+          address: showing.address,
+          city: showing.city,
+          postalCode: showing.postalCode,
+          url: showing.url,
+          // Add any additional metadata that might be useful
+          dayOfWeek: showing.dayOfWeek || new Date(showing.date).toLocaleDateString('en-US', { weekday: 'short' })
+        });
+        
+        // Keep the old timeInfo for backward compatibility, but enhance it
+        showing.timeInfo = {};
+        showing.times.forEach(time => {
+          showing.timeInfo[time] = [{
+            cinema: showing.cinema,
+            variants: movie.variants,
+            address: showing.address,
+            city: showing.city,
+            postalCode: showing.postalCode,
+            url: showing.url
+          }];
         });
       });
       
@@ -512,37 +505,42 @@ class BerlinCinemaScraper {
   processDataForFrontend(movies) {
     return movies.map(movie => {
       // Ensure all dates are sorted
-      movie.cinemas.forEach(cinema => {
-        cinema.showtimes.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        cinema.showtimes.forEach(showtime => {
-          showtime.times.sort();
-          
-          // Ensure showtimeEntries are also sorted by time
-          if (showtime.showtimeEntries) {
-            showtime.showtimeEntries.sort((a, b) => a.time.localeCompare(b.time));
-          }
-        });
+      movie.showings.forEach(showing => {
+        showing.showtimeEntries.sort((a, b) => a.time.localeCompare(b.time));
+        
+        // Ensure showtimeEntries are also sorted by time
+        if (showing.showtimeEntries) {
+          showing.showtimeEntries.sort((a, b) => a.time.localeCompare(b.time));
+        }
       });
       
-      // Sort cinemas by name
-      movie.cinemas.sort((a, b) => a.name.localeCompare(b.name));
-      
-      // Add a flattened showtimes array for easy frontend consumption
-      movie.allShowtimes = [];
-      movie.cinemas.forEach(cinema => {
-        cinema.showtimes.forEach(showtime => {
-          if (showtime.showtimeEntries) {
-            movie.allShowtimes.push(...showtime.showtimeEntries);
-          }
-        });
-      });
-      
-      // Sort all showtimes by date and time
-      movie.allShowtimes.sort((a, b) => {
+      // Sort showings by date and time
+      movie.showings.sort((a, b) => {
         const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
         if (dateComparison !== 0) return dateComparison;
         return a.time.localeCompare(b.time);
       });
+      
+      // Add a flattened showtimes array for backward compatibility
+      movie.allShowtimes = movie.showings.map(showing => ({
+        date: showing.date,
+        time: showing.time,
+        cinema: showing.cinema,
+        variant: showing.variants && showing.variants.length > 0 ? showing.variants[0] : null,
+        address: showing.address,
+        city: showing.city,
+        postalCode: showing.postalCode,
+        url: showing.url,
+        dayOfWeek: showing.dayOfWeek,
+        title: showing.title,
+        variants: showing.variants,
+        posterUrl: showing.posterUrl,
+        director: showing.director,
+        cast: showing.cast,
+        country: showing.country,
+        year: showing.year,
+        language: showing.language
+      }));
       
       return movie;
     });
@@ -581,10 +579,13 @@ router.get('/', async (req, res) => {
       console.log('Sample movie structure:');
       console.log('- Title:', sampleMovie.title);
       console.log('- Variants:', sampleMovie.variants);
-      console.log('- Cinemas count:', sampleMovie.cinemas.length);
+      console.log('- Showings count:', sampleMovie.showings.length);
+      if (sampleMovie.showings.length > 0) {
+        console.log('- Sample showing entry:', sampleMovie.showings[0]);
+      }
       if (sampleMovie.allShowtimes) {
         console.log('- All showtimes count:', sampleMovie.allShowtimes.length);
-        console.log('- Sample showtime entry:', sampleMovie.allShowtimes[0]);
+        console.log('- Sample allShowtimes entry:', sampleMovie.allShowtimes[0]);
       }
     }
     
