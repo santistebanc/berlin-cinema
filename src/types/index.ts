@@ -13,6 +13,8 @@ export interface Movie {
   fskRating: number;
   cinemas: Cinema[];
   variants?: string[]; // Store variant tags like (Imax), (EXPN), etc.
+  // Backend-processed data
+  allShowtimes?: ShowtimeEntry[];
 }
 
 export interface Cinema {
@@ -29,6 +31,21 @@ export interface Showtime {
   date: string;
   times: string[];
   dayOfWeek: string;
+  // Backend-processed data
+  showtimeEntries?: ShowtimeEntry[];
+  timeInfo?: Record<string, any[]>;
+}
+
+export interface ShowtimeEntry {
+  date: string;
+  time: string;
+  cinema: string;
+  variants: string[];
+  address: string;
+  city: string;
+  postalCode: string;
+  url: string;
+  dayOfWeek?: string;
 }
 
 export interface ScrapingResult {
