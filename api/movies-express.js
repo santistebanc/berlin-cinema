@@ -305,6 +305,13 @@ class BerlinCinemaScraper {
             showtimes: showtimes
           };
           
+          // Debug logging for URL construction
+          if (cinemaUrl) {
+            console.log(`Cinema URL debug - ${cinemaName}:`);
+            console.log(`  Original: ${cinemaUrl}`);
+            console.log(`  Final: ${cinema.url}`);
+          }
+          
           cinemas.push(cinema);
         });
         
