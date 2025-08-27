@@ -279,8 +279,35 @@ class BerlinCinemaScraper {
                   const parsedDate = this.parseDate(dateHeader);
                   const dayOfWeek = this.getDayOfWeek(dateHeader);
                   
-                  // Parse times (can be multiple times separated by <br>)
-                  const times = cellText.split('\n').map(time => time.trim()).filter(time => time);
+                  // Parse times (can be multiple times separated by <br> or other separators)
+                  let times = [];
+                  
+                  // First try splitting by newline
+                  times = cellText.split('\n').map(time => time.trim()).filter(time => time);
+                  
+                  // If that didn't work well, try splitting by common separators
+                  if (times.length === 1 && times[0].length > 8) {
+                    // If we got one long string, try splitting by common patterns
+                    const timePattern = /(\d{1,2}:\d{2})/g;
+                    const matches = times[0].match(timePattern);
+                    if (matches && matches.length > 1) {
+                      times = matches;
+                    }
+                  }
+                  
+                  // Additional cleanup: remove any non-time content
+                  times = times.map(time => {
+                    // Extract only the time pattern HH:MM
+                    const timeMatch = time.match(/(\d{1,2}:\d{2})/);
+                    return timeMatch ? timeMatch[1] : time;
+                  }).filter(time => time && time.match(/^\d{1,2}:\d{2}$/));
+                  
+                  // Debug logging for time parsing
+                  if (times.length > 1) {
+                    console.log(`Time parsing debug for ${cinemaName} on ${dateHeader}:`);
+                    console.log(`  Original cellText: "${cellText}"`);
+                    console.log(`  Parsed times:`, times);
+                  }
                   
                   if (times.length > 0) {
                     // Create individual showing for each time
