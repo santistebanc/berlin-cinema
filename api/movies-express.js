@@ -311,10 +311,6 @@ class BerlinCinemaScraper {
           }
         });
         
-        // Add cinemas and showings to the movie
-        movie.cinemas = movieCinemas;
-        movie.showings = movieShowings;
-        
         // Create movie object with the new structure
         const movie = {
           title: title,
@@ -325,8 +321,8 @@ class BerlinCinemaScraper {
           posterUrl: posterUrl || null,
           url: movieUrl.startsWith('http') ? movieUrl : `https://www.critic.de${movieUrl}`,
           variants: variants,
-          cinemas: [], // Will be populated in mergeMovies
-          showings: [] // Will be populated in mergeMovies
+          cinemas: movieCinemas,
+          showings: movieShowings
         };
         
         movies.push(movie);
