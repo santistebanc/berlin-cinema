@@ -446,13 +446,51 @@ class BerlinCinemaScraper {
       // Merge showings into organized structure
       if (movie.showings) {
         movie.showings.forEach(showing => {
-          // Format date as "Thu, Aug 27"
-          const date = new Date(showing.date);
-          const formattedDate = date.toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric' 
-          });
+          // Parse and format date properly
+          let formattedDate;
+          if (showing.originalDate === 'Today') {
+            // Handle "Today" specially
+            const today = new Date();
+            formattedDate = today.toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          } else {
+            // Parse the date string and format it
+            const date = new Date(showing.date);
+            if (isNaN(date.getTime())) {
+              // If parsing failed, try to parse the original date string
+              const dateMatch = showing.originalDate.match(/(\w{3})\s+(\d{1,2})\/(\d{1,2})/);
+              if (dateMatch) {
+                const dayAbbr = dateMatch[1];
+                const day = parseInt(dateMatch[2]);
+                const month = parseInt(dateMatch[3]);
+                const currentYear = new Date().getFullYear();
+                const parsedDate = new Date(currentYear, month - 1, day);
+                
+                // If the date is in the past, assume it's next year
+                if (parsedDate < new Date()) {
+                  parsedDate.setFullYear(currentYear + 1);
+                }
+                
+                formattedDate = parsedDate.toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric' 
+                });
+              } else {
+                // Fallback to original date string
+                formattedDate = showing.originalDate;
+              }
+            } else {
+              formattedDate = date.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+              });
+            }
+          }
           
           // Format time as "13:50"
           const formattedTime = showing.time;
@@ -502,9 +540,23 @@ class BerlinCinemaScraper {
       const sortedShowings = {};
       Object.keys(movie.showings)
         .sort((a, b) => {
-          const dateA = new Date(a);
-          const dateB = new Date(b);
-          return dateA.getTime() - dateB.getTime();
+          // Handle "Today" dates specially - they should come first
+          if (a === 'Today') return -1;
+          if (b === 'Today') return 1;
+          
+          // For other dates, try to parse them
+          try {
+            const dateA = new Date(a);
+            const dateB = new Date(b);
+            if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+              return dateA.getTime() - dateB.getTime();
+            }
+          } catch (e) {
+            // If parsing fails, keep original order
+          }
+          
+          // Fallback to string comparison
+          return a.localeCompare(b);
         })
         .forEach(date => {
           sortedShowings[date] = {};
