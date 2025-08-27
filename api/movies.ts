@@ -65,6 +65,7 @@ class VercelBerlinCinemaScraper {
       // Debug: Check what elements are actually in the HTML
       console.log('All elements with class containing "movie":', $('[class*="movie"]').length);
       console.log('All elements with class containing "film":', $('[class*="film"]').length);
+      console.log('All elements with class "itemContainer":', $('.itemContainer').length);
       console.log('All h1, h2, h3 elements:', $('h1, h2, h3').length);
       console.log('All links:', $('a').length);
       console.log('All divs:', $('div').length);
@@ -78,30 +79,12 @@ class VercelBerlinCinemaScraper {
         if (i < 5) console.log(`Link ${i}:`, $(el).text().trim());
       });
       
-      // Parse movie items using the proven selectors from berlin-cinema-api
-      let movieItems: any = $('.movie-item, .film-item, [class*="movie"], [class*="film"]');
-      console.log(`Found ${movieItems.length} movie items with movie/film selectors`);
+      // Use the exact working selector from the existing scraper
+      const movieItems = $('.itemContainer');
+      console.log(`Found ${movieItems.length} movie items with .itemContainer selector`);
       
       if (movieItems.length === 0) {
-        // Try the exact selectors that work in the original project
-        const workingSelectors = [
-          '.entry', '.post', '.content-item', 'article', '.card', '.item',
-          '[class*="entry"]', '[class*="post"]', '[class*="content"]',
-          '.movie', '.film', '.show', '.program', '.schedule'
-        ];
-        
-        for (const selector of workingSelectors) {
-          const elements = $(selector);
-          if (elements.length > 0) {
-            console.log(`Found ${elements.length} elements with selector: ${selector}`);
-            movieItems = elements as any;
-            break;
-          }
-        }
-      }
-      
-      if (movieItems.length === 0) {
-        // If still no movies found, return empty result instead of fake data
+        // If no movies found, return empty result
         console.log('No movie elements found in HTML');
         console.log('HTML preview:', html.substring(0, 1000));
         return {
@@ -112,109 +95,61 @@ class VercelBerlinCinemaScraper {
         };
       }
       
-      // Parse each movie item to extract real data
+      // Parse each movie item using the exact same logic as the existing scraper
       movieItems.each((i, el) => {
-        const $el = $(el);
-        
-        // Extract movie title
-        let title = $el.find('h1, h2, h3, h4, h5, h6').first().text().trim();
-        if (!title) title = $el.find('.title, .name, .headline').first().text().trim();
-        if (!title) title = $el.find('a').first().text().trim();
-        if (!title) title = $el.text().trim().split('\n')[0];
-        
-        // Skip if no valid title found
-        if (!title || title.length < 3 || title === 'Movie' || title === 'Film') {
+        try {
+          const $el = $(el);
+          
+          // Extract movie ID (same as existing scraper)
+          const movieId = $el.attr('data-movie_id') || `movie-${i}`;
+          
+          // Extract title (same as existing scraper)
+          const titleElement = $el.find('h2 a');
+          const title = titleElement.text().trim();
+          const movieUrl = titleElement.attr('href') || '';
+          
+          // Skip if no valid title found
+          if (!title || title.length < 3) {
+            return;
+          }
+          
+          // Extract poster image (same as existing scraper)
+          const posterUrl = $el.find('figure img').attr('src') || '';
+          
+          // Extract trailer and review URLs (same as existing scraper)
+          const trailerUrl = $el.find('.subfilminfo.trailer a').attr('href') || '';
+          const reviewUrl = $el.find('.subfilminfo.critic a').attr('href') || '';
+          
+          // Extract movie details from the dl element (same as existing scraper)
+          const details = this.parseMovieDetails($, $el);
+          
+          // Extract cinemas and showtimes (same as existing scraper)
+          const cinemas = this.parseCinemas($, $el);
+          
+          // Extract language and FSK rating from data attributes (same as existing scraper)
+          const language = $el.attr('data-search_of_value') === 'omu' ? 'OmU' : 'OV';
+          const fskRating = parseInt($el.attr('data-search_fsk_value') || '0');
+          
+          // Create movie object with real extracted data
+          movies.push({
+            id: movieId,
+            title: title,
+            originalTitle: title,
+            year: details.year,
+            country: details.country,
+            director: details.director,
+            cast: details.cast,
+            posterUrl: posterUrl,
+            trailerUrl: trailerUrl || undefined,
+            reviewUrl: reviewUrl || undefined,
+            language: language,
+            fskRating: fskRating,
+            cinemas: cinemas
+          });
+        } catch (error) {
+          console.error('Error parsing movie:', error);
           return;
         }
-        
-        // Clean up title
-        title = title.replace(/\s+/g, ' ').trim();
-        if (title.length > 100) title = title.substring(0, 100) + '...';
-        
-        // Extract other movie details
-        const year = $el.find('.year, .date, [class*="year"], [class*="date"]').first().text().trim() || '2024';
-        const country = $el.find('.country, .origin, [class*="country"], [class*="origin"]').first().text().trim() || 'Germany';
-        const director = $el.find('.director, .regie, [class*="director"], [class*="regie"]').first().text().trim() || 'Unknown';
-        const language = $el.find('.language, .sprache, [class*="language"], [class*="sprache"]').first().text().trim() || 'OV';
-        const fskRating = parseInt($el.find('.fsk, .rating, [class*="fsk"], [class*="rating"]').first().text().trim()) || 0;
-        
-        // Extract cinema and showtime information
-        const cinemas: any[] = [];
-        const cinemaElements = $el.find('.cinema, .kino, [class*="cinema"], [class*="kino"]');
-        
-        if (cinemaElements.length > 0) {
-          cinemaElements.each((j, cinemaEl) => {
-            const $cinema = $(cinemaEl);
-            const cinemaName = $cinema.find('.name, .title').first().text().trim() || `Cinema ${j + 1}`;
-            const address = $cinema.find('.address, .adresse').first().text().trim() || 'Berlin';
-            
-            // Extract showtimes
-            const showtimes: any[] = [];
-            const timeElements = $cinema.find('.time, .zeit, [class*="time"], [class*="zeit"]');
-            
-            if (timeElements.length > 0) {
-              timeElements.each((k, timeEl) => {
-                const time = $(timeEl).text().trim();
-                if (time && time.match(/\d{1,2}:\d{2}/)) {
-                  showtimes.push({
-                    date: new Date().toISOString().split('T')[0],
-                    times: [time],
-                    dayOfWeek: 'Today'
-                  });
-                }
-              });
-            } else {
-              // Default showtime if none found
-              showtimes.push({
-                date: new Date().toISOString().split('T')[0],
-                times: ['20:00'],
-                dayOfWeek: 'Today'
-              });
-            }
-            
-            cinemas.push({
-              id: `cinema-${j}`,
-              name: cinemaName,
-              address: address,
-              city: 'Berlin',
-              postalCode: '10000',
-              url: '',
-              showtimes: showtimes
-            });
-          });
-        } else {
-          // Default cinema if none found
-          cinemas.push({
-            id: 'cinema-1',
-            name: 'Berlin Cinema',
-            address: 'Berlin',
-            city: 'Berlin',
-            postalCode: '10000',
-            url: '',
-            showtimes: [{
-              date: new Date().toISOString().split('T')[0],
-              times: ['20:00'],
-              dayOfWeek: 'Today'
-            }]
-          });
-        }
-        
-        // Create movie object with real extracted data
-        movies.push({
-          id: `movie-${i}`,
-          title: title,
-          originalTitle: title,
-          year: parseInt(year) || 2024,
-          country: country,
-          director: director,
-          cast: [],
-          posterUrl: '',
-          trailerUrl: '',
-          reviewUrl: '',
-          language: language,
-          fskRating: fskRating,
-          cinemas: cinemas
-        });
       });
 
       const result = {
@@ -239,6 +174,102 @@ class VercelBerlinCinemaScraper {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
+  }
+
+  // Add the missing methods from the existing scraper
+  private parseMovieDetails($: any, $element: any) {
+    const $dl = $element.find('dl.oneline');
+    let year = 0;
+    let country = '';
+    let director = '';
+    let cast: string[] = [];
+
+    $dl.find('dd').each((index: number, element: any) => {
+      const text = $(element).text().trim();
+      
+      if (index === 0) {
+        // First dd contains country and year
+        const match = text.match(/(.+)\s+(\d{4})/);
+        if (match) {
+          country = match[1].trim();
+          year = parseInt(match[2]);
+        }
+      } else if (index === 1) {
+        // Second dd contains director
+        director = text;
+      } else if (index === 2) {
+        // Third dd contains cast
+        cast = text.split(',').map((actor: string) => actor.trim());
+      }
+    });
+
+    return { year, country, director, cast };
+  }
+
+  private parseCinemas($: any, $element: any) {
+    const cinemas: any[] = [];
+    
+    // Look for cinema information in the movie element
+    const cinemaElements = $element.find('.cinema, .kino, [class*="cinema"], [class*="kino"]');
+    
+    if (cinemaElements.length > 0) {
+      cinemaElements.each((j: number, cinemaEl: any) => {
+        const $cinema = $(cinemaEl);
+        const cinemaName = $cinema.find('.name, .title').first().text().trim() || `Cinema ${j + 1}`;
+        const address = $cinema.find('.address, .adresse').first().text().trim() || 'Berlin';
+        
+        // Extract showtimes
+        const showtimes: any[] = [];
+        const timeElements = $cinema.find('.time, .zeit, [class*="time"], [class*="zeit"]');
+        
+        if (timeElements.length > 0) {
+          timeElements.each((k: number, timeEl: any) => {
+            const time = $(timeEl).text().trim();
+            if (time && time.match(/\d{1,2}:\d{2}/)) {
+              showtimes.push({
+                date: new Date().toISOString().split('T')[0],
+                times: [time],
+                dayOfWeek: 'Today'
+              });
+            }
+          });
+        } else {
+          // Default showtime if none found
+          showtimes.push({
+            date: new Date().toISOString().split('T')[0],
+            times: ['20:00'],
+            dayOfWeek: 'Today'
+          });
+        }
+        
+        cinemas.push({
+          id: `cinema-${j}`,
+          name: cinemaName,
+          address: address,
+          city: 'Berlin',
+          postalCode: '10000',
+          url: '',
+          showtimes: showtimes
+        });
+      });
+    } else {
+      // Default cinema if none found
+      cinemas.push({
+        id: 'cinema-1',
+        name: 'Berlin Cinema',
+        address: 'Berlin',
+        city: 'Berlin',
+        postalCode: '10000',
+        url: '',
+        showtimes: [{
+          date: new Date().toISOString().split('T')[0],
+          times: ['20:00'],
+          dayOfWeek: 'Today'
+        }]
+      });
+    }
+    
+    return cinemas;
   }
 }
 
