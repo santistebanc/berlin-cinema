@@ -136,14 +136,9 @@ class VercelBerlinCinemaScraper {
             posterUrl = `https://www.critic.de${posterUrl}`;
           }
           
-          // Convert critic.de image URLs to use our proxy to avoid CORS issues
-          if (posterUrl && posterUrl.startsWith('https://www.critic.de/')) {
-            // Use absolute URL for the proxy to work in Vercel
-            const baseUrl = process.env.VERCEL_URL 
-              ? `https://${process.env.VERCEL_URL}` 
-              : 'http://localhost:3000';
-            posterUrl = `${baseUrl}/api/image-proxy?url=${encodeURIComponent(posterUrl)}`;
-          }
+          // For now, use direct URLs and let the browser handle CORS
+          // The fallback images will show if CORS blocks the images
+          // This is simpler and more reliable than proxying
           
           // Extract trailer and review URLs and ensure they're absolute
           let trailerUrl = $el.find('.subfilminfo.trailer a').attr('href') || '';
