@@ -34,7 +34,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:frontend": "vite --port 3000",
+    "dev:frontend": "vite --port 3002",
     "dev:server": "node server.js",
     "dev:fullstack": "concurrently \"npm run dev:frontend\" \"npm run dev:server\"",
     "build": "vite build",
