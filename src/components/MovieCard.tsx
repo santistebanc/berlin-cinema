@@ -36,8 +36,9 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           className="w-full h-80 object-cover"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            // Use a simple, clean fallback instead of base64
-            target.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="#f3f4f6"/><text x="150" y="200" font-family="Arial, sans-serif" font-size="16" fill="#6b7280" text-anchor="middle" dy=".3em">🎬</text><text x="150" y="230" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle" dy=".3em">${movie.title}</text></svg>`;
+            // Use a simple, clean fallback with proper SVG encoding
+            const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="#f3f4f6"/><text x="150" y="200" font-family="Arial, sans-serif" font-size="16" fill="#6b7280" text-anchor="middle">🎬</text><text x="150" y="230" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">${movie.title}</text></svg>`;
+            target.src = `data:image/svg+xml,${encodeURIComponent(fallbackSvg)}`;
           }}
         />
         
