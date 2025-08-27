@@ -497,7 +497,7 @@ const MovieDetailPage: React.FC = () => {
   const { cinemas, dates, variants } = getAvailableFilters();
 
   return (
-    <div className="w-full px-2 sm:px-4 space-y-8">
+    <div className="w-full px-2 sm:px-4 space-y-4">
       {/* Back Button */}
       <button
         onClick={() => navigate('/')}
@@ -509,7 +509,7 @@ const MovieDetailPage: React.FC = () => {
 
       {/* Movie Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-3 sm:p-6 bg-gray-50 border-b border-gray-200">
+        <div className="p-2 sm:p-4 bg-gray-50 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Movie Poster */}
             <div className="flex-shrink-0 mx-auto sm:mx-0">
@@ -526,10 +526,10 @@ const MovieDetailPage: React.FC = () => {
             
             {/* Movie Info */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 text-center sm:text-left">{movie.title}</h1>
+                              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">{movie.title}</h1>
               
               {/* Movie Details */}
-              <div className="mb-4 space-y-2 text-center sm:text-left">
+                              <div className="mb-3 space-y-1 text-center sm:text-left">
                 
                 {/* Year and Country */}
                 {(movie.year > 0 || movie.country) && (
@@ -565,7 +565,7 @@ const MovieDetailPage: React.FC = () => {
               </div>
               
               {/* Badges and Links */}
-              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-4">
+                              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
                 {/* Variants Badge */}
                 {movie.variants && movie.variants.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -619,8 +619,8 @@ const MovieDetailPage: React.FC = () => {
         </div>
         
         {/* Filters Section */}
-        <div className="px-3 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+        <div className="px-2 sm:px-4 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
@@ -737,7 +737,7 @@ const MovieDetailPage: React.FC = () => {
                   return Array.from(allDates).sort()
                     .filter(date => shouldShowDate(date)) // Only show selected dates
                     .map((date, dateIndex) => (
-                      <th key={date} className="text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200">
+                      <th key={date} className="text-center p-2 font-medium text-gray-700 min-w-[150px] border-r border-gray-200">
                         {new Date(date).toLocaleDateString('en-US', { 
                           weekday: 'short', 
                           month: 'short', 
@@ -827,11 +827,11 @@ const MovieDetailPage: React.FC = () => {
                             const isLastDate = dateIndex === sortedDates.filter(d => shouldShowDate(d)).length - 1;
                             
                             return (
-                              <td key={date} className={`p-3 text-center text-sm ${!isLastDate ? 'border-r border-gray-200' : ''}`}>
+                              <td key={date} className={`p-2 text-center text-sm ${!isLastDate ? 'border-r border-gray-200' : ''}`}>
                                 {cinema ? (
-                                  <div className="space-y-2">
+                                  <div className="space-y-1">
                                     {/* All Showings for this Time/Date */}
-                                    <div className="space-y-2">
+                                    <div className="space-y-1">
                                       {(() => {
                                         // Find which showings are playing at this time/date
                                         const showtime = cinema.showtimes.find(s => s.date === date);
@@ -854,7 +854,7 @@ const MovieDetailPage: React.FC = () => {
                                             return (
                                               <div className="space-y-2">
                                                 {filteredShowings.map((showing: any, idx: number) => (
-                                                  <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
+                                                  <div key={idx} className="p-1 border border-gray-200 rounded bg-white">
                                                     <div className="flex items-center justify-center">
                                                       <div className="flex items-center">
                                                         <button
@@ -883,7 +883,7 @@ const MovieDetailPage: React.FC = () => {
                                           }
                                           
                                           return (
-                                            <div className="p-2 border border-gray-200 rounded bg-white">
+                                            <div className="p-1 border border-gray-200 rounded bg-white">
                                               <div className="flex items-center justify-center">
                                                 <div className="flex items-center">
                                                   <button
@@ -927,8 +927,8 @@ const MovieDetailPage: React.FC = () => {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={handlePopupOutsideClick}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-2 sm:mx-4 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-2 sm:mx-4 p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-900">{selectedCinemaForPopup.name}</h3>
               <button
                 onClick={() => {
