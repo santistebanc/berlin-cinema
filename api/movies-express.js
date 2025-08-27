@@ -462,10 +462,27 @@ class BerlinCinemaScraper {
       // Convert variants Set to array
       movie.variants = Array.from(movie.variants);
       
-      // Process cinemas to add timeInfo for better frontend consumption
+      // Process cinemas to add complete showtime data for frontend
       movie.cinemas.forEach(cinema => {
         cinema.showtimes.forEach(showtime => {
-          // Create timeInfo structure for each time slot
+          // Create complete showtime entries with all necessary information
+          showtime.showtimeEntries = [];
+          showtime.times.forEach(time => {
+            showtime.showtimeEntries.push({
+              date: showtime.date,
+              time: time,
+              cinema: cinema.name,
+              variants: movie.variants,
+              address: cinema.address,
+              city: cinema.city,
+              postalCode: cinema.postalCode,
+              url: cinema.url,
+              // Add any additional metadata that might be useful
+              dayOfWeek: showtime.dayOfWeek || new Date(showtime.date).toLocaleDateString('en-US', { weekday: 'short' })
+            });
+          });
+          
+          // Keep the old timeInfo for backward compatibility, but enhance it
           showtime.timeInfo = {};
           showtime.times.forEach(time => {
             showtime.timeInfo[time] = [{
@@ -492,11 +509,33 @@ class BerlinCinemaScraper {
         cinema.showtimes.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         cinema.showtimes.forEach(showtime => {
           showtime.times.sort();
+          
+          // Ensure showtimeEntries are also sorted by time
+          if (showtime.showtimeEntries) {
+            showtime.showtimeEntries.sort((a, b) => a.time.localeCompare(b.time));
+          }
         });
       });
       
       // Sort cinemas by name
       movie.cinemas.sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Add a flattened showtimes array for easy frontend consumption
+      movie.allShowtimes = [];
+      movie.cinemas.forEach(cinema => {
+        cinema.showtimes.forEach(showtime => {
+          if (showtime.showtimeEntries) {
+            movie.allShowtimes.push(...showtime.showtimeEntries);
+          }
+        });
+      });
+      
+      // Sort all showtimes by date and time
+      movie.allShowtimes.sort((a, b) => {
+        const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateComparison !== 0) return dateComparison;
+        return a.time.localeCompare(b.time);
+      });
       
       return movie;
     });
@@ -528,6 +567,19 @@ router.get('/', async (req, res) => {
     const result = await scraper.scrapeMovies();
     
     console.log(`Scraping completed. Found ${result.movies.length} movies`);
+    
+    // Log sample data structure for debugging
+    if (result.movies.length > 0) {
+      const sampleMovie = result.movies[0];
+      console.log('Sample movie structure:');
+      console.log('- Title:', sampleMovie.title);
+      console.log('- Variants:', sampleMovie.variants);
+      console.log('- Cinemas count:', sampleMovie.cinemas.length);
+      if (sampleMovie.allShowtimes) {
+        console.log('- All showtimes count:', sampleMovie.allShowtimes.length);
+        console.log('- Sample showtime entry:', sampleMovie.allShowtimes[0]);
+      }
+    }
     
     // Return the result
     res.status(200).json(result);
