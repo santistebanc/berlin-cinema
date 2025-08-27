@@ -24,24 +24,41 @@ class VercelBerlinCinemaScraper {
     try {
       console.log('Scraping movies from:', this.baseUrl);
       
-      // Use POST request with form data as required by the website
-      const formData = new URLSearchParams();
-      formData.append('action', 'search');
-      formData.append('search', '');
+                    // Use POST request with form data exactly as the curl command
+              const formData = new URLSearchParams();
+              formData.append('tx_criticde_pi5[ovsearch_cinema]', '');
+              formData.append('tx_criticde_pi5[ovsearch_cinema_show]', '');
+              formData.append('ovsearch_movie_ajax', '');
+              formData.append('tx_criticde_pi5[ovsearch_movie]', '');
+              formData.append('tx_criticde_pi5[ovsearch_district]', '');
+              formData.append('tx_criticde_pi5[ovsearch_date]', '');
+              formData.append('tx_criticde_pi5[ovsearch_of]', '1');
+              formData.append('tx_criticde_pi5[ovsearch_omu]', '1');
+              formData.append('tx_criticde_pi5[submit_button]', 'search');
+              formData.append('tx_criticde_pi5[submit]', '');
+              formData.append('tx_criticde_pi5[ovsearch_days]', '');
       
-      const response = await axios.post(this.baseUrl, formData, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Origin': 'https://www.critic.de',
-          'Referer': 'https://www.critic.de/ov-movies-berlin/',
-          'DNT': '1',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1',
-        },
+                    const response = await axios.post(this.baseUrl, formData, {
+                headers: {
+                  'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                  'accept-language': 'en-GB,en;q=0.5',
+                  'cache-control': 'no-cache',
+                  'content-type': 'application/x-www-form-urlencoded',
+                  'origin': 'https://www.critic.de',
+                  'pragma': 'no-cache',
+                  'priority': 'u=0, i',
+                  'referer': 'https://www.critic.de/ov-movies-berlin/',
+                  'sec-ch-ua': '"Not;A=Brand";v="99", "Brave";v="139", "Chromium";v="139"',
+                  'sec-ch-ua-mobile': '?0',
+                  'sec-ch-ua-platform': '"Windows"',
+                  'sec-fetch-dest': 'document',
+                  'sec-fetch-mode': 'navigate',
+                  'sec-fetch-site': 'same-origin',
+                  'sec-fetch-user': '?1',
+                  'sec-gpc': '1',
+                  'upgrade-insecure-requests': '1',
+                  'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+                },
         timeout: 30000,
         httpsAgent: new (require('https').Agent)({
           rejectUnauthorized: false, // Ignore SSL certificate issues
@@ -103,7 +120,7 @@ class VercelBerlinCinemaScraper {
           // Extract movie ID (same as existing scraper)
           const movieId = $el.attr('data-movie_id') || `movie-${i}`;
           
-          // Extract title (same as existing scraper)
+          // Extract title from h2 a element
           const titleElement = $el.find('h2 a');
           const title = titleElement.text().trim();
           const movieUrl = titleElement.attr('href') || '';
@@ -113,20 +130,20 @@ class VercelBerlinCinemaScraper {
             return;
           }
           
-          // Extract poster image (same as existing scraper)
+          // Extract poster image from figure img
           const posterUrl = $el.find('figure img').attr('src') || '';
           
-          // Extract trailer and review URLs (same as existing scraper)
+          // Extract trailer and review URLs
           const trailerUrl = $el.find('.subfilminfo.trailer a').attr('href') || '';
           const reviewUrl = $el.find('.subfilminfo.critic a').attr('href') || '';
           
-          // Extract movie details from the dl element (same as existing scraper)
+          // Extract movie details from the dl.oneline element
           const details = this.parseMovieDetails($, $el);
           
-          // Extract cinemas and showtimes (same as existing scraper)
+          // Extract cinemas and showtimes from article.cinema elements
           const cinemas = this.parseCinemas($, $el);
           
-          // Extract language and FSK rating from data attributes (same as existing scraper)
+          // Extract language and FSK rating from data attributes
           const language = $el.attr('data-search_of_value') === 'omu' ? 'OmU' : 'OV';
           const fskRating = parseInt($el.attr('data-search_fsk_value') || '0');
           
@@ -209,67 +226,95 @@ class VercelBerlinCinemaScraper {
   private parseCinemas($: any, $element: any) {
     const cinemas: any[] = [];
     
-    // Look for cinema information in the movie element
-    const cinemaElements = $element.find('.cinema, .kino, [class*="cinema"], [class*="kino"]');
+    // Look for cinema information in article.cinema elements
+    const cinemaElements = $element.find('article.cinema');
     
     if (cinemaElements.length > 0) {
       cinemaElements.each((j: number, cinemaEl: any) => {
         const $cinema = $(cinemaEl);
-        const cinemaName = $cinema.find('.name, .title').first().text().trim() || `Cinema ${j + 1}`;
-        const address = $cinema.find('.address, .adresse').first().text().trim() || 'Berlin';
         
-        // Extract showtimes
+        // Extract cinema name and address from address element
+        const addressElement = $cinema.find('address');
+        const cinemaNameElement = addressElement.find('a');
+        const cinemaName = cinemaNameElement.text().trim();
+        const cinemaUrl = cinemaNameElement.attr('href') || '';
+        
+        // Extract full address text (includes both name and address)
+        const fullAddressText = addressElement.text().trim();
+        const address = fullAddressText.replace(cinemaName, '').trim();
+        
+        // Extract showtimes from the vorstellung table
         const showtimes: any[] = [];
-        const timeElements = $cinema.find('.time, .zeit, [class*="time"], [class*="zeit"]');
+        const showtimeTable = $cinema.find('table.vorstellung');
         
-        if (timeElements.length > 0) {
-          timeElements.each((k: number, timeEl: any) => {
-            const time = $(timeEl).text().trim();
-            if (time && time.match(/\d{1,2}:\d{2}/)) {
-              showtimes.push({
-                date: new Date().toISOString().split('T')[0],
-                times: [time],
-                dayOfWeek: 'Today'
-              });
+        if (showtimeTable.length > 0) {
+          const headerRow = showtimeTable.find('thead tr th');
+          const dateHeaders: string[] = [];
+          
+          // Extract date headers
+          headerRow.each((k: number, headerEl: any) => {
+            const headerText = $(headerEl).text().trim();
+            if (headerText && headerText !== 'Today') {
+              dateHeaders.push(headerText);
             }
           });
-        } else {
-          // Default showtime if none found
-          showtimes.push({
-            date: new Date().toISOString().split('T')[0],
-            times: ['20:00'],
-            dayOfWeek: 'Today'
+          
+          // Extract showtimes from table rows
+          const timeRows = showtimeTable.find('tbody tr');
+          timeRows.each((rowIndex: number, rowEl: any) => {
+            const timeCells = $(rowEl).find('td');
+            timeCells.each((cellIndex: number, cellEl: any) => {
+              const cellText = $(cellEl).text().trim();
+              const cellClass = $(cellEl).attr('class');
+              
+              // Only process cells with showtimes (wird_gezeigt class)
+              if (cellClass && cellClass.includes('wird_gezeigt') && cellText) {
+                const times = cellText.split('<br>').map((time: string) => time.trim()).filter((time: string) => time.match(/\d{1,2}:\d{2}/));
+                
+                if (times.length > 0 && dateHeaders[cellIndex - 1]) {
+                  showtimes.push({
+                    date: this.parseDateFromHeader(dateHeaders[cellIndex - 1]),
+                    times: times,
+                    dayOfWeek: dateHeaders[cellIndex - 1]
+                  });
+                }
+              }
+            });
           });
         }
         
-        cinemas.push({
-          id: `cinema-${j}`,
-          name: cinemaName,
-          address: address,
-          city: 'Berlin',
-          postalCode: '10000',
-          url: '',
-          showtimes: showtimes
-        });
-      });
-    } else {
-      // Default cinema if none found
-      cinemas.push({
-        id: 'cinema-1',
-        name: 'Berlin Cinema',
-        address: 'Berlin',
-        city: 'Berlin',
-        postalCode: '10000',
-        url: '',
-        showtimes: [{
-          date: new Date().toISOString().split('T')[0],
-          times: ['20:00'],
-          dayOfWeek: 'Today'
-        }]
+        if (cinemaName) {
+          cinemas.push({
+            id: `cinema-${j}`,
+            name: cinemaName,
+            address: address,
+            city: 'Berlin',
+            postalCode: '10000',
+            url: cinemaUrl,
+            showtimes: showtimes
+          });
+        }
       });
     }
     
     return cinemas;
+  }
+  
+  private parseDateFromHeader(headerText: string): string {
+    // Parse date from header like "Wed 27/08" or "Tue 26/08"
+    const match = headerText.match(/(\w+)\s+(\d{1,2})\/(\d{1,2})/);
+    if (match) {
+      const day = match[1];
+      const date = match[2];
+      const month = match[3];
+      const currentYear = new Date().getFullYear();
+      
+      // Create a date string in YYYY-MM-DD format
+      return `${currentYear}-${month.padStart(2, '0')}-${date.padStart(2, '0')}`;
+    }
+    
+    // Fallback to today's date
+    return new Date().toISOString().split('T')[0];
   }
 }
 
