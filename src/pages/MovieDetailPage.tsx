@@ -497,7 +497,7 @@ const MovieDetailPage: React.FC = () => {
   const { cinemas, dates, variants } = getAvailableFilters();
 
   return (
-    <div className="w-full px-4 space-y-8">
+    <div className="w-full px-2 sm:px-4 space-y-8">
       {/* Back Button */}
       <button
         onClick={() => navigate('/')}
@@ -509,10 +509,10 @@ const MovieDetailPage: React.FC = () => {
 
       {/* Movie Header */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-start space-x-4">
+        <div className="p-3 sm:p-6 bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Movie Poster */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 mx-auto sm:mx-0">
               <img
                 src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg=='}
                 alt={movie.title}
@@ -526,10 +526,10 @@ const MovieDetailPage: React.FC = () => {
             
             {/* Movie Info */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">{movie.title}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 text-center sm:text-left">{movie.title}</h1>
               
               {/* Movie Details */}
-              <div className="mb-4 space-y-2">
+              <div className="mb-4 space-y-2 text-center sm:text-left">
                 
                 {/* Year and Country */}
                 {(movie.year > 0 || movie.country) && (
@@ -565,7 +565,7 @@ const MovieDetailPage: React.FC = () => {
               </div>
               
               {/* Badges and Links */}
-              <div className="flex items-center space-x-3 mb-4">
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-4">
                 {/* Variants Badge */}
                 {movie.variants && movie.variants.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -589,7 +589,7 @@ const MovieDetailPage: React.FC = () => {
               </div>
               
               {/* Action Links */}
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
                 {movie.trailerUrl && (
                   <a
                     href={movie.trailerUrl}
@@ -619,8 +619,8 @@ const MovieDetailPage: React.FC = () => {
         </div>
         
         {/* Filters Section */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
+        <div className="px-3 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
@@ -719,11 +719,11 @@ const MovieDetailPage: React.FC = () => {
         
 
         {/* Showtimes Table */}
-        <div className="overflow-x-auto relative max-h-[600px] overflow-y-auto">
+        <div className="overflow-x-auto relative">
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-30">
+            <thead>
               <tr className="border-b border-gray-200 bg-gray-100">
-                <th className="text-left p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 min-w-[100px] sticky left-0 z-10">
+                <th className="text-left p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 min-w-[100px]">
                   Time
                 </th>
                 {(() => {
@@ -737,7 +737,7 @@ const MovieDetailPage: React.FC = () => {
                   return Array.from(allDates).sort()
                     .filter(date => shouldShowDate(date)) // Only show selected dates
                     .map((date, dateIndex) => (
-                      <th key={date} className={`text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200 sticky top-0 z-20 ${dateIndex === 0 ? 'sticky left-[100px]' : ''}`}>
+                      <th key={date} className="text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200">
                         {new Date(date).toLocaleDateString('en-US', { 
                           weekday: 'short', 
                           month: 'short', 
@@ -801,7 +801,7 @@ const MovieDetailPage: React.FC = () => {
                   })
                   .map(time => (
                     <tr key={time} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 sticky left-0 z-10">
+                      <td className="p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200">
                         {time}
                       </td>
                       {(() => {
@@ -927,7 +927,7 @@ const MovieDetailPage: React.FC = () => {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={handlePopupOutsideClick}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-2 sm:mx-4 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">{selectedCinemaForPopup.name}</h3>
               <button
