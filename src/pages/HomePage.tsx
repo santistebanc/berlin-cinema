@@ -109,8 +109,6 @@ const HomePage: React.FC = () => {
       console.log('Movies API response:', moviesResult);
       console.log('Total movies received:', moviesResult.movies.length);
       console.log('First movie structure:', moviesResult.movies[0]);
-      console.log('First movie showings:', moviesResult.movies[0]?.showings);
-      console.log('First movie cinemas:', moviesResult.movies[0]?.cinemas);
       
       const mergedMovies = getMergedMovies(moviesResult.movies);
       
