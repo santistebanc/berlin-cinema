@@ -87,12 +87,25 @@ const MovieDetailPage: React.FC = () => {
   const getAvailableFilters = () => {
     if (!movie) return { cinemas: [], dates: [], variants: [] };
     
-    // New data structure: use showings directly
-    const cinemas = [...new Set(movie.showings.map(showing => showing.cinema))].sort();
-    const dates = [...new Set(movie.showings.map(showing => showing.date))].sort();
+    // New data structure: showings is organized by date -> time -> cinema+variant
+    const cinemas = new Set<string>();
+    const dates = Object.keys(movie.showings).sort();
+    
+    Object.values(movie.showings).forEach(dateShowings => {
+      Object.values(dateShowings).forEach(timeShowings => {
+        timeShowings.forEach(showing => {
+          cinemas.add(showing.cinema);
+        });
+      });
+    });
+    
     const variants = movie.variants || [];
     
-    return { cinemas, dates, variants };
+    return { 
+      cinemas: Array.from(cinemas).sort(), 
+      dates, 
+      variants 
+    };
   };
 
   // Initialize filters when movie data loads

@@ -17,9 +17,15 @@ const HomePage: React.FC = () => {
 
   // Calculate total showtimes for a movie
   const getTotalShowtimes = (movie: Movie): number => {
-    // New data structure: movie.showings contains individual showings
-    if (movie.showings && Array.isArray(movie.showings)) {
-      return movie.showings.length;
+    // New data structure: movie.showings is organized by date -> time -> cinema+variant
+    if (movie.showings && typeof movie.showings === 'object') {
+      let total = 0;
+      Object.values(movie.showings).forEach(dateShowings => {
+        Object.values(dateShowings).forEach(timeShowings => {
+          total += timeShowings.length;
+        });
+      });
+      return total;
     }
     return 0;
   };
