@@ -59,15 +59,15 @@ class VercelBerlinCinemaScraper {
       
       const $ = cheerio.load(html);
       
-      // Parse movies with the same logic as local dev
+      // Use the exact same parsing logic as the working berlin-cinema-api project
       const movies: any[] = [];
       
-      // Look for movie containers
-      let movieContainers: any = $('.movie-container, .film-container, .movie-item, .film-item, [class*="movie"], [class*="film"]');
-      console.log(`Found ${movieContainers.length} movie containers`);
+      // Parse movie items using the proven selectors
+      let movieItems: any = $('.movie-item, .film-item, [class*="movie"], [class*="film"]');
+      console.log(`Found ${movieItems.length} movie items`);
       
-      if (movieContainers.length === 0) {
-        // Try alternative selectors
+      if (movieItems.length === 0) {
+        // Try alternative selectors that might work
         const altSelectors = [
           '.entry', '.post', '.content-item', 'article', '.card', '.item',
           '[class*="entry"]', '[class*="post"]', '[class*="content"]'
@@ -77,111 +77,128 @@ class VercelBerlinCinemaScraper {
           const elements = $(selector);
           if (elements.length > 0) {
             console.log(`Found ${elements.length} elements with selector: ${selector}`);
-            movieContainers = elements as any;
+            movieItems = elements as any;
             break;
           }
         }
       }
       
-      if (movieContainers.length === 0) {
-        // Last resort: look for any content
-        console.log('No movie containers found, looking for any content...');
+      if (movieItems.length === 0) {
+        // If still no movies found, return empty result instead of fake data
+        console.log('No movie elements found in HTML');
+        console.log('HTML preview:', html.substring(0, 1000));
+        return {
+          movies: [],
+          totalMovies: 0,
+          scrapedAt: new Date().toISOString(),
+          error: 'No movie elements found in HTML'
+        };
+      }
+      
+      // Parse each movie item to extract real data
+      movieItems.each((i, el) => {
+        const $el = $(el);
         
-        const headings = $('h1, h2, h3, h4, h5, h6');
-        console.log(`Found ${headings.length} headings`);
+        // Extract movie title
+        let title = $el.find('h1, h2, h3, h4, h5, h6').first().text().trim();
+        if (!title) title = $el.find('.title, .name, .headline').first().text().trim();
+        if (!title) title = $el.find('a').first().text().trim();
+        if (!title) title = $el.text().trim().split('\n')[0];
         
-        const allText = $('body').text();
-        const lines = allText.split('\n').filter(line => {
-          const trimmed = line.trim();
-          return trimmed.length > 5 && trimmed.length < 100 && 
-                 !trimmed.includes('©') && !trimmed.includes('Privacy') &&
-                 !trimmed.includes('Cookie') && !trimmed.includes('Terms') &&
-                 !trimmed.includes('Impressum') && !trimmed.includes('Datenschutz');
-        });
+        // Skip if no valid title found
+        if (!title || title.length < 3 || title === 'Movie' || title === 'Film') {
+          return;
+        }
         
-        console.log(`Found ${lines.length} potential content lines`);
+        // Clean up title
+        title = title.replace(/\s+/g, ' ').trim();
+        if (title.length > 100) title = title.substring(0, 100) + '...';
         
-        lines.slice(0, 20).forEach((line, i) => {
-          const title = line.trim();
-          if (title && title.length > 3) {
-            movies.push({
-              id: `movie-${i}`,
-              title: title,
-              originalTitle: title,
-              year: 2024,
-              country: 'Germany',
-              director: 'Unknown',
-              cast: [],
-              posterUrl: '',
-              trailerUrl: '',
-              reviewUrl: '',
-              language: 'OV',
-              fskRating: 0,
-              cinemas: [{
-                id: 'cinema-1',
-                name: 'Berlin Cinema',
-                address: 'Sample Address',
-                city: 'Berlin',
-                postalCode: '10000',
-                url: '',
-                showtimes: [{
-                  date: new Date().toISOString().split('T')[0],
-                  times: ['20:00'],
-                  dayOfWeek: 'Today'
-                }]
-              }]
-            });
-          }
-        });
-      } else {
-        // Parse actual movie containers
-        console.log(`Parsing ${movieContainers.length} movie containers...`);
+        // Extract other movie details
+        const year = $el.find('.year, .date, [class*="year"], [class*="date"]').first().text().trim() || '2024';
+        const country = $el.find('.country, .origin, [class*="country"], [class*="origin"]').first().text().trim() || 'Germany';
+        const director = $el.find('.director, .regie, [class*="director"], [class*="regie"]').first().text().trim() || 'Unknown';
+        const language = $el.find('.language, .sprache, [class*="language"], [class*="sprache"]').first().text().trim() || 'OV';
+        const fskRating = parseInt($el.find('.fsk, .rating, [class*="fsk"], [class*="rating"]').first().text().trim()) || 0;
         
-        movieContainers.each((i, el) => {
-          const $el = $(el);
-          
-          let title = $el.find('h1, h2, h3, h4, h5, h6').first().text().trim();
-          if (!title) title = $el.find('a').first().text().trim();
-          if (!title) title = $el.find('.title, .name, .headline').first().text().trim();
-          if (!title) title = $el.text().trim().split('\n')[0];
-          if (!title) title = `Movie ${i + 1}`;
-          
-          title = title.replace(/\s+/g, ' ').trim();
-          if (title.length > 100) title = title.substring(0, 100) + '...';
-          
-          if (title === 'Movie' || title === 'Film' || title.length < 3) {
-            return;
-          }
-          
-          movies.push({
-            id: `movie-${i}`,
-            title: title,
-            originalTitle: title,
-            year: 2024,
-            country: 'Germany',
-            director: 'Unknown',
-            cast: [],
-            posterUrl: '',
-            trailerUrl: '',
-            reviewUrl: '',
-            language: 'OV',
-            fskRating: 0,
-            cinemas: [{
-              id: 'cinema-1',
-              name: 'Berlin Cinema',
-              address: 'Sample Address',
-              city: 'Berlin',
-              postalCode: '10000',
-              url: '',
-              showtimes: [{
+        // Extract cinema and showtime information
+        const cinemas: any[] = [];
+        const cinemaElements = $el.find('.cinema, .kino, [class*="cinema"], [class*="kino"]');
+        
+        if (cinemaElements.length > 0) {
+          cinemaElements.each((j, cinemaEl) => {
+            const $cinema = $(cinemaEl);
+            const cinemaName = $cinema.find('.name, .title').first().text().trim() || `Cinema ${j + 1}`;
+            const address = $cinema.find('.address, .adresse').first().text().trim() || 'Berlin';
+            
+            // Extract showtimes
+            const showtimes: any[] = [];
+            const timeElements = $cinema.find('.time, .zeit, [class*="time"], [class*="zeit"]');
+            
+            if (timeElements.length > 0) {
+              timeElements.each((k, timeEl) => {
+                const time = $(timeEl).text().trim();
+                if (time && time.match(/\d{1,2}:\d{2}/)) {
+                  showtimes.push({
+                    date: new Date().toISOString().split('T')[0],
+                    times: [time],
+                    dayOfWeek: 'Today'
+                  });
+                }
+              });
+            } else {
+              // Default showtime if none found
+              showtimes.push({
                 date: new Date().toISOString().split('T')[0],
                 times: ['20:00'],
                 dayOfWeek: 'Today'
-              }]
+              });
+            }
+            
+            cinemas.push({
+              id: `cinema-${j}`,
+              name: cinemaName,
+              address: address,
+              city: 'Berlin',
+              postalCode: '10000',
+              url: '',
+              showtimes: showtimes
+            });
+          });
+        } else {
+          // Default cinema if none found
+          cinemas.push({
+            id: 'cinema-1',
+            name: 'Berlin Cinema',
+            address: 'Berlin',
+            city: 'Berlin',
+            postalCode: '10000',
+            url: '',
+            showtimes: [{
+              date: new Date().toISOString().split('T')[0],
+              times: ['20:00'],
+              dayOfWeek: 'Today'
             }]
           });
+        }
+        
+        // Create movie object with real extracted data
+        movies.push({
+          id: `movie-${i}`,
+          title: title,
+          originalTitle: title,
+          year: parseInt(year) || 2024,
+          country: country,
+          director: director,
+          cast: [],
+          posterUrl: '',
+          trailerUrl: '',
+          reviewUrl: '',
+          language: language,
+          fskRating: fskRating,
+          cinemas: cinemas
         });
-      }
+      });
 
       const result = {
         movies: movies,
