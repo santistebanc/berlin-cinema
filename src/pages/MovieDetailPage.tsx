@@ -719,7 +719,7 @@ const MovieDetailPage: React.FC = () => {
         
 
         {/* Showtimes Table */}
-        <div className="overflow-x-auto relative max-h-[70vh] overflow-y-auto">
+        <div className="overflow-x-auto relative">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-50">
               <tr className="border-b border-gray-200 bg-gray-100">
