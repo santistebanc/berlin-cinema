@@ -60,10 +60,10 @@ class VercelBerlinCinemaScraper {
       const $ = cheerio.load(html);
       
       // Parse movies with the same logic as local dev
-      const movies = [];
+      const movies: any[] = [];
       
       // Look for movie containers
-      let movieContainers = $('.movie-container, .film-container, .movie-item, .film-item, [class*="movie"], [class*="film"]');
+      let movieContainers: any = $('.movie-container, .film-container, .movie-item, .film-item, [class*="movie"], [class*="film"]');
       console.log(`Found ${movieContainers.length} movie containers`);
       
       if (movieContainers.length === 0) {
@@ -77,7 +77,7 @@ class VercelBerlinCinemaScraper {
           const elements = $(selector);
           if (elements.length > 0) {
             console.log(`Found ${elements.length} elements with selector: ${selector}`);
-            movieContainers = elements;
+            movieContainers = elements as any;
             break;
           }
         }
@@ -198,7 +198,6 @@ class VercelBerlinCinemaScraper {
 
     } catch (error) {
       console.error('Error scraping movies:', error);
-      
       return {
         movies: [],
         totalMovies: 0,
@@ -244,7 +243,7 @@ export default async function handler(
     console.log('Starting to scrape movies...');
     
     // Scrape movies
-    const result = await scraper.scrapeMovies();
+    const result = await scraper!.scrapeMovies();
     
     console.log(`Scraping completed. Found ${result.movies.length} movies`);
     
