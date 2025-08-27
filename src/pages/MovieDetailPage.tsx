@@ -124,6 +124,10 @@ const MovieDetailPage: React.FC = () => {
       setLoading(true);
       const moviesResult = await movieApi.getAllMovies();
       
+      console.log('Movies API response in MovieDetailPage:', moviesResult);
+      console.log('Total movies received:', moviesResult.movies.length);
+      console.log('Looking for movie with title:', movieTitle);
+      
       // Find the movie by title (handle merged movies)
       const allMovies = moviesResult.movies;
       const movieGroups: { [baseTitle: string]: Movie[] } = {};
