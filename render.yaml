@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: berlin-cinema-api
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /api/movies
+    autoDeploy: true
