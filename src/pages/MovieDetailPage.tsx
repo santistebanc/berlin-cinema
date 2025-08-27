@@ -721,8 +721,8 @@ const MovieDetailPage: React.FC = () => {
         {/* Showtimes Table */}
         <div className="overflow-x-auto relative">
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-[9999] h-screen">
-              <tr className="border-b border-gray-200 bg-gray-100 h-full">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-100">
                 <th className="text-left p-2 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 min-w-[80px]">
                   Time
                 </th>
@@ -737,7 +737,7 @@ const MovieDetailPage: React.FC = () => {
                   return Array.from(allDates).sort()
                     .filter(date => shouldShowDate(date)) // Only show selected dates
                     .map((date, dateIndex) => (
-                      <th key={date} className="text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200 sticky top-0 z-[9998]">
+                      <th key={date} className="text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200">
                         {new Date(date).toLocaleDateString('en-US', { 
                           weekday: 'short', 
                           month: 'short', 
