@@ -721,9 +721,9 @@ const MovieDetailPage: React.FC = () => {
         {/* Showtimes Table */}
         <div className="overflow-x-auto relative max-h-[70vh] overflow-y-auto">
           <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-30">
+            <thead className="sticky top-0 z-50">
               <tr className="border-b border-gray-200 bg-gray-100">
-                <th className="text-left p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 min-w-[100px]">
+                <th className="text-left p-2 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 min-w-[80px]">
                   Time
                 </th>
                 {(() => {
@@ -801,7 +801,7 @@ const MovieDetailPage: React.FC = () => {
                   })
                   .map(time => (
                     <tr key={time} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-3 font-medium text-gray-700 bg-gray-50 border-r border-gray-200">
+                      <td className="p-2 font-medium text-gray-700 bg-gray-50 border-r border-gray-200">
                         {time}
                       </td>
                       {(() => {
@@ -827,7 +827,7 @@ const MovieDetailPage: React.FC = () => {
                             const isLastDate = dateIndex === sortedDates.filter(d => shouldShowDate(d)).length - 1;
                             
                             return (
-                              <td key={date} className={`p-3 text-center text-sm ${!isLastDate ? 'border-r border-gray-200' : ''} ${dateIndex === 0 ? 'sticky left-[100px] z-10' : ''}`}>
+                              <td key={date} className={`p-3 text-center text-sm ${!isLastDate ? 'border-r border-gray-200' : ''}`}>
                                 {cinema ? (
                                   <div className="space-y-2">
                                     {/* All Showings for this Time/Date */}
