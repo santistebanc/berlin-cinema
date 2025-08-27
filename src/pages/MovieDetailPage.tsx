@@ -87,27 +87,12 @@ const MovieDetailPage: React.FC = () => {
   const getAvailableFilters = () => {
     if (!movie) return { cinemas: [], dates: [], variants: [] };
     
-    // New data structure: use allShowtimes if available, fallback to cinemas
-    if (movie.allShowtimes && movie.allShowtimes.length > 0) {
-      const cinemas = [...new Set(movie.allShowtimes.map(showtime => showtime.cinema))].sort();
-      const dates = [...new Set(movie.allShowtimes.map(showtime => showtime.date))].sort();
-      const variants = movie.variants || [];
-      
-      return { cinemas, dates, variants };
-    }
+    // New data structure: use showings directly
+    const cinemas = [...new Set(movie.showings.map(showing => showing.cinema))].sort();
+    const dates = [...new Set(movie.showings.map(showing => showing.date))].sort();
+    const variants = movie.variants || [];
     
-    // Fallback for backward compatibility
-    if (movie.cinemas) {
-      const cinemas = movie.cinemas.map(cinema => cinema.name).sort();
-      const dates = movie.cinemas.flatMap(cinema => 
-        cinema.showtimes.map(showtime => showtime.date)
-      ).filter((date, index, arr) => arr.indexOf(date) === index).sort();
-      const variants = movie.variants || [];
-      
-      return { cinemas, dates, variants };
-    }
-    
-    return { cinemas: [], dates: [], variants: [] };
+    return { cinemas, dates, variants };
   };
 
   // Initialize filters when movie data loads
@@ -308,7 +293,7 @@ const MovieDetailPage: React.FC = () => {
                               <div className="mb-3 space-y-1 text-center sm:text-left">
                 
                 {/* Year and Country */}
-                {(movie.year > 0 || movie.country) && (
+                {(movie.year || movie.country) && (
                   <div className="flex items-center text-sm text-gray-600">
                     {movie.country && (
                       <span className="mr-3">
@@ -316,7 +301,7 @@ const MovieDetailPage: React.FC = () => {
                         {movie.country}
                       </span>
                     )}
-                    {movie.year > 0 && (
+                    {movie.year && (
                       <span>
                         <Calendar className="h-4 w-4 inline mr-1" />
                         {movie.year}
@@ -357,39 +342,7 @@ const MovieDetailPage: React.FC = () => {
                   </span>
                 )}
                 
-                {movie.fskRating > 0 && (
-                  <span className="px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
-                    FSK {movie.fskRating}
-                  </span>
-                )}
-              </div>
-              
-              {/* Action Links */}
-              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                {movie.trailerUrl && (
-                  <a
-                    href={movie.trailerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-4 py-2 bg-cinema-600 text-white text-sm rounded-md hover:bg-cinema-700 transition-colors"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Trailer
-                  </a>
-                )}
-                
-                {movie.reviewUrl && (
-                  <a
-                    href={movie.reviewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Review
-                  </a>
-                )}
-              </div>
+
             </div>
           </div>
         </div>

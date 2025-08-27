@@ -1,21 +1,27 @@
 export interface Movie {
-  id: string;
   title: string;
-  originalTitle?: string;
-  year: number;
-  country: string;
-  director: string;
-  cast: string[];
-  posterUrl: string;
-  trailerUrl?: string;
-  reviewUrl?: string;
-  language: string;
-  fskRating: number;
-  cinemas?: Cinema[]; // Optional for backward compatibility
-  variants?: string[]; // Store variant tags like (Imax), (EXPN), etc.
-  // Backend-processed data
-  showings?: any[]; // Individual showings with all data
-  allShowtimes?: ShowtimeEntry[];
+  director: string | null;
+  cast: string[] | null;
+  country: string | null;
+  year: number | null;
+  posterUrl: string | null;
+  url: string | null;
+  variants: string[];
+  cinemas: Cinema[];
+  showings: Showing[];
+  allShowtimes?: ShowtimeEntry[]; // For backward compatibility
+}
+
+export interface Cinema {
+  name: string;
+  address: string;
+}
+
+export interface Showing {
+  date: string; // Formatted as "Thu, Aug 27"
+  time: string; // Formatted as "13:50"
+  cinema: string;
+  variant: string | null; // OV, sub, Imax, EXPN, etc.
 }
 
 export interface Cinema {

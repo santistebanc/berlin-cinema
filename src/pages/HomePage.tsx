@@ -18,20 +18,7 @@ const HomePage: React.FC = () => {
   // Calculate total showtimes for a movie
   const getTotalShowtimes = (movie: Movie): number => {
     // New data structure: movie.showings contains individual showings
-    if (movie.showings) {
-      return movie.showings.length;
-    }
-    // Fallback for backward compatibility
-    if (movie.cinemas) {
-      let total = 0;
-      movie.cinemas.forEach(cinema => {
-        cinema.showtimes.forEach(showtime => {
-          total += showtime.times.length;
-        });
-      });
-      return total;
-    }
-    return 0;
+    return movie.showings.length;
   };
 
   // Sort movies by total showtimes (descending)
@@ -219,7 +206,7 @@ const HomePage: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedFilteredMovies.map((movie) => (
               <div
-                key={movie.id}
+                key={movie.title}
                 onClick={() => handleMovieClick(movie)}
                 className="cursor-pointer rounded-lg border-2 border-gray-200 bg-white transition-all duration-200 hover:shadow-lg hover:border-cinema-300"
               >
@@ -255,12 +242,7 @@ const HomePage: React.FC = () => {
                     </div>
                   )}
                   
-                  {/* FSK Rating */}
-                  {movie.fskRating > 0 && (
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                      FSK {movie.fskRating}
-                    </span>
-                  )}
+
                   
                   {/* Showtimes Count */}
                   <div className="mt-2 pt-2 border-t border-gray-100">
