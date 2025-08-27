@@ -26,13 +26,7 @@ const MovieList: React.FC<MovieListProps> = ({ movies, onMovieSelect }) => {
                 </h3>
               </button>
               
-              <span className={`px-2 py-1 rounded-md text-xs font-medium flex-shrink-0 ${
-                movie.language === 'OV' 
-                  ? 'bg-blue-100 text-blue-800' 
-                  : 'bg-green-100 text-green-800'
-              }`}>
-                {movie.language}
-              </span>
+
             </div>
 
             {/* Right side - Action buttons and cinema tags */}
