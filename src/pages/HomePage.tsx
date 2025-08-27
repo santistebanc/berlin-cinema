@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Film } from 'lucide-react';
@@ -16,10 +16,15 @@ const HomePage: React.FC = () => {
 
 
   // Calculate total showtimes for a movie
-  const getTotalShowtimes = (movie: Movie): number => {
+  const getTotalShowtimes = (movie: Movie | undefined): number => {
     try {
+      // Safety check: if movie is undefined, return 0
+      if (!movie) {
+        return 0;
+      }
+      
       // New data structure: movie.showings is organized by date -> time -> cinema+variant
-      if (movie && movie.showings && typeof movie.showings === 'object' && !Array.isArray(movie.showings)) {
+      if (movie.showings && typeof movie.showings === 'object' && !Array.isArray(movie.showings)) {
         let total = 0;
         Object.values(movie.showings).forEach(dateShowings => {
           if (dateShowings && typeof dateShowings === 'object') {
@@ -42,6 +47,11 @@ const HomePage: React.FC = () => {
   // Sort movies by total showtimes (descending)
   const sortMoviesByShowtimes = (movies: Movie[]): Movie[] => {
     try {
+      // Safety check: if movies array is empty or undefined, return empty array
+      if (!movies || movies.length === 0) {
+        return [];
+      }
+      
       return [...movies].sort((a, b) => {
         const aShowtimes = getTotalShowtimes(a);
         const bShowtimes = getTotalShowtimes(b);
@@ -56,25 +66,33 @@ const HomePage: React.FC = () => {
 
   // Fuzzy search function for filtering movies
   const fuzzySearch = (query: string, movies: Movie[]): Movie[] => {
+    // Safety check: if movies array is empty or undefined, return empty array
+    if (!movies || movies.length === 0) {
+      return [];
+    }
+    
     if (!query.trim()) return movies;
     
     const searchTerm = query.toLowerCase().trim();
     
     return movies.filter(movie => {
+      // Safety check: if movie is undefined, skip it
+      if (!movie) return false;
+      
       // Search in title
-      if (movie.title.toLowerCase().includes(searchTerm)) return true;
+      if (movie.title && movie.title.toLowerCase().includes(searchTerm)) return true;
       
       // Search in director
       if (movie.director && movie.director.toLowerCase().includes(searchTerm)) return true;
       
       // Search in cast
       if (movie.cast && movie.cast.some(actor => 
-        actor.toLowerCase().includes(searchTerm)
+        actor && actor.toLowerCase().includes(searchTerm)
       )) return true;
       
       // Search in variants
       if (movie.variants && movie.variants.some(variant => 
-        variant.toLowerCase().includes(searchTerm)
+        variant && variant.toLowerCase().includes(searchTerm)
       )) return true;
       
       // Search in country
@@ -85,10 +103,16 @@ const HomePage: React.FC = () => {
   };
 
   // Get filtered movies based on search query
-  const filteredMovies = fuzzySearch(searchQuery, movies);
+  const filteredMovies = useMemo(() => {
+    if (!movies || movies.length === 0) return [];
+    return fuzzySearch(searchQuery, movies);
+  }, [searchQuery, movies]);
   
   // Sort filtered movies by showtimes
-  const sortedFilteredMovies = sortMoviesByShowtimes(filteredMovies);
+  const sortedFilteredMovies = useMemo(() => {
+    if (!filteredMovies || filteredMovies.length === 0) return [];
+    return sortMoviesByShowtimes(filteredMovies);
+  }, [filteredMovies]);
 
   // Backend now provides merged movies, no need for frontend processing
   const getMergedMovies = (rawMovies: Movie[]) => {
