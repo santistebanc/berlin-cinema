@@ -9,6 +9,6 @@
     "restartPolicyMaxRetries": 10
   },
   "variables": {
-    "NODE_VERSION": "18"
+    "NODE_VERSION": "20"
   }
 }
