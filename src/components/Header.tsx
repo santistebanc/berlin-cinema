@@ -9,7 +9,7 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2 text-cinema-600 hover:text-cinema-700 transition-colors">
             <Film className="h-8 w-8" />
-            <span className="text-xl font-bold">OV Berlin Cinema</span>
+            <span className="text-xl font-bold">Cinema Berlin</span>
           </Link>
           
           <div className="flex items-center space-x-4">
