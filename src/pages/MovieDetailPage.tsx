@@ -462,7 +462,13 @@ const MovieDetailPage: React.FC = () => {
                   return (
                     <div key={date} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                        <h3 className="font-medium text-gray-900">{date}</h3>
+                        <h3 className="font-medium text-gray-900">
+                          {new Date(date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </h3>
                       </div>
                       <div className="p-4">
                         <div className="grid gap-3">
