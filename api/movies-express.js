@@ -331,9 +331,18 @@ class BerlinCinemaScraper {
         movies.push(movie);
       });
       
+      // Merge movies with the same base title
+      console.log('Merging movies with same base titles...');
+      const mergedMovies = this.mergeMovies(movies);
+      console.log(`Merged ${movies.length} movies into ${mergedMovies.length} unique movies`);
+      
+      // Process data for frontend consumption
+      console.log('Processing data for frontend...');
+      const processedMovies = this.processDataForFrontend(mergedMovies);
+      
       const result = {
-        movies: movies,
-        total: movies.length,
+        movies: processedMovies,
+        total: processedMovies.length,
         scrapedAt: new Date().toISOString()
       };
       
@@ -392,6 +401,105 @@ class BerlinCinemaScraper {
     
     // If we can't parse it, return a fallback
     return new Date().toISOString().split('T')[0];
+  }
+
+  // Get base title without variants
+  getBaseTitle(title) {
+    return title.replace(/\s*\([^)]*\)/g, '').trim();
+  }
+
+  // Merge movies with the same base title
+  mergeMovies(movies) {
+    const movieMap = new Map();
+    
+    movies.forEach(movie => {
+      const baseTitle = this.getBaseTitle(movie.title);
+      
+      if (!movieMap.has(baseTitle)) {
+        // Create new merged movie
+        const mergedMovie = {
+          ...movie,
+          title: baseTitle,
+          variants: new Set(),
+          cinemas: []
+        };
+        movieMap.set(baseTitle, mergedMovie);
+      }
+      
+      const mergedMovie = movieMap.get(baseTitle);
+      
+      // Merge variants
+      if (movie.variants) {
+        movie.variants.forEach(variant => mergedMovie.variants.add(variant));
+      }
+      
+      // Merge cinemas and showtimes
+      movie.cinemas.forEach(cinema => {
+        const existingCinema = mergedMovie.cinemas.find(c => c.name === cinema.name);
+        
+        if (existingCinema) {
+          // Merge showtimes for existing cinema
+          cinema.showtimes.forEach(showtime => {
+            const existingShowtime = existingCinema.showtimes.find(s => s.date === showtime.date);
+            
+            if (existingShowtime) {
+              // Merge times for existing date
+              existingShowtime.times = [...new Set([...existingShowtime.times, ...showtime.times])];
+            } else {
+              // Add new showtime
+              existingCinema.showtimes.push(showtime);
+            }
+          });
+        } else {
+          // Add new cinema
+          mergedMovie.cinemas.push(cinema);
+        }
+      });
+    });
+    
+    // Convert Sets to arrays and process timeInfo
+    return Array.from(movieMap.values()).map(movie => {
+      // Convert variants Set to array
+      movie.variants = Array.from(movie.variants);
+      
+      // Process cinemas to add timeInfo for better frontend consumption
+      movie.cinemas.forEach(cinema => {
+        cinema.showtimes.forEach(showtime => {
+          // Create timeInfo structure for each time slot
+          showtime.timeInfo = {};
+          showtime.times.forEach(time => {
+            showtime.timeInfo[time] = [{
+              cinema: cinema.name,
+              variants: movie.variants,
+              address: cinema.address,
+              city: cinema.city,
+              postalCode: cinema.postalCode,
+              url: cinema.url
+            }];
+          });
+        });
+      });
+      
+      return movie;
+    });
+  }
+
+  // Process and prepare data for frontend
+  processDataForFrontend(movies) {
+    return movies.map(movie => {
+      // Ensure all dates are sorted
+      movie.cinemas.forEach(cinema => {
+        cinema.showtimes.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        cinema.showtimes.forEach(showtime => {
+          showtime.times.sort();
+        });
+      });
+      
+      // Sort cinemas by name
+      movie.cinemas.sort((a, b) => a.name.localeCompare(b.name));
+      
+      return movie;
+    });
   }
 }
 
