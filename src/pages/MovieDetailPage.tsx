@@ -251,12 +251,53 @@ const MovieDetailPage: React.FC = () => {
                   if (!showtimeMap[showtime.date][time]) {
                     showtimeMap[showtime.date][time] = [];
                   }
-                  showtimeMap[showtime.date][time].push({
-                    cinema: cinema.name,
-                    language: movie.language,
-                    variants: extractVariants(movie.title),
-                    originalMovie: movie
-                  });
+                  
+                  // Check if this exact cinema + variant combination already exists for this time slot
+                  const newVariants = extractVariants(movie.title);
+                  
+                  // Debug: Log what we're trying to add
+                  console.log(`Trying to add: cinema=${cinema.name}, language=${movie.language}, variants=${JSON.stringify(newVariants)}`);
+                  
+                  // More strict duplicate checking: check if the same cinema already exists for this time slot
+                  // regardless of language, since we're merging movies and want to avoid duplicate cinemas
+                  const existingEntry = showtimeMap[showtime.date][time].find(
+                    entry => {
+                      const cinemaMatch = entry.cinema === cinema.name;
+                      
+                      // If cinema matches, check if variants are the same or if one is a subset of the other
+                      if (cinemaMatch) {
+                        const existingVariants = entry.variants.sort();
+                        const newVariantsSorted = newVariants.sort();
+                        
+                        // Check if variants are identical or if new variants are a subset of existing ones
+                        const variantsIdentical = JSON.stringify(existingVariants) === JSON.stringify(newVariantsSorted);
+                        const newIsSubset = newVariantsSorted.every(v => existingVariants.includes(v));
+                        const existingIsSubset = existingVariants.every(v => newVariantsSorted.includes(v));
+                        
+                        // Debug: Log comparison details
+                        console.log(`Found cinema match: existing variants=${JSON.stringify(existingVariants)}, new variants=${JSON.stringify(newVariantsSorted)}`);
+                        console.log(`variantsIdentical=${variantsIdentical}, newIsSubset=${newIsSubset}, existingIsSubset=${existingIsSubset}`);
+                        
+                        // If variants are identical or one is a subset of the other, consider it a duplicate
+                        return variantsIdentical || newIsSubset || existingIsSubset;
+                      }
+                      
+                      return false;
+                    }
+                  );
+                  
+                  if (!existingEntry) {
+                    // Only add if this exact combination doesn't exist
+                    console.log(`Adding new entry for ${cinema.name} at ${time}`);
+                    showtimeMap[showtime.date][time].push({
+                      cinema: cinema.name,
+                      language: movie.language,
+                      variants: newVariants,
+                      originalMovie: movie
+                    });
+                  } else {
+                    console.log(`Skipping duplicate entry for ${cinema.name} at ${time}`);
+                  }
                 });
               });
             });
@@ -293,13 +334,25 @@ const MovieDetailPage: React.FC = () => {
           // Convert the map back to the expected format, preserving individual cinemas
           const mergedCinemas = Array.from(allCinemas.values()).map(cinema => ({
             ...cinema,
-            showtimes: Object.entries(showtimeMap).map(([date, times]) => ({
-              date,
-              times: Object.keys(times),
-              dayOfWeek: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-              // Store the complete info for each time
-              timeInfo: times
-            }))
+            showtimes: Object.entries(showtimeMap).map(([date, times]) => {
+              // Ensure times are properly split (safety check for concatenated times)
+              const timeKeys = Object.keys(times);
+              const cleanTimes = timeKeys.flatMap(timeKey => {
+                // If a time key contains multiple times (e.g., "10:3013:00"), split them
+                if (timeKey.match(/\d{1,2}:\d{2}\d{1,2}:\d{2}/)) {
+                  return timeKey.match(/\d{1,2}:\d{2}/g) || [];
+                }
+                return [timeKey];
+              });
+              
+              return {
+                date,
+                times: cleanTimes,
+                dayOfWeek: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+                // Store the complete info for each time
+                timeInfo: times
+              };
+            })
           }));
           
           const mergedMovie: Movie & { cinemas: typeof mergedCinemas } = {
@@ -383,10 +436,29 @@ const MovieDetailPage: React.FC = () => {
   };
 
   // Check if a showing should be displayed based on filters
-    const shouldShowShowing = (showing: any) => {
+  const shouldShowShowing = (showing: any) => {
     const cinemaMatch = selectedCinemas.includes(showing.cinema);
-    const variantMatch = !showing.variants || showing.variants.length === 0 || 
-                        showing.variants.some((variant: string) => selectedVariants.includes(variant));
+    
+    // Variant filtering logic:
+    // - If no variants are selected, show nothing (all variants are filtered out)
+    // - If variants are selected, show showings that either:
+    //   a) Have matching variants, OR
+    //   b) Have no variants (movies without variants should still be shown)
+    let variantMatch = false;
+    if (selectedVariants.length === 0) {
+      // No variants selected = show nothing
+      variantMatch = false;
+    } else {
+      // Variants are selected
+      if (showing.variants && showing.variants.length > 0) {
+        // Show if this showing has at least one matching variant
+        variantMatch = showing.variants.some((variant: string) => selectedVariants.includes(variant));
+      } else {
+        // If the showing has no variants, still show it when variants are selected
+        // This handles movies like "L'Attachement" that don't have variant tags
+        variantMatch = true;
+      }
+    }
     
     return cinemaMatch && variantMatch;
   };
@@ -442,13 +514,12 @@ const MovieDetailPage: React.FC = () => {
             {/* Movie Poster */}
             <div className="flex-shrink-0">
               <img
-                src={movie.posterUrl}
+                src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg=='}
                 alt={movie.title}
                 className="w-20 h-30 object-cover rounded-lg"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="192" viewBox="0 0 128 192"><rect width="128" height="192" fill="#f3f4f6"/><text x="64" y="96" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">🎬</text><text x="64" y="120" font-family="Arial, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">${movie.title}</text></svg>`;
-                  target.src = `data:image/svg+xml,${encodeURIComponent(fallbackSvg)}`;
+                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg==';
                 }}
               />
             </div>
@@ -459,17 +530,6 @@ const MovieDetailPage: React.FC = () => {
               
               {/* Movie Details */}
               <div className="mb-4 space-y-2">
-                {/* Movie ID and Language */}
-                <div className="flex items-center text-sm text-gray-500 space-x-4">
-                  {movie.id && (
-                    <span>ID: {movie.id}</span>
-                  )}
-                  {movie.language && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
-                      {movie.language}
-                    </span>
-                  )}
-                </div>
                 
                 {/* Year and Country */}
                 {(movie.year > 0 || movie.country) && (
@@ -510,7 +570,7 @@ const MovieDetailPage: React.FC = () => {
                 {movie.variants && movie.variants.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {movie.variants.map((variant, idx) => (
-                      <span key={idx} className="px-3 py-1 rounded-md text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                      <span key={idx} className="px-3 py-1 text-sm font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
                         {variant}
                       </span>
                     ))}
@@ -561,13 +621,20 @@ const MovieDetailPage: React.FC = () => {
         {/* Filters Section */}
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
             >
               <Filter className="h-4 w-4 mr-2" />
               {showFilters ? 'Hide' : 'Show'} Filters
+            </button>
+            
+            <button
+              onClick={resetFilters}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Reset All Filters
             </button>
           </div>
           
@@ -632,8 +699,8 @@ const MovieDetailPage: React.FC = () => {
                         onClick={() => toggleVariant(variant)}
                         className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
                           selectedVariants.includes(variant)
-                            ? 'bg-purple-100 text-purple-800 border-purple-300'
-                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                            ? 'bg-orange-100 text-orange-800 border-orange-300'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50 hover:border-orange-300'
                         }`}
                       >
                         {variant}
@@ -645,46 +712,12 @@ const MovieDetailPage: React.FC = () => {
                 </div>
               </div>
               
-              {/* Reset Button */}
-              <div className="pt-2">
-                <button
-                  onClick={resetFilters}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Reset All Filters
-                </button>
-              </div>
+
             </div>
           )}
         </div>
         
-        {/* Cinema Legend */}
-        <div className="px-6 py-3 bg-gray-100 border-b border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Cinemas:</h4>
-          <div className="flex flex-wrap gap-2">
-            {(() => {
-              const cinemaColors = getCinemaColors();
-              const uniqueCinemas = new Set<string>();
-              movie.cinemas.forEach(cinema => {
-                uniqueCinemas.add(cinema.name);
-              });
-              
-              return Array.from(uniqueCinemas).sort().map(cinemaName => (
-                <button
-                  key={cinemaName}
-                  onClick={() => handleCinemaClick(cinemaName)}
-                  className={`px-2 py-1 rounded-md text-xs font-medium border ${cinemaColors[cinemaName]} cursor-pointer hover:opacity-80 transition-opacity`}
-                >
-                  {cinemaName}
-                </button>
-              ));
-            })()}
-          </div>
-        </div>
-        
 
-        
         {/* Showtimes Table */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -822,24 +855,20 @@ const MovieDetailPage: React.FC = () => {
                                               <div className="space-y-2">
                                                 {filteredShowings.map((showing: any, idx: number) => (
                                                   <div key={idx} className="p-2 border border-gray-200 rounded bg-white">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                      <button
-                                                        onClick={() => handleCinemaClick(showing.cinema)}
-                                                        className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity`}
-                                                      >
-                                                        {showing.cinema}
-                                                      </button>
-                                                      {showing.variants && showing.variants.length > 0 ? (
-                                                        <div className="flex flex-wrap gap-1">
-                                                          {showing.variants.map((variant: string, vIdx: number) => (
-                                                            <span key={vIdx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
-                                                              {variant}
-                                                            </span>
-                                                          ))}
-                                                        </div>
-                                                      ) : (
-                                                        <span className="text-xs text-gray-400">No variants</span>
-                                                      )}
+                                                    <div className="flex items-center justify-center">
+                                                      <div className="flex items-center">
+                                                        <button
+                                                          onClick={() => handleCinemaClick(showing.cinema)}
+                                                          className={`px-2 py-1 rounded-l-md text-xs font-medium border-r-0 ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity`}
+                                                        >
+                                                          {showing.cinema}
+                                                        </button>
+                                                        {showing.variants && showing.variants.length > 0 && (
+                                                          <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-r-md">
+                                                            {showing.variants.join(' ')}
+                                                          </span>
+                                                        )}
+                                                      </div>
                                                     </div>
                                                   </div>
                                                 ))}
@@ -854,22 +883,22 @@ const MovieDetailPage: React.FC = () => {
                                           }
                                           
                                           return (
-                                            <div className="flex items-center justify-center gap-2">
-                                              <button
-                                                onClick={() => handleCinemaClick(cinema.name)}
-                                                className={`px-2 py-1 rounded-md text-xs font-medium border ${getCinemaColors()[cinema.name]} cursor-pointer hover:opacity-80 transition-opacity`}
-                                              >
-                                                {cinema.name}
-                                              </button>
-                                              {movie.variants && movie.variants.length > 0 && (
-                                                <div className="flex flex-wrap gap-1">
-                                                  {movie.variants.map((variant: string, vIdx: number) => (
-                                                    <span key={vIdx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
-                                                      {variant}
+                                            <div className="p-2 border border-gray-200 rounded bg-white">
+                                              <div className="flex items-center justify-center">
+                                                <div className="flex items-center">
+                                                  <button
+                                                    onClick={() => handleCinemaClick(cinema.name)}
+                                                    className={`px-2 py-1 rounded-l-md text-xs font-medium border-r-0 ${getCinemaColors()[cinema.name]} cursor-pointer hover:opacity-80 transition-opacity`}
+                                                  >
+                                                    {cinema.name}
+                                                  </button>
+                                                  {movie.variants && movie.variants.length > 0 && (
+                                                    <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-r-md">
+                                                      {movie.variants.join(' ')}
                                                     </span>
-                                                  ))}
+                                                  )}
                                                 </div>
-                                              )}
+                                              </div>
                                             </div>
                                           );
                                         }
@@ -915,7 +944,7 @@ const MovieDetailPage: React.FC = () => {
             <div className="space-y-3">
               {(selectedCinemaForPopup.address || (selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city)) && (
                 <div className="flex items-start">
-                  <span className="font-medium text-gray-700 w-20">Address:</span>
+                  <span className="font-medium text-gray-700 w-20">Address: </span>
                   <a
                     href={`https://www.google.com/maps/search/${encodeURIComponent(
                       `${selectedCinemaForPopup.name} ${selectedCinemaForPopup.address || ''} ${selectedCinemaForPopup.postalCode || ''} ${selectedCinemaForPopup.city || ''} Berlin`
