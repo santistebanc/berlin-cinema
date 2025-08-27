@@ -189,32 +189,16 @@ const MovieDetailPage: React.FC = () => {
 
   // Handle cinema badge click to show popup
   const handleCinemaClick = (cinemaName: string) => {
-    // Try to find cinema info from allShowtimes first (new structure)
-    if (movie?.allShowtimes) {
-      const showtime = movie.allShowtimes.find(s => s.cinema === cinemaName);
-      if (showtime) {
-        setSelectedCinemaForPopup({
-          name: showtime.cinema,
-          address: showtime.address,
-          city: showtime.city,
-          postalCode: showtime.postalCode,
-          url: showtime.url
-        });
-        setShowCinemaPopup(true);
-        return;
-      }
-    }
-    
-    // Fallback to old cinemas structure
+    // Find cinema info from cinemas array
     if (movie?.cinemas) {
       const cinema = movie.cinemas.find(c => c.name === cinemaName);
       if (cinema) {
         setSelectedCinemaForPopup({
           name: cinema.name,
           address: cinema.address,
-          city: cinema.city,
-          postalCode: cinema.postalCode,
-          url: cinema.url
+          city: cinema.city || 'Berlin',
+          postalCode: cinema.postalCode || '',
+          url: cinema.url || ''
         });
         setShowCinemaPopup(true);
       }
@@ -460,85 +444,81 @@ const MovieDetailPage: React.FC = () => {
         </div>
         
 
-        {/* Showtimes Table - Using Backend Data */}
+        {/* Showtimes Table - Using New Organized Structure */}
         <div className="overflow-x-auto relative">
-          {movie.allShowtimes && movie.allShowtimes.length > 0 ? (
+          {movie.showings && Object.keys(movie.showings).length > 0 ? (
             <div className="space-y-4">
-              {/* Group showtimes by date */}
-              {(() => {
-                const showtimesByDate = new Map<string, any[]>();
-                
-                // Filter showtimes based on selected dates and cinemas
-                const filteredShowtimes = movie.allShowtimes.filter(showtime => {
-                  const dateMatch = selectedDates.length === 0 || selectedDates.includes(showtime.date);
-                  const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showtime.cinema);
-                  const variantMatch = selectedVariants.length === 0 || 
-                    (showtime.variants && showtime.variants.some(v => selectedVariants.includes(v)));
-                  
-                  return dateMatch && cinemaMatch && variantMatch;
-                });
-                
-                // Group by date
-                filteredShowtimes.forEach(showtime => {
-                  if (!showtimesByDate.has(showtime.date)) {
-                    showtimesByDate.set(showtime.date, []);
-                  }
-                  showtimesByDate.get(showtime.date)!.push(showtime);
-                });
-                
-                // Sort dates
-                const sortedDates = Array.from(showtimesByDate.keys()).sort();
-                
-                return sortedDates.map(date => {
-                  const dateShowtimes = showtimesByDate.get(date)!;
-                  const sortedDateShowtimes = dateShowtimes.sort((a, b) => a.time.localeCompare(b.time));
+              {Object.keys(movie.showings)
+                .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
+                .sort((a, b) => {
+                  const dateA = new Date(a);
+                  const dateB = new Date(b);
+                  return dateA.getTime() - dateB.getTime();
+                })
+                .map(date => {
+                  const dateShowings = movie.showings[date];
+                  const sortedTimes = Object.keys(dateShowings).sort();
                   
                   return (
                     <div key={date} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                        <h3 className="font-medium text-gray-900">
-                          {new Date(date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </h3>
+                        <h3 className="font-medium text-gray-900">{date}</h3>
                       </div>
                       <div className="p-4">
                         <div className="grid gap-3">
-                          {sortedDateShowtimes.map((showtime, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
-                              <div className="flex items-center space-x-4">
-                                <div className="text-lg font-mono text-gray-700 min-w-[60px]">
-                                  {showtime.time}
+                          {sortedTimes
+                            .filter(time => {
+                              const timeShowings = dateShowings[time];
+                                                             // Check if any showing matches the selected filters
+                               return timeShowings.some(showing => {
+                                 const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                                 const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                                 return cinemaMatch && variantMatch;
+                               });
+                            })
+                            .map(time => {
+                              const timeShowings = dateShowings[time];
+                                                             const filteredShowings = timeShowings.filter(showing => {
+                                 const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                                 const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                                 return cinemaMatch && variantMatch;
+                               });
+                              
+                              if (filteredShowings.length === 0) return null;
+                              
+                              return (
+                                <div key={time} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                                  <div className="flex items-center space-x-4">
+                                    <div className="text-lg font-mono text-gray-700 min-w-[60px]">
+                                      {time}
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      {filteredShowings.map((showing, idx) => (
+                                        <div key={idx} className="flex items-center space-x-2">
+                                          <button
+                                            onClick={() => handleCinemaClick(showing.cinema)}
+                                            className={`px-3 py-1 rounded-md text-sm font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity`}
+                                          >
+                                            {showing.cinema}
+                                          </button>
+                                          {showing.variant && (
+                                            <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
+                                              {showing.variant}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <button
-                                    onClick={() => handleCinemaClick(showtime.cinema)}
-                                    className={`px-3 py-1 rounded-md text-sm font-medium ${getCinemaColors()[showtime.cinema]} cursor-pointer hover:opacity-80 transition-opacity`}
-                                  >
-                                    {showtime.cinema}
-                                  </button>
-                                  {showtime.variants && showtime.variants.length > 0 && (
-                                    <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
-                                      {showtime.variants.join(' ')}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {showtime.address && (
-                                  <span>{showtime.address}, {showtime.city}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
+                              );
+                            })
+                            .filter(Boolean)} {/* Remove null entries */}
                         </div>
                       </div>
                     </div>
                   );
-                });
-              })()}
+                })}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
