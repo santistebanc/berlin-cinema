@@ -98,9 +98,7 @@ const HomePage: React.FC = () => {
       const allVariantsPattern = /\([^)]+\)/g;
       const matches = title.match(allVariantsPattern);
       
-      console.log('Extracting variants from title:', title);
       if (matches) {
-        console.log('Found all variants:', matches);
         // Remove parentheses from each variant and clean up specific variants
         const cleanVariants = matches.map(match => {
           let variant = match.replace(/^\(|\)$/g, '');
@@ -110,32 +108,21 @@ const HomePage: React.FC = () => {
           }
           return variant;
         });
-        console.log('Clean variants (no parentheses):', cleanVariants);
         variants.push(...cleanVariants);
       }
-      console.log('Extracted variants:', variants);
       
       return variants;
     };
     
-    console.log('Processing movies for merging:', rawMovies.map(m => ({ title: m.title, baseTitle: getBaseTitle(m.title) })));
-    
     // Group movies by their base title (without variants)
     rawMovies.forEach(movie => {
       const baseTitle = getBaseTitle(movie.title);
-      console.log(`Grouping movie "${movie.title}" (ID: ${movie.id}) under base title: "${baseTitle}"`);
       
       if (!movieGroups[baseTitle]) {
         movieGroups[baseTitle] = [];
       }
       movieGroups[baseTitle].push(movie);
     });
-    
-    console.log('Movie groups:', Object.keys(movieGroups).map(key => ({
-      baseTitle: key,
-      count: movieGroups[key].length,
-      movies: movieGroups[key].map(m => ({ title: m.title, id: m.id }))
-    })));
     
     return Object.values(movieGroups).map(group => {
       if (group.length === 1) {
@@ -147,12 +134,7 @@ const HomePage: React.FC = () => {
         };
       }
       
-      // Debug logging
-      console.log('Merging movie group:', {
-        baseTitle: getBaseTitle(group[0].title),
-        count: group.length,
-        versions: group.map(m => ({ title: m.title, language: m.language }))
-      });
+
       
       // Merge multiple versions of the same movie
       const baseMovie = group[0];
@@ -182,8 +164,7 @@ const HomePage: React.FC = () => {
         });
       });
       
-      // Debug logging for showtime map
-      console.log('Showtime map for', getBaseTitle(baseMovie.title), ':', showtimeMap);
+
       
       // Convert the map back to the expected format
       const mergedCinemas = [{
@@ -205,14 +186,9 @@ const HomePage: React.FC = () => {
       // Collect all unique variants from all movies in the group
       const allVariants = new Set<string>();
       group.forEach(movie => {
-        console.log(`Processing movie "${movie.title}" for variants`);
         const variants = extractVariants(movie.title);
-        console.log(`  Extracted variants:`, variants);
         variants.forEach(variant => allVariants.add(variant));
       });
-      
-      // Debug logging for variants
-      console.log('All collected variants for', getBaseTitle(baseMovie.title), ':', Array.from(allVariants));
       
       const mergedMovie: Movie & { cinemas: typeof mergedCinemas } = {
         ...baseMovie,
@@ -223,11 +199,7 @@ const HomePage: React.FC = () => {
         cinemas: mergedCinemas
       };
       
-      console.log('Created merged movie:', {
-        title: mergedMovie.title,
-        variants: mergedMovie.variants,
-        language: mergedMovie.language
-      });
+
       
       return mergedMovie;
     });
@@ -240,13 +212,7 @@ const HomePage: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      console.log('Calling movieApi.getAllMovies()...');
-      
       const moviesResult = await movieApi.getAllMovies();
-      
-      console.log('Full API response:', moviesResult);
-      console.log('Raw movies from API:', moviesResult.movies);
-      console.log('Movies array length:', moviesResult.movies?.length || 'undefined');
       
       if (!moviesResult.movies || moviesResult.movies.length === 0) {
         console.error('No movies found in API response');
@@ -255,8 +221,6 @@ const HomePage: React.FC = () => {
       }
       
       const mergedMovies = getMergedMovies(moviesResult.movies);
-      console.log('Merged movies with variants:', mergedMovies);
-      console.log('Merged movies length:', mergedMovies.length);
       
       setMovies(mergedMovies);
       setError(null);
