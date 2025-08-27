@@ -130,12 +130,31 @@ class VercelBerlinCinemaScraper {
             return;
           }
           
-          // Extract poster image from figure img
-          const posterUrl = $el.find('figure img').attr('src') || '';
+          // Extract poster image from figure img and ensure it's absolute
+          let posterUrl = $el.find('figure img').attr('src') || '';
+          if (posterUrl && !posterUrl.startsWith('http')) {
+            posterUrl = `https://www.critic.de${posterUrl}`;
+          }
           
-          // Extract trailer and review URLs
-          const trailerUrl = $el.find('.subfilminfo.trailer a').attr('href') || '';
-          const reviewUrl = $el.find('.subfilminfo.critic a').attr('href') || '';
+          // Extract trailer and review URLs and ensure they're absolute
+          let trailerUrl = $el.find('.subfilminfo.trailer a').attr('href') || '';
+          if (trailerUrl && !trailerUrl.startsWith('http')) {
+            trailerUrl = `https://www.critic.de${trailerUrl}`;
+          }
+          
+          let reviewUrl = $el.find('.subfilminfo.critic a').attr('href') || '';
+          if (reviewUrl && !reviewUrl.startsWith('http')) {
+            reviewUrl = `https://www.critic.de${reviewUrl}`;
+          }
+          
+          // Debug: Log image extraction
+          console.log(`Movie: ${title}`);
+          console.log(`  Raw poster src: ${$el.find('figure img').attr('src')}`);
+          console.log(`  Final poster URL: ${posterUrl}`);
+          console.log(`  Raw trailer href: ${$el.find('.subfilminfo.trailer a').attr('href')}`);
+          console.log(`  Final trailer URL: ${trailerUrl}`);
+          console.log(`  Raw review href: ${$el.find('.subfilminfo.critic a').attr('href')}`);
+          console.log(`  Final review URL: ${reviewUrl}`);
           
           // Extract movie details from the dl.oneline element
           const details = this.parseMovieDetails($, $el);
