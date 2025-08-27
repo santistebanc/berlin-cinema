@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, MapPin, Star, Users, Calendar, Play, ExternalLink, X } from 'lucide-react';
+import { Clock, MapPin, Star, Users, Calendar, X } from 'lucide-react';
 import { Movie } from '../types';
 
 interface MovieDetailsProps {
@@ -13,12 +13,57 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
   }
 
   const getTotalShowtimes = (movie: Movie) => {
-    return movie.cinemas.reduce((total, cinema) => {
-      return total + cinema.showtimes.reduce((cinemaTotal, showtime) => {
-        return cinemaTotal + showtime.times.length;
-      }, 0);
-    }, 0);
+    if (!movie.showings || typeof movie.showings !== 'object' || Array.isArray(movie.showings)) {
+      return 0;
+    }
+    
+    let total = 0;
+    Object.values(movie.showings).forEach(dateShowings => {
+      if (dateShowings && typeof dateShowings === 'object') {
+        Object.values(dateShowings).forEach(timeShowings => {
+          if (Array.isArray(timeShowings)) {
+            total += timeShowings.length;
+          }
+        });
+      }
+    });
+    return total;
   };
+
+  // Get all unique cinemas from showings
+  const getAllCinemas = () => {
+    if (!movie.showings || typeof movie.showings !== 'object' || Array.isArray(movie.showings)) {
+      return [];
+    }
+    
+    const cinemas = new Set<string>();
+    Object.values(movie.showings).forEach(dateShowings => {
+      if (dateShowings && typeof dateShowings === 'object') {
+        Object.values(dateShowings).forEach(timeShowings => {
+          if (Array.isArray(timeShowings)) {
+            timeShowings.forEach(showing => {
+              if (showing.cinema) {
+                cinemas.add(showing.cinema);
+              }
+            });
+          }
+        });
+      }
+    });
+    return Array.from(cinemas).sort();
+  };
+
+  // Get all unique dates from showings
+  const getAllDates = () => {
+    if (!movie.showings || typeof movie.showings !== 'object' || Array.isArray(movie.showings)) {
+      return [];
+    }
+    
+    return Object.keys(movie.showings).sort();
+  };
+
+  const cinemas = getAllCinemas();
+  const dates = getAllDates();
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-full overflow-y-auto">
@@ -37,51 +82,40 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
         
         {/* Quick Info Badges */}
         <div className="flex items-center space-x-3 mb-4">
-          <span className={`px-3 py-1 rounded-md text-sm font-medium ${
-            movie.language === 'OV' 
-              ? 'bg-blue-100 text-blue-800' 
-              : 'bg-green-100 text-green-800'
-          }`}>
-            {movie.language}
-          </span>
-          
-          {movie.fskRating > 0 && (
-                    <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
-          FSK {movie.fskRating}
-        </span>
+          {movie.director && (
+            <span className="px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-800">
+              Director: {movie.director}
+            </span>
           )}
           
-          <span className="text-sm text-gray-600">
-            {movie.year} • {movie.country}
-          </span>
+          {movie.year && (
+            <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
+              {movie.year}
+            </span>
+          )}
+          
+          {movie.country && (
+            <span className="text-sm text-gray-600">
+              {movie.country}
+            </span>
+          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center space-x-3">
-          {movie.trailerUrl && (
-            <a
-              href={movie.trailerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 bg-cinema-600 text-white rounded-lg hover:bg-cinema-700 transition-colors"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Watch Trailer
-            </a>
-          )}
-          
-          {movie.reviewUrl && (
-            <a
-              href={movie.reviewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Read Review
-            </a>
-          )}
-        </div>
+        {/* Cast */}
+        {movie.cast && movie.cast.length > 0 && (
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <Users className="h-4 w-4" />
+            <span>Cast: {movie.cast.join(', ')}</span>
+          </div>
+        )}
+
+        {/* Variants */}
+        {movie.variants && movie.variants.length > 0 && (
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <Star className="h-4 w-4" />
+            <span>Variants: {movie.variants.join(', ')}</span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -94,33 +128,9 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
             className="w-48 h-72 object-cover rounded-lg shadow-md mx-auto"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjI4OCIgdmlld0JveD0iMCAwIDE5MiAyODgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdxb3I+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMjg4IiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg==';
+              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjI4OCIgdmlld0JveD0iMCAwIDE5MiAyODgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMjg4IiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg==';
             }}
           />
-        </div>
-
-        {/* Movie Details */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2 text-gray-600">
-            <Users className="h-4 w-4" />
-            <span><strong>Director:</strong> {movie.director}</span>
-          </div>
-          
-          {movie.cast.length > 0 && (
-            <div className="flex items-start space-x-2 text-gray-600">
-              <Star className="h-4 w-4 mt-0.5" />
-              <div>
-                <strong>Cast:</strong>
-                <div className="mt-1 space-y-1">
-                  {movie.cast.map((actor, index) => (
-                    <div key={index} className="text-sm text-gray-700 ml-4">
-                      • {actor}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Showtimes Summary */}
@@ -133,87 +143,62 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
             
             <div className="flex items-center space-x-2 text-gray-600">
               <MapPin className="h-4 w-4" />
-              <span><strong>{movie.cinemas.length} cinemas</strong></span>
+              <span><strong>{cinemas.length} cinemas</strong></span>
             </div>
           </div>
         </div>
 
-        {/* Cinemas and Showtimes Table */}
+        {/* Showtimes Table */}
         <div className="border-t pt-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Showtimes</h3>
           
-          {/* Showtimes Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left p-3 font-medium text-gray-700 bg-gray-50">Cinema</th>
-                  {(() => {
-                    // Get all unique dates from all cinemas
-                    const allDates = new Set<string>();
-                    movie.cinemas.forEach(cinema => {
-                      cinema.showtimes.forEach(showtime => {
-                        allDates.add(showtime.date);
-                      });
-                    });
-                    return Array.from(allDates).sort().map(date => (
-                      <th key={date} className="text-center p-3 font-medium text-gray-700 bg-gray-50 min-w-[120px]">
-                        {new Date(date).toLocaleDateString('en-US', { 
-                          weekday: 'short', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </th>
-                    ));
-                  })()}
-                </tr>
-              </thead>
-              <tbody>
-                {movie.cinemas.map((cinema) => (
-                  <tr key={cinema.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="p-3">
-                      <div>
-                        <div className="font-medium text-gray-900">{cinema.name}</div>
-                        <div className="text-sm text-gray-500">{cinema.address}</div>
-                      </div>
-                    </td>
-                    {(() => {
-                      // Get all unique dates from all cinemas
-                      const allDates = new Set<string>();
-                      movie.cinemas.forEach(c => {
-                        c.showtimes.forEach(showtime => {
-                          allDates.add(showtime.date);
-                        });
-                      });
-                      const sortedDates = Array.from(allDates).sort();
-                      
-                      return sortedDates.map(date => {
-                        const showtime = cinema.showtimes.find(s => s.date === date);
-                        return (
-                          <td key={date} className="p-3 text-center">
-                            {showtime ? (
-                              <div className="space-y-1">
-                                {showtime.times.map((time, timeIndex) => (
-                                  <span
-                                    key={timeIndex}
-                                    className="inline-block px-2 py-1 bg-cinema-100 text-cinema-800 text-xs rounded-md mb-1"
-                                  >
-                                    {time}
+          {dates.length > 0 ? (
+            <div className="space-y-4">
+              {dates.map(date => (
+                <div key={date} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                    <h4 className="font-medium text-gray-900">
+                      {new Date(date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </h4>
+                  </div>
+                  
+                  <div className="p-4">
+                    <div className="space-y-3">
+                      {Object.entries(movie.showings[date]).map(([time, timeShowings]) => (
+                        <div key={time} className="flex items-center space-x-4">
+                          <div className="w-16 text-sm font-medium text-gray-700">
+                            {time}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {Array.isArray(timeShowings) && timeShowings.map((showing, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <span className="px-2 py-1 bg-cinema-100 text-cinema-800 text-xs rounded-md">
+                                  {showing.cinema}
+                                </span>
+                                {showing.variant && (
+                                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                    {showing.variant}
                                   </span>
-                                ))}
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-gray-300 text-xs">-</span>
-                            )}
-                          </td>
-                        );
-                      });
-                    })()}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No showtimes available
+            </div>
+          )}
         </div>
       </div>
     </div>
