@@ -301,7 +301,7 @@ class BerlinCinemaScraper {
             address: address,
             city: city,
             postalCode: postalCode,
-            url: cinemaUrl ? `https://www.critic.de${cinemaUrl}` : null,
+            url: cinemaUrl ? (cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`) : null,
             showtimes: showtimes
           };
           
