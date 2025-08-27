@@ -39,11 +39,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error) {
     console.error('Error proxying image:', error);
+    console.error('Requested URL:', url);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      response: (error as any)?.response?.status,
+      responseData: (error as any)?.response?.data
+    });
     
     // Return a default image or error
     res.status(500).json({ 
       error: 'Failed to load image',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      requestedUrl: url
     });
   }
 }
