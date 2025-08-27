@@ -17,26 +17,41 @@ const HomePage: React.FC = () => {
 
   // Calculate total showtimes for a movie
   const getTotalShowtimes = (movie: Movie): number => {
-    // New data structure: movie.showings is organized by date -> time -> cinema+variant
-    if (movie.showings && typeof movie.showings === 'object') {
-      let total = 0;
-      Object.values(movie.showings).forEach(dateShowings => {
-        Object.values(dateShowings).forEach(timeShowings => {
-          total += timeShowings.length;
+    try {
+      // New data structure: movie.showings is organized by date -> time -> cinema+variant
+      if (movie && movie.showings && typeof movie.showings === 'object' && !Array.isArray(movie.showings)) {
+        let total = 0;
+        Object.values(movie.showings).forEach(dateShowings => {
+          if (dateShowings && typeof dateShowings === 'object') {
+            Object.values(dateShowings).forEach(timeShowings => {
+              if (Array.isArray(timeShowings)) {
+                total += timeShowings.length;
+              }
+            });
+          }
         });
-      });
-      return total;
+        return total;
+      }
+      return 0;
+    } catch (error) {
+      console.warn(`Error calculating showtimes for movie "${movie?.title}":`, error);
+      return 0;
     }
-    return 0;
   };
 
   // Sort movies by total showtimes (descending)
   const sortMoviesByShowtimes = (movies: Movie[]): Movie[] => {
-    return [...movies].sort((a, b) => {
-      const aShowtimes = getTotalShowtimes(a);
-      const bShowtimes = getTotalShowtimes(b);
-      return bShowtimes - aShowtimes; // Descending order (most showtimes first)
-    });
+    try {
+      return [...movies].sort((a, b) => {
+        const aShowtimes = getTotalShowtimes(a);
+        const bShowtimes = getTotalShowtimes(b);
+        return bShowtimes - aShowtimes; // Descending order (most showtimes first)
+      });
+    } catch (error) {
+      console.warn('Error sorting movies by showtimes:', error);
+      // Return original array if sorting fails
+      return [...movies];
+    }
   };
 
   // Fuzzy search function for filtering movies
@@ -109,6 +124,14 @@ const HomePage: React.FC = () => {
       console.log('Movies API response:', moviesResult);
       console.log('Total movies received:', moviesResult.movies.length);
       console.log('First movie structure:', moviesResult.movies[0]);
+      
+      // Debug: Check for movies with missing or malformed showings
+      const moviesWithIssues = moviesResult.movies.filter(movie => 
+        !movie.showings || typeof movie.showings !== 'object' || Array.isArray(movie.showings)
+      );
+      if (moviesWithIssues.length > 0) {
+        console.warn(`Found ${moviesWithIssues.length} movies with showings issues:`, moviesWithIssues.map(m => ({ title: m.title, showings: m.showings })));
+      }
       
       const mergedMovies = getMergedMovies(moviesResult.movies);
       
