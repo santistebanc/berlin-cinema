@@ -11,9 +11,10 @@ export interface Movie {
   reviewUrl?: string;
   language: string;
   fskRating: number;
-  cinemas: Cinema[];
+  cinemas?: Cinema[]; // Optional for backward compatibility
   variants?: string[]; // Store variant tags like (Imax), (EXPN), etc.
   // Backend-processed data
+  showings?: any[]; // Individual showings with all data
   allShowtimes?: ShowtimeEntry[];
 }
 

@@ -48,7 +48,7 @@ const MovieDetailPage: React.FC = () => {
     let colorIndex = 0;
     
     // For merged movies, we need to get all unique cinema names from the timeInfo
-    if (movie.cinemas.length > 0 && (movie.cinemas[0] as any).timeInfo) {
+    if (movie.cinemas && movie.cinemas.length > 0 && (movie.cinemas[0] as any).timeInfo) {
       // This is a merged movie, collect all cinema names from showtimes
       const allCinemaNames = new Set<string>();
       movie.cinemas.forEach(cinema => {
@@ -70,7 +70,7 @@ const MovieDetailPage: React.FC = () => {
           colorIndex++;
         }
       });
-    } else {
+    } else if (movie.cinemas) {
       // Regular movie, use cinemas array
       movie.cinemas.forEach(cinema => {
         if (!cinemaColors[cinema.name]) {
@@ -83,11 +83,21 @@ const MovieDetailPage: React.FC = () => {
     return cinemaColors;
   };
 
-  // Get available cinemas, dates, and variants for filters
-      const getAvailableFilters = () => {
-      if (!movie) return { cinemas: [], dates: [], variants: [] };
+    // Get available cinemas, dates, and variants for filters
+  const getAvailableFilters = () => {
+    if (!movie) return { cinemas: [], dates: [], variants: [] };
+    
+    // New data structure: use allShowtimes if available, fallback to cinemas
+    if (movie.allShowtimes && movie.allShowtimes.length > 0) {
+      const cinemas = [...new Set(movie.allShowtimes.map(showtime => showtime.cinema))].sort();
+      const dates = [...new Set(movie.allShowtimes.map(showtime => showtime.date))].sort();
+      const variants = movie.variants || [];
       
-      // Backend now provides clean, processed data
+      return { cinemas, dates, variants };
+    }
+    
+    // Fallback for backward compatibility
+    if (movie.cinemas) {
       const cinemas = movie.cinemas.map(cinema => cinema.name).sort();
       const dates = movie.cinemas.flatMap(cinema => 
         cinema.showtimes.map(showtime => showtime.date)
@@ -95,7 +105,10 @@ const MovieDetailPage: React.FC = () => {
       const variants = movie.variants || [];
       
       return { cinemas, dates, variants };
-    };
+    }
+    
+    return { cinemas: [], dates: [], variants: [] };
+  };
 
   // Initialize filters when movie data loads
   useEffect(() => {
@@ -178,16 +191,35 @@ const MovieDetailPage: React.FC = () => {
 
   // Handle cinema badge click to show popup
   const handleCinemaClick = (cinemaName: string) => {
-    const cinema = movie?.cinemas.find(c => c.name === cinemaName);
-    if (cinema) {
-      setSelectedCinemaForPopup({
-        name: cinema.name,
-        address: cinema.address,
-        city: cinema.city,
-        postalCode: cinema.postalCode,
-        url: cinema.url
-      });
-      setShowCinemaPopup(true);
+    // Try to find cinema info from allShowtimes first (new structure)
+    if (movie?.allShowtimes) {
+      const showtime = movie.allShowtimes.find(s => s.cinema === cinemaName);
+      if (showtime) {
+        setSelectedCinemaForPopup({
+          name: showtime.cinema,
+          address: showtime.address,
+          city: showtime.city,
+          postalCode: showtime.postalCode,
+          url: showtime.url
+        });
+        setShowCinemaPopup(true);
+        return;
+      }
+    }
+    
+    // Fallback to old cinemas structure
+    if (movie?.cinemas) {
+      const cinema = movie.cinemas.find(c => c.name === cinemaName);
+      if (cinema) {
+        setSelectedCinemaForPopup({
+          name: cinema.name,
+          address: cinema.address,
+          city: cinema.city,
+          postalCode: cinema.postalCode,
+          url: cinema.url
+        });
+        setShowCinemaPopup(true);
+      }
     }
   };
 
