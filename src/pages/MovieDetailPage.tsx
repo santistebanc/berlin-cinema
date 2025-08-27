@@ -84,58 +84,18 @@ const MovieDetailPage: React.FC = () => {
   };
 
   // Get available cinemas, dates, and variants for filters
-  const getAvailableFilters = () => {
-    if (!movie) return { cinemas: [], dates: [], variants: [] };
-    
-    console.log('Getting available filters for movie:', movie.title, 'with variants:', movie.variants);
-    
-    const cinemas = new Set<string>();
-    const dates = new Set<string>();
-    const variants = new Set<string>();
-    
-    if (movie.cinemas.length > 0 && (movie.cinemas[0] as any).timeInfo) {
-      // Merged movie - extract from timeInfo
-      movie.cinemas.forEach(cinema => {
-        cinema.showtimes.forEach(showtime => {
-          dates.add(showtime.date);
-          if ((showtime as any).timeInfo) {
-            Object.values((showtime as any).timeInfo).forEach((timeSlots: any) => {
-              timeSlots.forEach((showing: any) => {
-                cinemas.add(showing.cinema);
-                if (showing.variants) {
-                  console.log('Found showing variants:', showing.variants);
-                  showing.variants.forEach((variant: string) => variants.add(variant));
-                }
-              });
-            });
-          }
-        });
-      });
-    } else {
-      // Regular movie
-      movie.cinemas.forEach(cinema => {
-        cinemas.add(cinema.name);
-        cinema.showtimes.forEach(showtime => {
-          dates.add(showtime.date);
-        });
-      });
-    }
-    
-    // Add movie variants if available
-    if (movie.variants) {
-      console.log('Adding movie variants to filters:', movie.variants);
-      movie.variants.forEach(variant => variants.add(variant));
-    }
-    
-    const result = {
-      cinemas: Array.from(cinemas).sort(),
-      dates: Array.from(dates).sort(),
-      variants: Array.from(variants).sort()
+      const getAvailableFilters = () => {
+      if (!movie) return { cinemas: [], dates: [], variants: [] };
+      
+      // Backend now provides clean, processed data
+      const cinemas = movie.cinemas.map(cinema => cinema.name).sort();
+      const dates = movie.cinemas.flatMap(cinema => 
+        cinema.showtimes.map(showtime => showtime.date)
+      ).filter((date, index, arr) => arr.indexOf(date) === index).sort();
+      const variants = movie.variants || [];
+      
+      return { cinemas, dates, variants };
     };
-    
-    console.log('Final filter result:', result);
-    return result;
-  };
 
   // Initialize filters when movie data loads
   useEffect(() => {
