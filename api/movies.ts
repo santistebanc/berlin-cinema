@@ -59,6 +59,9 @@ class VercelBerlinCinemaScraper {
       
       const $ = cheerio.load(html);
       
+      // Use the exact same parsing logic as the working berlin-cinema-api project
+      const movies: any[] = [];
+      
       // Debug: Check what elements are actually in the HTML
       console.log('All elements with class containing "movie":', $('[class*="movie"]').length);
       console.log('All elements with class containing "film":', $('[class*="film"]').length);
@@ -75,21 +78,19 @@ class VercelBerlinCinemaScraper {
         if (i < 5) console.log(`Link ${i}:`, $(el).text().trim());
       });
       
-      // Use the exact same parsing logic as the working berlin-cinema-api project
-      const movies: any[] = [];
-      
-      // Parse movie items using the proven selectors
+      // Parse movie items using the proven selectors from berlin-cinema-api
       let movieItems: any = $('.movie-item, .film-item, [class*="movie"], [class*="film"]');
-      console.log(`Found ${movieItems.length} movie items`);
+      console.log(`Found ${movieItems.length} movie items with movie/film selectors`);
       
       if (movieItems.length === 0) {
-        // Try alternative selectors that might work
-        const altSelectors = [
+        // Try the exact selectors that work in the original project
+        const workingSelectors = [
           '.entry', '.post', '.content-item', 'article', '.card', '.item',
-          '[class*="entry"]', '[class*="post"]', '[class*="content"]'
+          '[class*="entry"]', '[class*="post"]', '[class*="content"]',
+          '.movie', '.film', '.show', '.program', '.schedule'
         ];
         
-        for (const selector of altSelectors) {
+        for (const selector of workingSelectors) {
           const elements = $(selector);
           if (elements.length > 0) {
             console.log(`Found ${elements.length} elements with selector: ${selector}`);
@@ -100,78 +101,15 @@ class VercelBerlinCinemaScraper {
       }
       
       if (movieItems.length === 0) {
-        // If still no movies found, try to extract any meaningful content
-        console.log('No movie elements found, trying to extract any content...');
-        
-        // Look for any text that might be movie titles
-        const allText = $('body').text();
-        const lines = allText.split('\n').filter(line => {
-          const trimmed = line.trim();
-          return trimmed.length > 5 && trimmed.length < 200 && 
-                 !trimmed.includes('©') && !trimmed.includes('Privacy') &&
-                 !trimmed.includes('Cookie') && !trimmed.includes('Terms') &&
-                 !trimmed.includes('Impressum') && !trimmed.includes('Datenschutz') &&
-                 !trimmed.includes('Home') && !trimmed.includes('About') &&
-                 !trimmed.includes('Contact') && !trimmed.includes('Login') &&
-                 !trimmed.includes('Register') && !trimmed.includes('Search');
-        });
-        
-        console.log(`Found ${lines.length} potential content lines`);
-        console.log('Sample lines:', lines.slice(0, 10));
-        
-        // Create movies from the first few valid lines that look like movie titles
-        lines.slice(0, 30).forEach((line, i) => {
-          const title = line.trim();
-          if (title && title.length > 3 && title.length < 100) {
-            // Skip if it looks like navigation or UI text
-            if (title.toLowerCase().includes('menu') || 
-                title.toLowerCase().includes('navigation') ||
-                title.toLowerCase().includes('footer') ||
-                title.toLowerCase().includes('header')) {
-              return;
-            }
-            
-            movies.push({
-              id: `movie-${i}`,
-              title: title,
-              originalTitle: title,
-              year: 2024,
-              country: 'Germany',
-              director: 'Unknown',
-              cast: [],
-              posterUrl: '',
-              trailerUrl: '',
-              reviewUrl: '',
-              language: 'OV',
-              fskRating: 0,
-              cinemas: [{
-                id: 'cinema-1',
-                name: 'Berlin Cinema',
-                address: 'Berlin',
-                city: 'Berlin',
-                postalCode: '10000',
-                url: '',
-                showtimes: [{
-                  date: new Date().toISOString().split('T')[0],
-                  times: ['20:00'],
-                  dayOfWeek: 'Today'
-                }]
-              }]
-            });
-          }
-        });
-        
-        // If still no movies, return empty result
-        if (movies.length === 0) {
-          console.log('No meaningful content found in HTML');
-          console.log('HTML preview:', html.substring(0, 1000));
-          return {
-            movies: [],
-            totalMovies: 0,
-            scrapedAt: new Date().toISOString(),
-            error: 'No meaningful content found in HTML'
-          };
-        }
+        // If still no movies found, return empty result instead of fake data
+        console.log('No movie elements found in HTML');
+        console.log('HTML preview:', html.substring(0, 1000));
+        return {
+          movies: [],
+          totalMovies: 0,
+          scrapedAt: new Date().toISOString(),
+          error: 'No movie elements found in HTML'
+        };
       }
       
       // Parse each movie item to extract real data
