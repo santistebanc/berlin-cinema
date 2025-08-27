@@ -471,7 +471,7 @@ class BerlinCinemaScraper {
       }
       
       // Merge showings into organized structure
-      if (movie.showings) {
+      if (movie.showings && Array.isArray(movie.showings)) {
         movie.showings.forEach(showing => {
           // Parse and format date properly
           let formattedDate;
@@ -619,9 +619,18 @@ router.get('/', async (req, res) => {
       console.log('- Title:', sampleMovie.title);
       console.log('- Variants:', sampleMovie.variants);
       console.log('- Cinemas count:', sampleMovie.cinemas.length);
-      console.log('- Showings count:', sampleMovie.showings.length);
-      if (sampleMovie.showings.length > 0) {
-        console.log('- Sample showing entry:', sampleMovie.showings[0]);
+      // Count total showings from the nested structure
+      let totalShowings = 0;
+      if (sampleMovie.showings && typeof sampleMovie.showings === 'object') {
+        Object.values(sampleMovie.showings).forEach(dateShowings => {
+          Object.values(dateShowings).forEach(timeShowings => {
+            totalShowings += timeShowings.length;
+          });
+        });
+      }
+      console.log('- Showings count:', totalShowings);
+      if (totalShowings > 0) {
+        console.log('- Sample showing entry:', Object.values(sampleMovie.showings)[0]);
       }
     }
     
