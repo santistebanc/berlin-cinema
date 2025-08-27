@@ -737,7 +737,7 @@ const MovieDetailPage: React.FC = () => {
                   return Array.from(allDates).sort()
                     .filter(date => shouldShowDate(date)) // Only show selected dates
                     .map((date, dateIndex) => (
-                      <th key={date} className="text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200">
+                      <th key={date} className="text-center p-3 font-medium text-gray-700 min-w-[150px] border-r border-gray-200 sticky top-0 z-[9998]">
                         {new Date(date).toLocaleDateString('en-US', { 
                           weekday: 'short', 
                           month: 'short', 
