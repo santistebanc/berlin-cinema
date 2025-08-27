@@ -102,6 +102,10 @@ const HomePage: React.FC = () => {
         return;
       }
       
+      console.log('Movies API response:', moviesResult);
+      console.log('Total movies received:', moviesResult.movies.length);
+      console.log('First movie structure:', moviesResult.movies[0]);
+      
       const mergedMovies = getMergedMovies(moviesResult.movies);
       
       setMovies(mergedMovies);
