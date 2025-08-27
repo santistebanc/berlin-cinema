@@ -136,6 +136,11 @@ class VercelBerlinCinemaScraper {
             posterUrl = `https://www.critic.de${posterUrl}`;
           }
           
+          // Convert critic.de image URLs to use our proxy to avoid CORS issues
+          if (posterUrl && posterUrl.startsWith('https://www.critic.de/')) {
+            posterUrl = `/api/image-proxy?url=${encodeURIComponent(posterUrl)}`;
+          }
+          
           // Extract trailer and review URLs and ensure they're absolute
           let trailerUrl = $el.find('.subfilminfo.trailer a').attr('href') || '';
           if (trailerUrl && !trailerUrl.startsWith('http')) {
