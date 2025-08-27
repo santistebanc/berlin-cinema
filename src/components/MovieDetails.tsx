@@ -94,7 +94,8 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
             className="w-48 h-72 object-cover rounded-lg shadow-md mx-auto"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjI4OCIgdmlld0JveD0iMCAwIDE5MiAyODgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMjg4IiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9Ijk2IiB5PSIxNDQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+';
+              const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="192" height="288" viewBox="0 0 192 288"><rect width="192" height="288" fill="#f3f4f6"/><text x="96" y="144" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">🎬</text><text x="96" y="170" font-family="Arial, sans-serif" font-size="12" fill="#6b7280" text-anchor="middle">${movie.title}</text></svg>`;
+              target.src = `data:image/svg+xml,${encodeURIComponent(fallbackSvg)}`;
             }}
           />
         </div>
