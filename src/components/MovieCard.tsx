@@ -31,41 +31,25 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
       {/* Movie Poster */}
       <div className="relative">
         <img
-          src={movie.posterUrl}
+          src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDMwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg=='}
           alt={movie.title}
           className="w-full h-80 object-cover"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            // Use a simple, clean fallback with proper SVG encoding
-            const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="#f3f4f6"/><text x="150" y="200" font-family="Arial, sans-serif" font-size="16" fill="#6b7280" text-anchor="middle">🎬</text><text x="150" y="230" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">${movie.title}</text></svg>`;
-            target.src = `data:image/svg+xml,${encodeURIComponent(fallbackSvg)}`;
+            target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDMwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg==';
           }}
         />
         
-        {/* Language Badge */}
-        <div className="absolute top-2 right-2">
-          <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-            movie.language === 'OV' 
-              ? 'bg-blue-500 text-white' 
-              : 'bg-green-500 text-white'
-          }`}>
-            {movie.language}
-          </span>
-        </div>
+
         
         {/* Variant Badges */}
         {movie.variants && movie.variants.length > 0 && (
           <div className="absolute top-2 left-2 flex flex-col gap-1">
-            {movie.variants.slice(0, 2).map((variant, idx) => (
-              <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
+            {movie.variants.map((variant, idx) => (
+              <span key={idx} className="px-1.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
                 {variant}
               </span>
             ))}
-            {movie.variants.length > 2 && (
-              <span className="px-1 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 rounded">
-                +{movie.variants.length - 2}
-              </span>
-            )}
           </div>
         )}
         
