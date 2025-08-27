@@ -424,7 +424,7 @@ class BerlinCinemaScraper {
           url: movie.url,
           variants: new Set(),
           cinemas: new Set(),
-          showings: []
+          showings: {} // Changed to object for organized structure
         };
         movieMap.set(baseTitle, mergedMovie);
       }
@@ -443,7 +443,7 @@ class BerlinCinemaScraper {
         });
       }
       
-      // Merge showings
+      // Merge showings into organized structure
       if (movie.showings) {
         movie.showings.forEach(showing => {
           // Format date as "Thu, Aug 27"
@@ -468,23 +468,29 @@ class BerlinCinemaScraper {
             else variant = movie.variants[0]; // Take first available variant
           }
           
-          const newShowing = {
-            date: formattedDate,
-            time: formattedTime,
+          // Initialize date if it doesn't exist
+          if (!mergedMovie.showings[formattedDate]) {
+            mergedMovie.showings[formattedDate] = {};
+          }
+          
+          // Initialize time if it doesn't exist
+          if (!mergedMovie.showings[formattedDate][formattedTime]) {
+            mergedMovie.showings[formattedDate][formattedTime] = [];
+          }
+          
+          // Add cinema and variant info
+          const showingInfo = {
             cinema: showing.cinema,
             variant: variant
           };
           
           // Check if this exact showing already exists
-          const exists = mergedMovie.showings.some(s => 
-            s.date === newShowing.date && 
-            s.time === newShowing.time && 
-            s.cinema === newShowing.cinema && 
-            s.variant === newShowing.variant
+          const exists = mergedMovie.showings[formattedDate][formattedTime].some(s => 
+            s.cinema === showingInfo.cinema && s.variant === showingInfo.variant
           );
           
           if (!exists) {
-            mergedMovie.showings.push(newShowing);
+            mergedMovie.showings[formattedDate][formattedTime].push(showingInfo);
           }
         });
       }
@@ -492,19 +498,28 @@ class BerlinCinemaScraper {
     
     // Convert Sets to arrays and format the final structure
     return Array.from(movieMap.values()).map(movie => {
+      // Sort the showings object by date and time
+      const sortedShowings = {};
+      Object.keys(movie.showings)
+        .sort((a, b) => {
+          const dateA = new Date(a);
+          const dateB = new Date(b);
+          return dateA.getTime() - dateB.getTime();
+        })
+        .forEach(date => {
+          sortedShowings[date] = {};
+          Object.keys(movie.showings[date])
+            .sort((a, b) => a.localeCompare(b))
+            .forEach(time => {
+              sortedShowings[date][time] = movie.showings[date][time];
+            });
+        });
+      
       return {
         ...movie,
         variants: Array.from(movie.variants),
         cinemas: Array.from(movie.cinemas).map(cinemaStr => JSON.parse(cinemaStr)),
-        showings: movie.showings.sort((a, b) => {
-          // Sort by date first, then by time
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          if (dateA.getTime() !== dateB.getTime()) {
-            return dateA.getTime() - dateB.getTime();
-          }
-          return a.time.localeCompare(b.time);
-        })
+        showings: sortedShowings
       };
     });
   }
@@ -513,23 +528,7 @@ class BerlinCinemaScraper {
   processDataForFrontend(movies) {
     return movies.map(movie => {
       // The data is already processed and sorted in mergeMovies
-      // Just add some computed properties for frontend convenience
-      
-      // Add a flattened showtimes array for backward compatibility
-      movie.allShowtimes = movie.showings.map(showing => ({
-        date: showing.date,
-        time: showing.time,
-        cinema: showing.cinema,
-        variant: showing.variant,
-        title: movie.title,
-        variants: movie.variants,
-        posterUrl: movie.posterUrl,
-        director: movie.director,
-        cast: movie.cast,
-        country: movie.country,
-        year: movie.year
-      }));
-      
+      // No additional processing needed - return the movie as is
       return movie;
     });
   }
@@ -571,10 +570,6 @@ router.get('/', async (req, res) => {
       console.log('- Showings count:', sampleMovie.showings.length);
       if (sampleMovie.showings.length > 0) {
         console.log('- Sample showing entry:', sampleMovie.showings[0]);
-      }
-      if (sampleMovie.allShowtimes) {
-        console.log('- All showtimes count:', sampleMovie.allShowtimes.length);
-        console.log('- Sample allShowtimes entry:', sampleMovie.allShowtimes[0]);
       }
     }
     

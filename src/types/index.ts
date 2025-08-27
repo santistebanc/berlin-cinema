@@ -8,8 +8,17 @@ export interface Movie {
   url: string | null;
   variants: string[];
   cinemas: Cinema[];
-  showings: Showing[];
-  allShowtimes?: ShowtimeEntry[]; // For backward compatibility
+  showings: Record<string, Record<string, ShowingInfo[]>>; // Date -> Time -> Cinema+Variant[]
+}
+
+export interface Cinema {
+  name: string;
+  address: string;
+}
+
+export interface ShowingInfo {
+  cinema: string;
+  variant: string | null; // OV, sub, Imax, EXPN, etc.
 }
 
 export interface Cinema {
