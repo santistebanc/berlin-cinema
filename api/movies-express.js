@@ -478,11 +478,7 @@ class BerlinCinemaScraper {
           if (showing.originalDate === 'Today') {
             // Handle "Today" specially
             const today = new Date();
-            formattedDate = today.toLocaleDateString('en-US', { 
-              weekday: 'short', 
-              month: 'short', 
-              day: 'numeric' 
-            });
+            formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
           } else {
             // Parse the date string and format it
             const date = new Date(showing.date);
@@ -501,21 +497,13 @@ class BerlinCinemaScraper {
                   parsedDate.setFullYear(currentYear + 1);
                 }
                 
-                formattedDate = parsedDate.toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  month: 'short', 
-                  day: 'numeric' 
-                });
+                formattedDate = parsedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
               } else {
                 // Fallback to original date string
                 formattedDate = showing.originalDate;
               }
             } else {
-              formattedDate = date.toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric' 
-              });
+              formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
             }
           }
           
@@ -567,22 +555,7 @@ class BerlinCinemaScraper {
       const sortedShowings = {};
       Object.keys(movie.showings)
         .sort((a, b) => {
-          // Handle "Today" dates specially - they should come first
-          if (a === 'Today') return -1;
-          if (b === 'Today') return 1;
-          
-          // For other dates, try to parse them
-          try {
-            const dateA = new Date(a);
-            const dateB = new Date(b);
-            if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
-              return dateA.getTime() - dateB.getTime();
-            }
-          } catch (e) {
-            // If parsing fails, keep original order
-          }
-          
-          // Fallback to string comparison
+          // For ISO date strings (YYYY-MM-DD), direct string comparison works
           return a.localeCompare(b);
         })
         .forEach(date => {
