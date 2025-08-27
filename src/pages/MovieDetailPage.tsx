@@ -207,34 +207,6 @@ const MovieDetailPage: React.FC = () => {
     setSelectedVariants(variants);
   };
 
-  // Check if a showing should be displayed based on filters
-  const shouldShowShowing = (showing: any) => {
-    const cinemaMatch = selectedCinemas.includes(showing.cinema);
-    
-    // Variant filtering logic:
-    // - If no variants are selected, show nothing (all variants are filtered out)
-    // - If variants are selected, show showings that either:
-    //   a) Have matching variants, OR
-    //   b) Have no variants (movies without variants should still be shown)
-    let variantMatch = false;
-    if (selectedVariants.length === 0) {
-      // No variants selected = show nothing
-      variantMatch = false;
-    } else {
-      // Variants are selected
-      if (showing.variants && showing.variants.length > 0) {
-        // Show if this showing has at least one matching variant
-        variantMatch = showing.variants.some((variant: string) => selectedVariants.includes(variant));
-      } else {
-        // If the showing has no variants, still show it when variants are selected
-        // This handles movies like "L'Attachement" that don't have variant tags
-        variantMatch = true;
-      }
-    }
-    
-    return cinemaMatch && variantMatch;
-  };
-
   // Check if a date should be displayed
   const shouldShowDate = (date: string) => {
     return selectedDates.includes(date);
@@ -490,206 +462,91 @@ const MovieDetailPage: React.FC = () => {
         </div>
         
 
-        {/* Showtimes Table */}
+        {/* Showtimes Table - Using Backend Data */}
         <div className="overflow-x-auto relative">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-100">
-                <th className="text-left p-2 font-medium text-gray-700 bg-gray-50 border-r border-gray-200 min-w-[80px]">
-                  Time
-                </th>
-                {(() => {
-                  // Get all unique dates from all movies, but only show selected dates
-                  const allDates = new Set<string>();
-                  movie.cinemas.forEach(cinema => {
-                    cinema.showtimes.forEach(showtime => {
-                      allDates.add(showtime.date);
-                    });
-                  });
-                  return Array.from(allDates).sort()
-                    .filter(date => shouldShowDate(date)) // Only show selected dates
-                    .map((date, dateIndex) => (
-                      <th key={date} className="text-center p-2 font-medium text-gray-700 min-w-[150px] border-r border-gray-200">
-                        {new Date(date).toLocaleDateString('en-US', { 
-                          weekday: 'short', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </th>
-                    ));
-                })()}
-              </tr>
-            </thead>
-            <tbody>
+          {movie.allShowtimes && movie.allShowtimes.length > 0 ? (
+            <div className="space-y-4">
+              {/* Group showtimes by date */}
               {(() => {
-                // Get all unique times for this movie across all dates
-                const allTimes = new Set<string>();
-                movie.cinemas.forEach(cinema => {
-                  cinema.showtimes.forEach(showtime => {
-                    showtime.times.forEach(time => {
-                      allTimes.add(time);
-                    });
-                  });
-                });
-                const sortedTimes = Array.from(allTimes).sort();
+                const showtimesByDate = new Map<string, any[]>();
                 
-                return sortedTimes
-                  .filter(time => {
-                    // Check if this time slot has any content after filtering
-                    const allDates = new Set<string>();
-                    movie.cinemas.forEach(cinema => {
-                      cinema.showtimes.forEach(showtime => {
-                        allDates.add(showtime.date);
-                      });
-                    });
-                    const sortedDates = Array.from(allDates).sort();
-                    
-                    // Check if any date at this time has content
-                    return sortedDates
-                      .filter(date => shouldShowDate(date))
-                      .some(date => {
-                        const cinema = movie.cinemas.find(c => {
-                          const showtime = c.showtimes.find(s => s.date === date);
-                          return showtime && showtime.times.includes(time);
-                        });
-                        
-                        if (!cinema) return false;
-                        
-                        const showtime = cinema.showtimes.find(s => s.date === date);
-                        if (!showtime || !showtime.times.includes(time)) return false;
-                        
-                        // Check if there are any showings after filtering
-                        const timeInfo = (showtime as any).timeInfo?.[time];
-                        if (timeInfo && timeInfo.length > 0) {
-                          return timeInfo.some(shouldShowShowing);
-                        }
-                        
-                        // Fallback for non-merged movies
-                        return shouldShowShowing({ 
-                          language: movie.language.split('/')[0], 
-                          cinema: cinema.name 
-                        });
-                      });
-                  })
-                  .map(time => (
-                    <tr key={time} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-2 font-medium text-gray-700 bg-gray-50 border-r border-gray-200">
-                        {time}
-                      </td>
-                      {(() => {
-                        // Get all unique dates from all movies
-                        const allDates = new Set<string>();
-                        movie.cinemas.forEach(cinema => {
-                          cinema.showtimes.forEach(showtime => {
-                            allDates.add(showtime.date);
-                          });
-                        });
-                        const sortedDates = Array.from(allDates).sort();
-                        
-                        return sortedDates
-                          .filter(date => shouldShowDate(date)) // Only show selected dates
-                          .map((date, dateIndex) => {
-                            // Find if this movie is playing at this time on this date
-                            const cinema = movie.cinemas.find(c => {
-                              const showtime = c.showtimes.find(s => s.date === date);
-                              return showtime && showtime.times.includes(time);
-                            });
-                            
-                            // Add border-r to all date columns except the last one
-                            const isLastDate = dateIndex === sortedDates.filter(d => shouldShowDate(d)).length - 1;
-                            
-                            return (
-                              <td key={date} className={`p-2 text-center text-sm ${!isLastDate ? 'border-r border-gray-200' : ''}`}>
-                                {cinema ? (
-                                  <div className="space-y-1">
-                                    {/* All Showings for this Time/Date */}
-                                    <div className="space-y-1">
-                                      {(() => {
-                                        // Find which showings are playing at this time/date
-                                        const showtime = cinema.showtimes.find(s => s.date === date);
-                                        if (showtime && showtime.times.includes(time)) {
-                                          // Use the stored complete information from the merged movie
-                                          const timeInfo = (showtime as any).timeInfo?.[time];
-                                          
-                                          if (timeInfo && timeInfo.length > 0) {
-                                            // Filter showings based on selected cinemas and variants
-                                            const filteredShowings = timeInfo.filter(shouldShowShowing);
-                                            
-                                            if (filteredShowings.length === 0) {
-                                              return <span className="text-gray-300">-</span>;
-                                            }
-                                            
-                                            // Debug logging for showings
-                                            console.log('Filtered showings for time', time, ':', filteredShowings);
-                                            
-                                            // Always show all showings vertically stacked
-                                            return (
-                                              <div className="space-y-2">
-                                                {filteredShowings.map((showing: any, idx: number) => (
-                                                  <div key={idx} className="p-1 border border-gray-200 rounded bg-white">
-                                                    <div className="flex items-center justify-center">
-                                                      <div className="flex items-center">
-                                                        <button
-                                                          onClick={() => handleCinemaClick(showing.cinema)}
-                                                          className={`px-2 py-1 rounded-l-md text-xs font-medium border-r-0 ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity`}
-                                                        >
-                                                          {showing.cinema}
-                                                        </button>
-                                                        {showing.variants && showing.variants.length > 0 && (
-                                                          <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-r-md">
-                                                            {showing.variants.join(' ')}
-                                                          </span>
-                                                        )}
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            );
-                                          }
-                                          
-                                          // Fallback to original logic if timeInfo not available
-                                          // Check if this showing should be displayed
-                                          if (!shouldShowShowing({ language: movie.language.split('/')[0], cinema: cinema.name })) {
-                                            return <span className="text-gray-300">-</span>;
-                                          }
-                                          
-                                          return (
-                                            <div className="p-1 border border-gray-200 rounded bg-white">
-                                              <div className="flex items-center justify-center">
-                                                <div className="flex items-center">
-                                                  <button
-                                                    onClick={() => handleCinemaClick(cinema.name)}
-                                                    className={`px-2 py-1 rounded-l-md text-xs font-medium border-r-0 ${getCinemaColors()[cinema.name]} cursor-pointer hover:opacity-80 transition-opacity`}
-                                                  >
-                                                    {cinema.name}
-                                                  </button>
-                                                  {movie.variants && movie.variants.length > 0 && (
-                                                    <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-r-md">
-                                                      {movie.variants.join(' ')}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          );
-                                        }
-                                        return <span className="text-gray-300">-</span>;
-                                      })()}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-300">-</span>
+                // Filter showtimes based on selected dates and cinemas
+                const filteredShowtimes = movie.allShowtimes.filter(showtime => {
+                  const dateMatch = selectedDates.length === 0 || selectedDates.includes(showtime.date);
+                  const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showtime.cinema);
+                  const variantMatch = selectedVariants.length === 0 || 
+                    (showtime.variants && showtime.variants.some(v => selectedVariants.includes(v)));
+                  
+                  return dateMatch && cinemaMatch && variantMatch;
+                });
+                
+                // Group by date
+                filteredShowtimes.forEach(showtime => {
+                  if (!showtimesByDate.has(showtime.date)) {
+                    showtimesByDate.set(showtime.date, []);
+                  }
+                  showtimesByDate.get(showtime.date)!.push(showtime);
+                });
+                
+                // Sort dates
+                const sortedDates = Array.from(showtimesByDate.keys()).sort();
+                
+                return sortedDates.map(date => {
+                  const dateShowtimes = showtimesByDate.get(date)!;
+                  const sortedDateShowtimes = dateShowtimes.sort((a, b) => a.time.localeCompare(b.time));
+                  
+                  return (
+                    <div key={date} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                        <h3 className="font-medium text-gray-900">
+                          {new Date(date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </h3>
+                      </div>
+                      <div className="p-4">
+                        <div className="grid gap-3">
+                          {sortedDateShowtimes.map((showtime, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                              <div className="flex items-center space-x-4">
+                                <div className="text-lg font-mono text-gray-700 min-w-[60px]">
+                                  {showtime.time}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => handleCinemaClick(showtime.cinema)}
+                                    className={`px-3 py-1 rounded-md text-sm font-medium ${getCinemaColors()[showtime.cinema]} cursor-pointer hover:opacity-80 transition-opacity`}
+                                  >
+                                    {showtime.cinema}
+                                  </button>
+                                  {showtime.variants && showtime.variants.length > 0 && (
+                                    <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
+                                      {showtime.variants.join(' ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {showtime.address && (
+                                  <span>{showtime.address}, {showtime.city}</span>
                                 )}
-                              </td>
-                            );
-                          });
-                      })()}
-                    </tr>
-                  ));
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
               })()}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No showtimes available for the selected filters.
+            </div>
+          )}
         </div>
       </div>
       
