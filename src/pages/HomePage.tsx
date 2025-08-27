@@ -18,28 +18,62 @@ const HomePage: React.FC = () => {
   // Calculate total showtimes for a movie
   const getTotalShowtimes = (movie: Movie | undefined): number => {
     try {
+      console.log('🔍 getTotalShowtimes called with:', movie);
+      
       // Safety check: if movie is undefined, return 0
       if (!movie) {
+        console.log('❌ Movie is undefined, returning 0');
         return 0;
       }
       
+      console.log('📽️ Movie title:', movie.title);
+      console.log('🎬 Movie showings:', movie.showings);
+      console.log('🔍 Type of showings:', typeof movie.showings);
+      console.log('🔍 Is array?', Array.isArray(movie.showings));
+      
       // New data structure: movie.showings is organized by date -> time -> cinema+variant
       if (movie.showings && typeof movie.showings === 'object' && !Array.isArray(movie.showings)) {
+        console.log('✅ Showings structure is valid, processing...');
         let total = 0;
-        Object.values(movie.showings).forEach(dateShowings => {
+        
+        const dateKeys = Object.keys(movie.showings);
+        console.log('📅 Date keys:', dateKeys);
+        
+        dateKeys.forEach((dateKey, dateIndex) => {
+          console.log(`📅 Processing date ${dateIndex}: ${dateKey}`);
+          const dateShowings = movie.showings[dateKey];
+          console.log(`🎬 Date showings for ${dateKey}:`, dateShowings);
+          
           if (dateShowings && typeof dateShowings === 'object') {
-            Object.values(dateShowings).forEach(timeShowings => {
+            const timeKeys = Object.keys(dateShowings);
+            console.log(`⏰ Time keys for ${dateKey}:`, timeKeys);
+            
+            timeKeys.forEach((timeKey, timeIndex) => {
+              console.log(`⏰ Processing time ${timeIndex}: ${timeKey}`);
+              const timeShowings = dateShowings[timeKey];
+              console.log(`🎭 Time showings for ${timeKey}:`, timeShowings);
+              
               if (Array.isArray(timeShowings)) {
+                console.log(`✅ Adding ${timeShowings.length} showings from ${timeKey}`);
                 total += timeShowings.length;
+              } else {
+                console.log(`❌ Time showings is not an array:`, timeShowings);
               }
             });
+          } else {
+            console.log(`❌ Date showings is not an object:`, dateShowings);
           }
         });
+        
+        console.log(`🎯 Total showings calculated: ${total}`);
         return total;
+      } else {
+        console.log('❌ Showings structure is invalid');
+        return 0;
       }
-      return 0;
     } catch (error) {
-      console.warn(`Error calculating showtimes for movie "${movie?.title}":`, error);
+      console.error(`💥 Error calculating showtimes for movie "${movie?.title}":`, error);
+      console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       return 0;
     }
   };
@@ -47,18 +81,30 @@ const HomePage: React.FC = () => {
   // Sort movies by total showtimes (descending)
   const sortMoviesByShowtimes = (movies: Movie[]): Movie[] => {
     try {
+      console.log('🔄 sortMoviesByShowtimes called with:', movies);
+      console.log('🔍 Movies length:', movies?.length);
+      console.log('🔍 First movie:', movies?.[0]);
+      
       // Safety check: if movies array is empty or undefined, return empty array
       if (!movies || movies.length === 0) {
+        console.log('❌ Movies array is empty or undefined, returning empty array');
         return [];
       }
       
-      return [...movies].sort((a, b) => {
+      console.log('✅ Starting to sort movies...');
+      const sorted = [...movies].sort((a, b) => {
+        console.log(`🔄 Comparing movies: "${a?.title}" vs "${b?.title}"`);
         const aShowtimes = getTotalShowtimes(a);
         const bShowtimes = getTotalShowtimes(b);
+        console.log(`🎯 Showtimes: ${aShowtimes} vs ${bShowtimes}`);
         return bShowtimes - aShowtimes; // Descending order (most showtimes first)
       });
+      
+      console.log('✅ Sorting completed successfully');
+      return sorted;
     } catch (error) {
-      console.warn('Error sorting movies by showtimes:', error);
+      console.error('💥 Error sorting movies by showtimes:', error);
+      console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       // Return original array if sorting fails
       return [...movies];
     }
