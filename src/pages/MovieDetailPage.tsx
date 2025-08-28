@@ -572,31 +572,34 @@ const MovieDetailPage: React.FC = () => {
                                   return cinemaMatch && variantMatch;
                                 });
                                 
-                                // Only render the cell if there are showings
-                                if (filteredShowings.length === 0) {
-                                  return null; // This will hide the empty cell
-                                }
-                                
+                                // Always render the cell, even if empty
                                 return (
                                   <td key={date} className="py-1 px-1 text-center">
-                                    <div className="flex flex-col gap-0.5">
-                                      {filteredShowings.map((showing, idx) => (
-                                        <div key={idx} className="flex items-center justify-center gap-1">
-                                                                                      <button
+                                    {filteredShowings.length > 0 ? (
+                                      <div className="flex flex-col gap-0.5">
+                                        {filteredShowings.map((showing, idx) => (
+                                          <div key={idx} className="flex items-center justify-center gap-1">
+                                            <button
                                               onClick={() => handleCinemaClick(showing.cinema)}
                                               className={`px-1 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-[250px]`}
                                               title={showing.cinema}
                                             >
                                               {showing.cinema}
                                             </button>
-                                          {showing.variant && (
-                                            <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded">
-                                              {showing.variant}
-                                            </span>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
+                                            {showing.variant && (
+                                              <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded">
+                                                {showing.variant}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      // Show empty cell with subtle styling
+                                      <div className="text-gray-300 dark:text-gray-600 text-xs">
+                                        —
+                                      </div>
+                                    )}
                                   </td>
                                 );
                               });
