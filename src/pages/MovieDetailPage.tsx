@@ -348,21 +348,25 @@ const MovieDetailPage: React.FC = () => {
         {/* Filters Section */}
         <div className="px-2 sm:px-4 py-3 bg-gray-50 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              {showFilters ? 'Hide' : 'Show'} Filters
-            </button>
-            
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Reset All Filters
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                {showFilters ? 'Hide' : 'Show'} Filters
+              </button>
+              
+              {showFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reset All Filters
+                </button>
+              )}
+            </div>
           </div>
           
           {showFilters && (
@@ -578,7 +582,7 @@ const MovieDetailPage: React.FC = () => {
                                         <div key={idx} className="flex items-center justify-center gap-1">
                                                                                       <button
                                               onClick={() => handleCinemaClick(showing.cinema)}
-                                              className={`px-1 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-[300px]`}
+                                              className={`px-1 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-[250px]`}
                                               title={showing.cinema}
                                             >
                                               {showing.cinema}
