@@ -81,7 +81,7 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
         </div>
         
         {/* Quick Info Badges */}
-        <div className="flex items-center space-x-3 mb-4">
+        <div className="flex flex-wrap items-start gap-2 mb-4">
           {movie.director && (
             <span className="px-1 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
               Director: {movie.director}
@@ -103,16 +103,16 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
 
         {/* Cast */}
         {movie.cast && movie.cast.length > 0 && (
-          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-            <Users className="h-4 w-4" />
+          <div className="flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-400">
+            <Users className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>Cast: {movie.cast.join(', ')}</span>
           </div>
         )}
 
         {/* Variants */}
         {movie.variants && movie.variants.length > 0 && (
-          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-            <Star className="h-4 w-4" />
+          <div className="flex items-start space-x-2 text-sm text-gray-600 dark:text-gray-400">
+            <Star className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>Variants: </span>
             <div className="flex flex-wrap gap-1">
               {movie.variants.map((variant, idx) => (

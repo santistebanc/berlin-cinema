@@ -427,10 +427,10 @@ const MovieDetailPage: React.FC = () => {
               <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
                 <button
                   onClick={resetFilters}
-                  className="inline-flex items-center px-1 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="inline-flex items-center pl-1 pr-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   title="Reset All Filters"
                 >
-                  <X className="h-3 w-3 mr-3" />
+                  <X className="h-3 w-3 mr-1" />
                   Reset
                 </button>
               </div>
