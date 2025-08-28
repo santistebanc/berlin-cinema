@@ -457,11 +457,11 @@ const MovieDetailPage: React.FC = () => {
           
                       {movie.showings && Object.keys(movie.showings).length > 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-max">
+              <div className="overflow-x-auto relative">
+                <table className="w-full min-w-max relative">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-2 px-1 font-medium text-gray-700 dark:text-gray-300 min-w-[50px] sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 text-xs">
+                      <th className="text-left py-2 px-1 font-medium text-gray-700 dark:text-gray-300 min-w-[50px] sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 text-xs shadow-sm">
                         Time
                       </th>
                       {(() => {
@@ -536,7 +536,7 @@ const MovieDetailPage: React.FC = () => {
                         })
                         .map(time => (
                           <tr key={time} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="py-1 px-1 font-mono text-sm text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800 z-10">
+                            <td className="py-1 px-1 font-mono text-sm text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800 z-10 shadow-sm">
                               {time}
                             </td>
                             {(() => {
