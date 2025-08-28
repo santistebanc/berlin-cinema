@@ -578,7 +578,7 @@ const MovieDetailPage: React.FC = () => {
                                         <div key={idx} className="flex items-center justify-center gap-1">
                                                                                       <button
                                               onClick={() => handleCinemaClick(showing.cinema)}
-                                              className={`px-1 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-[70px]`}
+                                              className={`px-1 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-[300px]`}
                                               title={showing.cinema}
                                             >
                                               {showing.cinema}
