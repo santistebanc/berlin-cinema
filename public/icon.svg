@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#ea580c"/>
+  
+  <!-- Film strip -->
+  <rect x="128" y="128" width="256" height="256" rx="16" fill="white"/>
+  
+  <!-- Film perforations -->
+  <rect x="128" y="140" width="256" height="8" fill="#ea580c"/>
+  <rect x="128" y="240" width="256" height="8" fill="#ea580c"/>
+  <rect x="128" y="340" width="256" height="8" fill="#ea580c"/>
+  
+  <!-- Film sprocket holes -->
+  <circle cx="140" cy="148" r="4" fill="#ea580c"/>
+  <circle cx="140" cy="248" r="4" fill="#ea580c"/>
+  <circle cx="140" cy="348" r="4" fill="#ea580c"/>
+  <circle cx="372" cy="148" r="4" fill="#ea580c"/>
+  <circle cx="372" cy="248" r="4" fill="#ea580c"/>
+  <circle cx="372" cy="348" r="4" fill="#ea580c"/>
+  
+  <!-- Movie camera icon -->
+  <circle cx="256" cy="256" r="48" fill="#ea580c"/>
+  <circle cx="256" cy="256" r="32" fill="white"/>
+  <circle cx="256" cy="256" r="24" fill="#ea580c"/>
+  
+  <!-- Camera lens -->
+  <circle cx="256" cy="256" r="16" fill="white"/>
+  <circle cx="256" cy="256" r="8" fill="#ea580c"/>
+</svg>
