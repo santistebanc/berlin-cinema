@@ -1,29 +1,21 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle -->
-  <circle cx="256" cy="256" r="256" fill="#ea580c"/>
+  <!-- Background circle (blue theme color) -->
+  <circle cx="256" cy="256" r="256" fill="#3b82f6"/>
   
-  <!-- Film strip -->
-  <rect x="128" y="128" width="256" height="256" rx="16" fill="white"/>
+  <!-- Main film strip rectangle (white) -->
+  <rect x="64" y="64" width="384" height="384" rx="40" fill="white"/>
   
-  <!-- Film perforations -->
-  <rect x="128" y="140" width="256" height="8" fill="#ea580c"/>
-  <rect x="128" y="240" width="256" height="8" fill="#ea580c"/>
-  <rect x="128" y="340" width="256" height="8" fill="#ea580c"/>
+  <!-- Vertical perforations (blue) -->
+  <rect x="149" y="64" width="4" height="384" fill="#3b82f6"/>
+  <rect x="362" y="64" width="4" height="384" fill="#3b82f6"/>
   
-  <!-- Film sprocket holes -->
-  <circle cx="140" cy="148" r="4" fill="#ea580c"/>
-  <circle cx="140" cy="248" r="4" fill="#ea580c"/>
-  <circle cx="140" cy="348" r="4" fill="#ea580c"/>
-  <circle cx="372" cy="148" r="4" fill="#ea580c"/>
-  <circle cx="372" cy="248" r="4" fill="#ea580c"/>
-  <circle cx="372" cy="348" r="4" fill="#ea580c"/>
+  <!-- Horizontal perforations (blue) - Left side -->
+  <rect x="64" y="160" width="85" height="4" fill="#3b82f6"/>
+  <rect x="64" y="256" width="85" height="4" fill="#3b82f6"/>
+  <rect x="64" y="352" width="85" height="4" fill="#3b82f6"/>
   
-  <!-- Movie camera icon -->
-  <circle cx="256" cy="256" r="48" fill="#ea580c"/>
-  <circle cx="256" cy="256" r="32" fill="white"/>
-  <circle cx="256" cy="256" r="24" fill="#ea580c"/>
-  
-  <!-- Camera lens -->
-  <circle cx="256" cy="256" r="16" fill="white"/>
-  <circle cx="256" cy="256" r="8" fill="#ea580c"/>
+  <!-- Horizontal perforations (blue) - Right side -->
+  <rect x="362" y="160" width="86" height="4" fill="#3b82f6"/>
+  <rect x="362" y="256" width="86" height="4" fill="#3b82f6"/>
+  <rect x="362" y="352" width="86" height="4" fill="#3b82f6"/>
 </svg>
