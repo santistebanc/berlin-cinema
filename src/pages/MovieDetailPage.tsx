@@ -256,7 +256,7 @@ const MovieDetailPage: React.FC = () => {
   const { cinemas, dates, variants } = getAvailableFilters();
 
   return (
-    <div className="w-full px-2 sm:px-4 space-y-4">
+    <div className="w-full px-2 sm:px-4 space-y-2">
       {/* Back Button */}
       <button
         onClick={() => navigate('/')}
@@ -273,13 +273,13 @@ const MovieDetailPage: React.FC = () => {
             {/* Movie Poster */}
             <div className="flex-shrink-0 mx-auto sm:mx-0">
               <img
-                src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg=='}
+                src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+'}
                 alt={movie.title}
-                className="w-20 h-30 object-cover rounded-lg"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg==';
-                }}
+                className={`w-20 h-30 object-cover rounded-lg ${!movie.posterUrl ? 'border-2 border-gray-300 border-dashed' : ''}`}
+                                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
+                  }}
               />
             </div>
             
@@ -422,6 +422,8 @@ const MovieDetailPage: React.FC = () => {
                 <h4 className="text-sm font-medium text-gray-700 mb-2">
                   Variants {movie.variants ? `(${movie.variants.length})` : '(none)'}
                 </h4>
+                
+
                 <div className="flex flex-wrap gap-2">
                   {movie.variants && movie.variants.length > 0 ? (
                     movie.variants.map(variant => (

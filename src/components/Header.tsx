@@ -1,8 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Film } from 'lucide-react';
+import SearchBar from './SearchBar';
+import { Movie } from '../types';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  movies: Movie[];
+  onSearch: (query: string) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
   return (
     <header className="w-full bg-white shadow-sm border-b border-gray-200">
       <div className="px-4">
@@ -12,9 +19,10 @@ const Header: React.FC = () => {
             <span className="text-xl font-bold">Cinema Berlin</span>
           </Link>
           
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-500">OV Movies in Berlin</span>
-          </div>
+          {/* Search Bar */}
+          <SearchBar movies={movies} onSearch={onSearch} />
+          
+
         </div>
       </div>
     </header>

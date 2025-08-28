@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Film } from 'lucide-react';
-import { movieApi } from '../services/api';
 import { Movie } from '../types';
 
-const HomePage: React.FC = () => {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface HomePageProps {
+  movies: Movie[];
+  loading: boolean;
+  error: string | null;
+}
+
+const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -93,9 +95,7 @@ const HomePage: React.FC = () => {
 
 
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
+
 
   // Read search query from URL and update when it changes
   useEffect(() => {
@@ -106,31 +106,6 @@ const HomePage: React.FC = () => {
       setSearchQuery('');
     }
   }, [searchParams]);
-
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      const moviesResult = await movieApi.getAllMovies();
-      
-      if (!moviesResult.movies || moviesResult.movies.length === 0) {
-        console.error('No movies found in API response');
-        setError('No movies data received from API');
-        return;
-      }
-      
-      console.log('Movies API response:', moviesResult);
-      console.log('Total movies received:', moviesResult.movies.length);
-      console.log('First movie structure:', moviesResult.movies[0]);
-      
-      setMovies(moviesResult.movies);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError(`Failed to load movies: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleMovieClick = (movie: Movie) => {
     // Navigate to the movie detail page
@@ -153,26 +128,16 @@ const HomePage: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Error Message */}
-      {error && (
+      {propError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
+          <p className="text-red-800">{propError}</p>
         </div>
       )}
 
       {/* Movie Selection Menu */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {searchQuery ? `Search Results for "${searchQuery}"` : 'Select a Movie'}
-          </h2>
-          <span className="text-gray-600">
-            {searchQuery 
-              ? `Found ${sortedFilteredMovies.length} movie${sortedFilteredMovies.length !== 1 ? 's' : ''} matching "${searchQuery}"`
-              : `${sortedFilteredMovies.length} of ${movies.length} movies (ordered by showtimes)`
-            }
-          </span>
-        </div>
-        
+
+
         {/* Search Results Summary */}
         {searchQuery && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -180,7 +145,7 @@ const HomePage: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <span className="text-blue-600">🔍</span>
                 <span className="text-blue-800">
-                  Showing results for: <strong>"{searchQuery}"</strong>
+                  Found {sortedFilteredMovies.length} movie{sortedFilteredMovies.length !== 1 ? 's' : ''} matching "{searchQuery}"
                 </span>
               </div>
               <button
@@ -232,13 +197,13 @@ const HomePage: React.FC = () => {
                 {/* Movie Poster */}
                 <div className="relative">
                   <img
-                    src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg=='}
+                    src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+'}
                     alt={movie.title}
                     className="w-full h-32 object-cover rounded-t-lg"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjgiIGhlaWdodD0iMTkyIiBmaWxsPSIjZjNmNGY2Ii8+Cjwvc3ZnPg==';
-                    }}
+                                          onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
+                      }}
                   />
                   
                     
