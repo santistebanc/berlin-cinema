@@ -329,13 +329,13 @@ const MovieDetailPage: React.FC = () => {
                 {movie.variants && movie.variants.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {movie.variants.map((variant, idx) => (
-                      <span key={idx} className="px-3 py-1 text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded-md">
+                      <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded">
                         {variant}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
+                  <span className="px-1 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                     No variants
                   </span>
                 )}
@@ -430,7 +430,7 @@ const MovieDetailPage: React.FC = () => {
                   className="inline-flex items-center px-1 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   title="Reset All Filters"
                 >
-                  <X className="h-3 w-3 mr-2" />
+                  <X className="h-3 w-3 mr-3" />
                   Reset
                 </button>
               </div>
