@@ -310,14 +310,14 @@ const MovieDetailPage: React.FC = () => {
                 
                 {/* Director */}
                 {movie.director && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     <span className="font-medium text-gray-700 dark:text-gray-300">Director:</span> {movie.director}
                   </div>
                 )}
                 
                 {/* Cast */}
                 {movie.cast && movie.cast.length > 0 && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     <span className="font-medium text-gray-700 dark:text-gray-300">Cast:</span> {movie.cast.join(', ')}
                   </div>
                 )}
