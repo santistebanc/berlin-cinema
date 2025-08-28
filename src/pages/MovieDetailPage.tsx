@@ -458,14 +458,29 @@ const MovieDetailPage: React.FC = () => {
                       <th className="text-left py-2 px-1 font-medium text-gray-700 min-w-[50px] sticky left-0 bg-gray-50 z-10 text-xs">
                         Time
                       </th>
-                      {Object.keys(movie.showings)
-                        .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
-                        .sort((a, b) => {
-                          const dateA = new Date(a);
-                          const dateB = new Date(b);
-                          return dateA.getTime() - dateB.getTime();
-                        })
-                        .map(date => (
+                      {(() => {
+                        // Only show dates that have showings after filtering
+                        const datesWithShowings = Object.keys(movie.showings)
+                          .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
+                          .filter(date => {
+                            // Check if this date has any showings that match the filters
+                            const dateShowings = movie.showings[date];
+                            return Object.keys(dateShowings).some(time => {
+                              const timeShowings = dateShowings[time] || [];
+                              return timeShowings.some(showing => {
+                                const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                                const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                                return cinemaMatch && variantMatch;
+                              });
+                            });
+                          })
+                          .sort((a, b) => {
+                            const dateA = new Date(a);
+                            const dateB = new Date(b);
+                            return dateA.getTime() - dateB.getTime();
+                          });
+                        
+                        return datesWithShowings.map(date => (
                           <th key={date} className="text-center py-2 px-1 font-medium text-gray-700 min-w-[80px]">
                             <div className="text-xs">
                               <div className="font-semibold">
@@ -481,7 +496,8 @@ const MovieDetailPage: React.FC = () => {
                               </div>
                             </div>
                           </th>
-                        ))}
+                        ));
+                      })()}
                     </tr>
                   </thead>
                   <tbody>
@@ -498,31 +514,48 @@ const MovieDetailPage: React.FC = () => {
                       
                       return sortedTimes
                         .filter(time => {
-                          // Check if this time has any showings that match the filters
-                          return Object.keys(movie.showings).some(date => {
-                            const dateShowings = movie.showings[date];
-                            if (!dateShowings[time]) return false;
-                            
-                            return dateShowings[time].some(showing => {
-                              const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
-                              const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
-                              return cinemaMatch && variantMatch;
+                          // Check if this time has any showings that match ALL filters (dates, cinemas, variants)
+                          return Object.keys(movie.showings)
+                            .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
+                            .some(date => {
+                              const dateShowings = movie.showings[date];
+                              if (!dateShowings[time]) return false;
+                              
+                              return dateShowings[time].some(showing => {
+                                const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                                const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                                return cinemaMatch && variantMatch;
+                              });
                             });
-                          });
                         })
                         .map(time => (
                           <tr key={time} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="py-1 px-1 font-mono text-sm text-gray-700 sticky left-0 bg-white z-10">
                               {time}
                             </td>
-                            {Object.keys(movie.showings)
-                              .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
-                              .sort((a, b) => {
-                                const dateA = new Date(a);
-                                const dateB = new Date(b);
-                                return dateA.getTime() - dateB.getTime();
-                              })
-                              .map(date => {
+                            {(() => {
+                              // Use the same filtered dates as the header
+                              const datesWithShowings = Object.keys(movie.showings)
+                                .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
+                                .filter(date => {
+                                  // Check if this date has any showings that match the filters
+                                  const dateShowings = movie.showings[date];
+                                  return Object.keys(dateShowings).some(time => {
+                                    const timeShowings = dateShowings[time] || [];
+                                    return timeShowings.some(showing => {
+                                      const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                                      const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                                      return cinemaMatch && variantMatch;
+                                    });
+                                  });
+                                })
+                                .sort((a, b) => {
+                                  const dateA = new Date(a);
+                                  const dateB = new Date(b);
+                                  return dateA.getTime() - dateB.getTime();
+                                });
+                              
+                              return datesWithShowings.map(date => {
                                 const dateShowings = movie.showings[date];
                                 const timeShowings = dateShowings[time] || [];
                                 
@@ -533,33 +566,35 @@ const MovieDetailPage: React.FC = () => {
                                   return cinemaMatch && variantMatch;
                                 });
                                 
+                                // Only render the cell if there are showings
+                                if (filteredShowings.length === 0) {
+                                  return null; // This will hide the empty cell
+                                }
+                                
                                 return (
                                   <td key={date} className="py-1 px-1 text-center">
-                                    {filteredShowings.length > 0 ? (
-                                      <div className="flex flex-col gap-0.5">
-                                        {filteredShowings.map((showing, idx) => (
-                                          <div key={idx} className="flex items-center justify-center gap-1">
-                                            <button
+                                    <div className="flex flex-col gap-0.5">
+                                      {filteredShowings.map((showing, idx) => (
+                                        <div key={idx} className="flex items-center justify-center gap-1">
+                                                                                      <button
                                               onClick={() => handleCinemaClick(showing.cinema)}
                                               className={`px-1 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-[70px]`}
                                               title={showing.cinema}
                                             >
-                                              {showing.cinema.length > 8 ? showing.cinema.substring(0, 8) + '...' : showing.cinema}
+                                              {showing.cinema}
                                             </button>
-                                            {showing.variant && (
-                                              <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded">
-                                                {showing.variant}
-                                              </span>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <span className="text-gray-400 text-xs">-</span>
-                                    )}
+                                          {showing.variant && (
+                                            <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded">
+                                              {showing.variant}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </td>
                                 );
-                              })}
+                              });
+                            })()}
                           </tr>
                         ));
                     })()}
