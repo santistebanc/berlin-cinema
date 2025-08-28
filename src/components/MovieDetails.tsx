@@ -83,13 +83,13 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
         {/* Quick Info Badges */}
         <div className="flex items-center space-x-3 mb-4">
           {movie.director && (
-            <span className="px-3 py-1 rounded-md text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+            <span className="px-1 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
               Director: {movie.director}
             </span>
           )}
           
           {movie.year && (
-            <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+            <span className="px-1 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
               {movie.year}
             </span>
           )}
