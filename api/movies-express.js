@@ -4,12 +4,43 @@ const cheerio = require('cheerio');
 
 const router = express.Router();
 
+// Test hot reload
+console.log('Backend server loaded at:', new Date().toISOString());
+
+
+
 // Self-contained scraper for conventional Node.js
 class BerlinCinemaScraper {
   constructor() {
     this.baseUrl = 'https://www.critic.de/ov-movies-berlin/';
     this.cache = null;
     this.cacheTimestamp = null;
+    
+    // Cookie storage - starts empty, gets populated by server responses
+    this.cookies = {};
+  }
+  
+  // Get formatted cookie string for headers
+  getCookieString() {
+    const cookieEntries = Object.entries(this.cookies);
+    return cookieEntries.length > 0 
+      ? cookieEntries.map(([name, value]) => `${name}=${value}`).join('; ')
+      : '';
+  }
+  
+  // Update cookies from response headers
+  updateCookiesFromResponse(response) {
+    const setCookieHeaders = response.headers['set-cookie'];
+    if (setCookieHeaders) {
+      setCookieHeaders.forEach(cookieHeader => {
+        const cookieMatch = cookieHeader.match(/^([^=]+)=([^;]+)/);
+        if (cookieMatch) {
+          const [, name, value] = cookieMatch;
+          this.cookies[name] = value;
+          console.log(`Updated cookie: ${name}=${value}`);
+        }
+      });
+    }
   }
 
   isCacheValid() {
@@ -31,22 +62,9 @@ class BerlinCinemaScraper {
       // First, get the search form page
       const response = await axios.get(this.baseUrl, {
         headers: {
-          'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'accept-language': 'en-US,en;q=0.9',
-          'cache-control': 'no-cache',
-          'content-type': 'application/x-www-form-urlencoded',
-          'origin': 'null',
-          'pragma': 'no-cache',
-          'priority': 'u=0, i',
-          'sec-ch-ua': '"Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"',
-          'sec-ch-ua-mobile': '?0',
-          'sec-ch-ua-platform': '"Windows"',
-          'sec-fetch-dest': 'document',
-          'sec-fetch-mode': 'navigate',
-          'sec-fetch-site': 'none',
-          'sec-fetch-user': '?1',
-          'upgrade-insecure-requests': '1',
-          'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0'
+          'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+          'cookie': this.getCookieString()
         },
         timeout: 30000,
         httpsAgent: new (require('https').Agent)({
@@ -62,6 +80,9 @@ class BerlinCinemaScraper {
       const html = response.data;
       console.log('Initial response status:', response.status);
       console.log('Initial HTML length:', html.length);
+      
+      // Track any new cookies from the response
+      this.updateCookiesFromResponse(response);
       
       // Save initial HTML for debugging
       const fs = require('fs');
@@ -92,25 +113,14 @@ class BerlinCinemaScraper {
         formData.append('tx_criticde_pi5[submit]', '');
         formData.append('tx_criticde_pi5[ovsearch_days]', '');
         
-        const searchResponse = await axios.post(this.baseUrl, formData, {
+                const searchResponse = await axios.post(this.baseUrl, formData, {
           headers: {
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'accept-language': 'en-US,en;q=0.9',
-            'cache-control': 'no-cache',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'content-type': 'application/x-www-form-urlencoded',
             'origin': 'https://www.critic.de',
-            'referer': this.baseUrl,
-            'pragma': 'no-cache',
-            'priority': 'u=0, i',
-            'sec-ch-ua': '"Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0'
+            'referer': 'https://www.critic.de/ov-movies-berlin/',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+            'cookie': this.getCookieString()
           },
           timeout: 30000,
           httpsAgent: new (require('https').Agent)({
@@ -126,6 +136,9 @@ class BerlinCinemaScraper {
         const searchHtml = searchResponse.data;
         console.log('Search form response status:', searchResponse.status);
         console.log('Search form response HTML length:', searchHtml.length);
+        
+        // Track any new cookies from the search response
+        this.updateCookiesFromResponse(searchResponse);
         
         // Save the search results HTML
         fs.writeFileSync('debug-search-results.html', searchHtml);
@@ -387,12 +400,21 @@ class BerlinCinemaScraper {
     // Parse date strings like "Tue 26/08", "Wed 27/08"
     const dateMatch = dateStr.match(/(\w{3})\s+(\d{1,2})\/(\d{1,2})/);
     if (dateMatch) {
-      const dayAbbr = dateMatch[1];
-      const dayMap = {
-        'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu',
-        'Fri': 'Fri', 'Sat': 'Sat', 'Sun': 'Sun'
-      };
-      return dayMap[dayAbbr] || dayAbbr;
+      const day = parseInt(dateMatch[2]);
+      const month = parseInt(dateMatch[3]);
+      
+      // Assume current year and create a proper date
+      const currentYear = new Date().getFullYear();
+      const date = new Date(currentYear, month - 1, day); // month is 0-indexed
+      
+      // If the date is in the past, assume it's next year
+      if (date < new Date()) {
+        date.setFullYear(currentYear + 1);
+      }
+      
+      // Calculate the actual day of the week from the parsed date
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return dayNames[date.getDay()];
     }
     
     return dateStr;
@@ -409,14 +431,17 @@ class BerlinCinemaScraper {
     if (dateMatch) {
       const dayAbbr = dateMatch[1];
       const day = parseInt(dateMatch[2]);
-      const month = parseInt(dateMatch[3]);
+      const month = parseInt(dateMatch[3]); 	
       
       // Assume current year and create a proper date
       const currentYear = new Date().getFullYear();
       const date = new Date(currentYear, month - 1, day); // month is 0-indexed
       
-      // If the date is in the past, assume it's next year
-      if (date < new Date()) {
+      // Only add a year if the date is more than a month in the past
+      const now = new Date();
+      const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      
+      if (date < oneMonthAgo) {
         date.setFullYear(currentYear + 1);
       }
       
@@ -492,8 +517,11 @@ class BerlinCinemaScraper {
                 const currentYear = new Date().getFullYear();
                 const parsedDate = new Date(currentYear, month - 1, day);
                 
-                // If the date is in the past, assume it's next year
-                if (parsedDate < new Date()) {
+                // Only add a year if the date is more than a month in the past
+                const now = new Date();
+                const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                
+                if (parsedDate < oneMonthAgo) {
                   parsedDate.setFullYear(currentYear + 1);
                 }
                 

@@ -37,8 +37,8 @@
     "dev": "vite",
     "dev:frontend": "vite --port 3002",
     "dev:server": "node server.js",
-    "dev:server:watch": "nodemon server.js --watch api/ --ext js",
-    "dev:fullstack": "concurrently \"npm run dev:frontend\" \"npm run dev:server:watch\"",
+    "dev:server:watch": "nodemon --config nodemon.json",
+    "dev:fullstack": "concurrently --kill-others \"npm run dev:frontend\" \"npm run dev:server:watch\"",
     "build": "vite build",
     "start": "node server.js",
     "preview": "vite preview"

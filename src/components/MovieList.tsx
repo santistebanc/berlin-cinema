@@ -13,7 +13,7 @@ const MovieList: React.FC<MovieListProps> = ({ movies, onMovieSelect }) => {
   return (
     <div className="space-y-2">
       {movies.map((movie) => (
-        <div key={movie.id} className="bg-white rounded-lg border border-gray-200 hover:border-cinema-300 transition-colors">
+        <div key={movie.title} className="bg-white rounded-lg border border-gray-200 hover:border-cinema-300 transition-colors">
           <div className="flex items-center justify-between p-3">
             {/* Left side - Movie title and language badge */}
             <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -31,30 +31,7 @@ const MovieList: React.FC<MovieListProps> = ({ movies, onMovieSelect }) => {
 
             {/* Right side - Action buttons and cinema tags */}
             <div className="flex items-center space-x-3 ml-4">
-              {/* Action Buttons */}
-              {movie.trailerUrl && (
-                <a
-                  href={movie.trailerUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 text-cinema-600 hover:text-cinema-700 hover:bg-cinema-50 rounded-md transition-colors"
-                  title="Watch Trailer"
-                >
-                  <Play className="h-4 w-4" />
-                </a>
-              )}
-              
-              {movie.reviewUrl && (
-                <a
-                  href={movie.reviewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-                  title="Read Review"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              )}
+
 
               {/* Cinema Tags */}
               <div className="flex items-center space-x-2">
