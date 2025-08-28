@@ -53,19 +53,12 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
           </div>
         )}
         
-        {/* FSK Rating */}
-        {movie.fskRating > 0 && (
-          <div className="absolute top-2 left-2" style={{ left: movie.variants && movie.variants.length > 0 ? '4rem' : '0.5rem' }}>
-            <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-800 text-white">
-              FSK {movie.fskRating}
-            </span>
-          </div>
-        )}
+
       </div>
 
       {/* Movie Info */}
       <div className="p-4">
-        <Link to={`/movie/${movie.id}`}>
+        <Link to={`/movie/${encodeURIComponent(movie.title)}`}>
           <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-cinema-600 transition-colors line-clamp-2">
             {movie.title}
           </h3>

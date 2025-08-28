@@ -22,10 +22,8 @@ const HomePage: React.FC = () => {
     }
     
     let total = 0;
-    console.log('11111', Object.values(movie.showings))
     Object.values(movie.showings).forEach(dateShowings => {
       if (dateShowings && typeof dateShowings === 'object') {
-        console.log('22222', Object.values(dateShowings))
         Object.values(dateShowings).forEach(timeShowings => {
           if (Array.isArray(timeShowings)) {
             total += timeShowings.length;
