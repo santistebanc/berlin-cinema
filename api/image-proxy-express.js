@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
 
     // Set appropriate headers
     res.setHeader('Content-Type', response.headers['content-type'] || 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     // Send the image data

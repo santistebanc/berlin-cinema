@@ -47,7 +47,7 @@ class BerlinCinemaScraper {
     if (!this.cache || !this.cacheTimestamp) return false;
     const now = new Date();
     const cacheAge = now.getTime() - this.cacheTimestamp.getTime();
-    return cacheAge < 24 * 60 * 60 * 1000; // 24 hours
+    return cacheAge < 60 * 60 * 1000; // 1 hour
   }
 
   async scrapeMovies() {
