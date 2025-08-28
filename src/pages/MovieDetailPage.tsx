@@ -346,7 +346,7 @@ const MovieDetailPage: React.FC = () => {
         </div>
         
         {/* Filters Section */}
-        <div className="px-2 sm:px-4 pb-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <div className="px-2 sm:px-4 pb-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
           {showFilters && (
             <div className="space-y-4">
 
