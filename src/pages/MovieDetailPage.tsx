@@ -285,10 +285,10 @@ const MovieDetailPage: React.FC = () => {
             
             {/* Movie Info */}
             <div className="flex-1 min-w-0">
-                              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 text-center sm:text-left">{movie.title}</h1>
+                              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 text-left">{movie.title}</h1>
               
               {/* Movie Details */}
-                              <div className="mb-3 space-y-1 text-center sm:text-left">
+                              <div className="mb-3 space-y-1 text-left">
                 
                 {/* Year and Country */}
                 {(movie.year || movie.country) && (
@@ -324,7 +324,7 @@ const MovieDetailPage: React.FC = () => {
               </div>
               
               {/* Badges and Links */}
-                              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
+                              <div className="flex flex-col sm:flex-row items-start space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
                 {/* Variants Badge */}
                 {movie.variants && movie.variants.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
