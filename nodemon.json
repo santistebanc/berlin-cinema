@@ -1,0 +1,10 @@
+{
+  "watch": ["api/", "server.js"],
+  "ext": "js,json",
+  "ignore": ["node_modules/", "src/", "dist/", "*.log"],
+  "exec": "node server.js",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": "1000"
+}
