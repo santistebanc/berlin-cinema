@@ -4,6 +4,7 @@ import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import MovieDetailPage from './pages/MovieDetailPage';
 import PWAInstaller from './components/PWAInstaller';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { movieApi } from './services/api';
 import { Movie } from './types';
 
@@ -44,20 +45,22 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header movies={movies} onSearch={handleSearch} />
-      <main className="py-2">
-        <Routes>
-          <Route path="/" element={
-            <div className="container mx-auto px-4">
-              <HomePage movies={movies} loading={loading} error={error} />
-            </div>
-          } />
-          <Route path="/movie/:title" element={<MovieDetailPage />} />
-        </Routes>
-      </main>
-      <PWAInstaller />
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Header movies={movies} onSearch={handleSearch} />
+        <main className="py-2">
+          <Routes>
+            <Route path="/" element={
+              <div className="container mx-auto px-4">
+                <HomePage movies={movies} loading={loading} error={error} />
+              </div>
+            } />
+            <Route path="/movie/:title" element={<MovieDetailPage />} />
+          </Routes>
+        </main>
+        <PWAInstaller />
+      </div>
+    </ThemeProvider>
   );
 };
 

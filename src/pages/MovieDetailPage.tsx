@@ -27,22 +27,22 @@ const MovieDetailPage: React.FC = () => {
     
     const cinemaColors: { [key: string]: string } = {};
     const colors = [
-      'bg-red-100 text-red-800 border-red-200',
-      'bg-blue-100 text-blue-800 border-blue-200',
-      'bg-green-100 text-green-800 border-green-200',
-      'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'bg-purple-100 text-purple-800 border-purple-200',
-      'bg-pink-100 text-pink-800 border-pink-200',
-      'bg-indigo-100 text-indigo-800 border-indigo-200',
-      'bg-teal-100 text-teal-800 border-teal-200',
-      'bg-orange-100 text-orange-800 border-orange-200',
-      'bg-cyan-100 text-cyan-800 border-cyan-200',
-      'bg-lime-100 text-lime-800 border-lime-200',
-      'bg-amber-100 text-amber-800 border-amber-200',
-      'bg-emerald-100 text-emerald-800 border-emerald-200',
-      'bg-violet-100 text-violet-800 border-violet-200',
-      'bg-rose-100 text-rose-800 border-rose-200',
-      'bg-sky-100 text-sky-800 border-sky-200'
+      'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700',
+      'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700',
+      'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700',
+      'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700',
+      'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700',
+      'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200 border-pink-200 dark:border-pink-700',
+      'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700',
+      'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200 border-teal-200 dark:border-teal-700',
+      'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-700',
+      'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-200 border-cyan-200 dark:border-cyan-700',
+      'bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-200 border-lime-200 dark:border-lime-700',
+      'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700',
+      'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-700',
+      'bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200 border-violet-200 dark:border-violet-700',
+      'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-700',
+      'bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200 border-sky-200 dark:border-sky-700'
     ];
     
     let colorIndex = 0;
@@ -232,7 +232,7 @@ const MovieDetailPage: React.FC = () => {
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cinema-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading movie information...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading movie information...</p>
         </div>
       </div>
     );
@@ -241,8 +241,8 @@ const MovieDetailPage: React.FC = () => {
   if (error || !movie) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Movie Not Found</h2>
-        <p className="text-gray-600 mb-6">{error || 'The requested movie could not be found.'}</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Movie Not Found</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{error || 'The requested movie could not be found.'}</p>
         <button
           onClick={() => navigate('/')}
           className="px-4 py-2 bg-cinema-600 text-white rounded-lg hover:bg-cinema-700 transition-colors"
@@ -267,8 +267,8 @@ const MovieDetailPage: React.FC = () => {
       </button>
 
       {/* Movie Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-2 sm:p-4 bg-gray-50 border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-2 sm:p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
           <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Movie Poster */}
             <div className="flex-shrink-0 mx-auto sm:mx-0">
@@ -285,14 +285,14 @@ const MovieDetailPage: React.FC = () => {
             
             {/* Movie Info */}
             <div className="flex-1 min-w-0">
-                              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">{movie.title}</h1>
+                              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 text-center sm:text-left">{movie.title}</h1>
               
               {/* Movie Details */}
                               <div className="mb-3 space-y-1 text-center sm:text-left">
                 
                 {/* Year and Country */}
                 {(movie.year || movie.country) && (
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     {movie.country && (
                       <span className="mr-3">
                         <Globe className="h-4 w-4 inline mr-1" />
@@ -310,15 +310,15 @@ const MovieDetailPage: React.FC = () => {
                 
                 {/* Director */}
                 {movie.director && (
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium text-gray-700">Director:</span> {movie.director}
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Director:</span> {movie.director}
                   </div>
                 )}
                 
                 {/* Cast */}
                 {movie.cast && movie.cast.length > 0 && (
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium text-gray-700">Cast:</span> {movie.cast.join(', ')}
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Cast:</span> {movie.cast.join(', ')}
                   </div>
                 )}
               </div>
@@ -329,13 +329,13 @@ const MovieDetailPage: React.FC = () => {
                 {movie.variants && movie.variants.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {movie.variants.map((variant, idx) => (
-                      <span key={idx} className="px-3 py-1 text-sm font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
+                      <span key={idx} className="px-3 py-1 text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded-md">
                         {variant}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                  <span className="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                     No variants
                   </span>
                 )}
@@ -346,12 +346,12 @@ const MovieDetailPage: React.FC = () => {
         </div>
         
         {/* Filters Section */}
-        <div className="px-2 sm:px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="px-2 sm:px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cinema-500"
               >
                 <Filter className="h-4 w-4 mr-2" />
                 {showFilters ? 'Hide' : 'Show'} Filters
@@ -360,7 +360,7 @@ const MovieDetailPage: React.FC = () => {
               {showFilters && (
                 <button
                   onClick={resetFilters}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Reset All Filters
@@ -375,7 +375,7 @@ const MovieDetailPage: React.FC = () => {
               
               {/* Cinema Filters */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Cinemas</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cinemas</h4>
                 <div className="flex flex-wrap gap-2">
                   {cinemas.map(cinema => (
                     <button
@@ -384,7 +384,7 @@ const MovieDetailPage: React.FC = () => {
                       className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
                         selectedCinemas.includes(cinema)
                           ? `${getCinemaColors()[cinema]}`
-                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                       }`}
                     >
                       {cinema}
@@ -395,7 +395,7 @@ const MovieDetailPage: React.FC = () => {
               
               {/* Date Filters */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Dates</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dates</h4>
                 <div className="flex flex-wrap gap-2">
                   {dates.map(date => (
                     <button
@@ -403,8 +403,8 @@ const MovieDetailPage: React.FC = () => {
                       onClick={() => toggleDate(date)}
                       className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
                         selectedDates.includes(date)
-                          ? 'bg-blue-100 text-blue-800 border-blue-300'
-                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                       }`}
                     >
                       {new Date(date).toLocaleDateString('en-US', { 
@@ -419,7 +419,7 @@ const MovieDetailPage: React.FC = () => {
 
               {/* Variant Filters */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Variants {movie.variants ? `(${movie.variants.length})` : '(none)'}
                 </h4>
                 
@@ -431,16 +431,16 @@ const MovieDetailPage: React.FC = () => {
                         key={variant}
                         onClick={() => toggleVariant(variant)}
                         className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
-                          selectedVariants.includes(variant)
-                            ? 'bg-orange-100 text-orange-800 border-orange-300'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50 hover:border-orange-300'
+                                                  selectedVariants.includes(variant)
+                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-600'
                         }`}
                       >
                         {variant}
                       </button>
                     ))
                   ) : (
-                    <span className="text-gray-500 text-sm">No variants available</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">No variants available</span>
                   )}
                 </div>
               </div>
@@ -456,12 +456,12 @@ const MovieDetailPage: React.FC = () => {
 
           
                       {movie.showings && Object.keys(movie.showings).length > 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-max">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="text-left py-2 px-1 font-medium text-gray-700 min-w-[50px] sticky left-0 bg-gray-50 z-10 text-xs">
+                    <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                      <th className="text-left py-2 px-1 font-medium text-gray-700 dark:text-gray-300 min-w-[50px] sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 text-xs">
                         Time
                       </th>
                       {(() => {
@@ -487,14 +487,14 @@ const MovieDetailPage: React.FC = () => {
                           });
                         
                         return datesWithShowings.map(date => (
-                          <th key={date} className="text-center py-2 px-1 font-medium text-gray-700 min-w-[80px]">
+                          <th key={date} className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
                             <div className="text-xs">
                               <div className="font-semibold">
                                 {new Date(date).toLocaleDateString('en-US', { 
                                   weekday: 'short'
                                 })}
                               </div>
-                              <div className="text-gray-600">
+                              <div className="text-gray-600 dark:text-gray-400">
                                 {new Date(date).toLocaleDateString('en-US', { 
                                   month: 'short', 
                                   day: 'numeric' 
@@ -535,8 +535,8 @@ const MovieDetailPage: React.FC = () => {
                             });
                         })
                         .map(time => (
-                          <tr key={time} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-1 px-1 font-mono text-sm text-gray-700 sticky left-0 bg-white z-10">
+                          <tr key={time} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="py-1 px-1 font-mono text-sm text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800 z-10">
                               {time}
                             </td>
                             {(() => {
@@ -590,7 +590,7 @@ const MovieDetailPage: React.FC = () => {
                                               {showing.cinema}
                                             </button>
                                           {showing.variant && (
-                                            <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded">
+                                            <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded">
                                               {showing.variant}
                                             </span>
                                           )}
@@ -609,7 +609,7 @@ const MovieDetailPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               No showtimes available for the selected filters.
             </div>
           )}
@@ -622,15 +622,15 @@ const MovieDetailPage: React.FC = () => {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={handlePopupOutsideClick}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-2 sm:mx-4 p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-2 sm:mx-4 p-3 sm:p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">{selectedCinemaForPopup.name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{selectedCinemaForPopup.name}</h3>
               <button
                 onClick={() => {
                   setShowCinemaPopup(false);
                   setSelectedCinemaForPopup(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -639,14 +639,14 @@ const MovieDetailPage: React.FC = () => {
             <div className="space-y-3">
               {(selectedCinemaForPopup.address || (selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city)) && (
                 <div className="flex items-start">
-                  <span className="font-medium text-gray-700 w-20">Address: </span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300 w-20">Address: </span>
                   <a
                     href={`https://www.google.com/maps/search/${encodeURIComponent(
                       `${selectedCinemaForPopup.name} ${selectedCinemaForPopup.address || ''} ${selectedCinemaForPopup.postalCode || ''} ${selectedCinemaForPopup.city || ''} Berlin`
                     ).trim()}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-600 hover:text-cinema-600 underline cursor-pointer transition-colors"
+                    className="text-gray-600 dark:text-gray-400 hover:text-cinema-600 underline cursor-pointer transition-colors"
                   >
                     {selectedCinemaForPopup.address}
                     {selectedCinemaForPopup.address && selectedCinemaForPopup.postalCode && selectedCinemaForPopup.city && ', '}
