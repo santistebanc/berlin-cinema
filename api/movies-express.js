@@ -15,19 +15,19 @@ class BerlinCinemaScraper {
     this.baseUrl = 'https://www.critic.de/ov-movies-berlin/';
     this.cache = null;
     this.cacheTimestamp = null;
-    
+
     // Cookie storage - starts empty, gets populated by server responses
     this.cookies = {};
   }
-  
+
   // Get formatted cookie string for headers
   getCookieString() {
     const cookieEntries = Object.entries(this.cookies);
-    return cookieEntries.length > 0 
+    return cookieEntries.length > 0
       ? cookieEntries.map(([name, value]) => `${name}=${value}`).join('; ')
       : '';
   }
-  
+
   // Update cookies from response headers
   updateCookiesFromResponse(response) {
     const setCookieHeaders = response.headers['set-cookie'];
@@ -58,7 +58,7 @@ class BerlinCinemaScraper {
 
     try {
       console.log('Scraping movies from:', this.baseUrl);
-      
+
       // First, get the search form page
       const response = await axios.get(this.baseUrl, {
         headers: {
@@ -80,25 +80,25 @@ class BerlinCinemaScraper {
       const html = response.data;
       console.log('Initial response status:', response.status);
       console.log('Initial HTML length:', html.length);
-      
+
       // Track any new cookies from the response
       this.updateCookiesFromResponse(response);
-      
+
       // Save initial HTML for debugging
       const fs = require('fs');
       fs.writeFileSync('debug-initial.html', html);
       console.log('Saved initial HTML to debug-initial.html');
-      
+
       let $ = cheerio.load(html);
-      
+
       // Check if we already have movie results
       let movieItems = $('.itemContainer');
       console.log('Initial itemContainer count:', movieItems.length);
-      
+
       // If no movies found, submit the search form
       if (movieItems.length === 0) {
         console.log('No movies found, submitting search form to get results...');
-        
+
         // Submit the search form with default values to get all movies
         const formData = new URLSearchParams();
         formData.append('tx_criticde_pi5[ovsearch_cinema]', '');
@@ -112,8 +112,8 @@ class BerlinCinemaScraper {
         formData.append('tx_criticde_pi5[submit_button]', 'search');
         formData.append('tx_criticde_pi5[submit]', '');
         formData.append('tx_criticde_pi5[ovsearch_days]', '');
-        
-                const searchResponse = await axios.post(this.baseUrl, formData, {
+
+        const searchResponse = await axios.post(this.baseUrl, formData, {
           headers: {
             'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'content-type': 'application/x-www-form-urlencoded',
@@ -132,62 +132,62 @@ class BerlinCinemaScraper {
             return status >= 200 && status < 400;
           }
         });
-        
+
         const searchHtml = searchResponse.data;
         console.log('Search form response status:', searchResponse.status);
         console.log('Search form response HTML length:', searchHtml.length);
-        
+
         // Track any new cookies from the search response
         this.updateCookiesFromResponse(searchResponse);
-        
+
         // Save the search results HTML
         fs.writeFileSync('debug-search-results.html', searchHtml);
         console.log('Saved search results HTML to debug-search-results.html');
-        
+
         // Parse the search results
         $ = cheerio.load(searchHtml);
         movieItems = $('.itemContainer');
         console.log('Search results - itemContainer count:', movieItems.length);
       }
-      
+
       // Parse the real HTML structure from response.html
       const movies = [];
-      
+
       // Debug: Check what elements are actually in the HTML
       console.log('Final itemContainer count:', movieItems.length);
       console.log('All h1, h2, h3 elements:', $('h1, h2, h3').length);
       console.log('All links:', $('a').length);
       console.log('All divs:', $('div').length);
-      
+
       // Debug: Show some actual content
       $('h1, h2, h3').each((i, el) => {
         if (i < 5) console.log(`Heading ${i}:`, $(el).text().trim());
       });
-      
+
       movieItems.each((i, item) => {
         const $item = $(item);
-        
+
         // Extract movie ID and metadata
         const movieId = $item.attr('data-movie_id');
         const searchOfValue = $item.attr('data-search_of_value');
         const searchFskValue = $item.attr('data-search_fsk_value');
         const searchMovieTypes = $item.attr('data-search_movie_types');
-        
+
         // Extract title and link
         const titleElement = $item.find('h2 a, h1 a').first();
         const title = titleElement.text().trim();
         const movieUrl = titleElement.attr('href');
-        
+
         if (!title || !movieUrl) return;
-        
+
         console.log(`Processing movie ${i + 1}:`, title);
-        
+
         // Extract movie details from the dl.oneline element
         const movieDetails = {};
         $item.find('dl.oneline dt, dl.oneline dd').each((j, el) => {
           const $el = $(el);
           if ($el.hasClass('hidden')) return;
-          
+
           const text = $el.text().trim();
           if (text === 'D:') {
             const director = $el.next('dd').text().trim();
@@ -209,54 +209,39 @@ class BerlinCinemaScraper {
             }
           }
         });
-        
-        // Extract language/variant from title
-        let language = 'DE';
+
+        // Extract variant from title
         let variants = [];
-        
-        if (title.includes('(OV)')) {
-          language = 'OV';
-          variants.push('OV');
-        } else if (title.includes('(OmU)')) {
-          language = 'OmU';
-          variants.push('OmU');
-        } else if (title.includes('(OV w/ sub)')) {
-          language = 'OV';
-          variants.push('sub');
-        }
-        
-        // Extract additional variants
+
         if (title.includes('(Imax)')) variants.push('Imax');
-        if (title.includes('(EXPN)')) variants.push('EXPN');
-        if (title.includes('(3D)')) variants.push('3D');
-        if (title.includes('(4DX)')) variants.push('4DX');
-        if (title.includes('(Dolby Atmos)')) variants.push('Dolby Atmos');
-        if (title.includes('(Premium Large Format)')) variants.push('Premium Large Format');
-        
+        else if (title.includes('(EXPN)')) variants.push('EXPN');
+        else if (title.includes('(OV w/ sub)')) variants.push('sub');
+        else if (title.includes('(OV)')) variants.push('OV');
+
         // Extract poster URL
         const posterElement = $item.find('img').first();
         let posterUrl = posterElement.attr('src') || posterElement.attr('data-src');
-        
+
         if (posterUrl && !posterUrl.startsWith('http')) {
           posterUrl = `https://www.critic.de${posterUrl}`;
         }
-        
+
         // Extract real cinema and showtime data
         const movieCinemas = [];
         const movieShowings = [];
-        
+
         $item.find('article.cinema').each((j, cinemaEl) => {
           const $cinema = $(cinemaEl);
-          
+
           // Extract cinema name and address
           const cinemaLink = $cinema.find('address a').first();
           const cinemaName = cinemaLink.text().trim();
           const cinemaUrl = cinemaLink.attr('href');
-          
+
           // Extract address (text after the link)
           const addressText = $cinema.find('address').text().trim();
           const address = addressText.replace(cinemaName, '').trim();
-          
+
           // Parse address components
           const addressParts = address.split(',').map(part => part.trim());
           const streetAddress = addressParts[0] || '';
@@ -264,40 +249,40 @@ class BerlinCinemaScraper {
           const cityPostalParts = cityPostal.split(' ');
           const postalCode = cityPostalParts[0] || '';
           const city = cityPostalParts.slice(1).join(' ') || 'Berlin';
-          
+
           // Add cinema to cinemas array
           movieCinemas.push({
             name: cinemaName,
             address: address
           });
-          
+
           // Extract individual showings from the table
           const $table = $cinema.find('table.vorstellung');
-          
+
           if ($table.length > 0) {
             const $headers = $table.find('thead th');
             const $rows = $table.find('tbody tr');
-            
+
             $rows.each((rowIndex, row) => {
               const $row = $(row);
               const $cells = $row.find('td');
-              
+
               $cells.each((cellIndex, cell) => {
                 const $cell = $(cell);
                 const cellText = $cell.text().trim();
-                
+
                 if (cellText && $cell.hasClass('wird_gezeigt')) {
                   // Parse the date from header
                   const dateHeader = $headers.eq(cellIndex).text().trim();
                   const parsedDate = this.parseDate(dateHeader);
                   const dayOfWeek = this.getDayOfWeek(dateHeader);
-                  
+
                   // Parse times (can be multiple times separated by <br> or other separators)
                   let times = [];
-                  
+
                   // First try splitting by newline
                   times = cellText.split('\n').map(time => time.trim()).filter(time => time);
-                  
+
                   // If that didn't work well, try splitting by common separators
                   if (times.length === 1 && times[0].length > 8) {
                     // If we got one long string, try splitting by common patterns
@@ -307,21 +292,21 @@ class BerlinCinemaScraper {
                       times = matches;
                     }
                   }
-                  
+
                   // Additional cleanup: remove any non-time content
                   times = times.map(time => {
                     // Extract only the time pattern HH:MM
                     const timeMatch = time.match(/(\d{1,2}:\d{2})/);
                     return timeMatch ? timeMatch[1] : time;
                   }).filter(time => time && time.match(/^\d{1,2}:\d{2}$/));
-                  
+
                   // Debug logging for time parsing
                   if (times.length > 1) {
                     console.log(`Time parsing debug for ${cinemaName} on ${dateHeader}:`);
                     console.log(`  Original cellText: "${cellText}"`);
                     console.log(`  Parsed times:`, times);
                   }
-                  
+
                   if (times.length > 0) {
                     // Create individual showing for each time
                     times.forEach(time => {
@@ -342,7 +327,7 @@ class BerlinCinemaScraper {
               });
             });
           }
-          
+
           // Debug logging for URL construction
           if (cinemaUrl) {
             console.log(`Cinema URL debug - ${cinemaName}:`);
@@ -350,7 +335,7 @@ class BerlinCinemaScraper {
             console.log(`  Final: ${cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`}`);
           }
         });
-        
+
         // Create movie object with the new structure
         const movie = {
           title: title,
@@ -364,29 +349,29 @@ class BerlinCinemaScraper {
           cinemas: movieCinemas,
           showings: movieShowings
         };
-        
+
         movies.push(movie);
       });
-      
+
       // Merge movies with the same base title
       console.log('Merging movies with same base titles...');
       const mergedMovies = this.mergeMovies(movies);
       console.log(`Merged ${movies.length} movies into ${mergedMovies.length} unique movies`);
-      
+
       // Process data for frontend consumption
       console.log('Processing data for frontend...');
       const processedMovies = this.processDataForFrontend(mergedMovies);
-      
+
       const result = {
         movies: processedMovies,
         total: processedMovies.length,
         scrapedAt: new Date().toISOString()
       };
-      
+
       // Cache the result
       this.cache = result;
       this.cacheTimestamp = new Date();
-      
+
       return result;
     } catch (error) {
       console.error('Error scraping movies:', error);
@@ -396,27 +381,27 @@ class BerlinCinemaScraper {
 
   getDayOfWeek(dateStr) {
     if (dateStr === 'Today') return 'Today';
-    
+
     // Parse date strings like "Tue 26/08", "Wed 27/08"
     const dateMatch = dateStr.match(/(\w{3})\s+(\d{1,2})\/(\d{1,2})/);
     if (dateMatch) {
       const day = parseInt(dateMatch[2]);
       const month = parseInt(dateMatch[3]);
-      
+
       // Assume current year and create a proper date
       const currentYear = new Date().getFullYear();
       const date = new Date(currentYear, month - 1, day); // month is 0-indexed
-      
+
       // If the date is in the past, assume it's next year
       if (date < new Date()) {
         date.setFullYear(currentYear + 1);
       }
-      
+
       // Calculate the actual day of the week from the parsed date
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       return dayNames[date.getDay()];
     }
-    
+
     return dateStr;
   }
 
@@ -425,29 +410,29 @@ class BerlinCinemaScraper {
       const today = new Date();
       return today.toISOString().split('T')[0];
     }
-    
+
     // Parse date strings like "Tue 26/08", "Wed 27/08"
     const dateMatch = dateStr.match(/(\w{3})\s+(\d{1,2})\/(\d{1,2})/);
     if (dateMatch) {
       const dayAbbr = dateMatch[1];
       const day = parseInt(dateMatch[2]);
-      const month = parseInt(dateMatch[3]); 	
-      
+      const month = parseInt(dateMatch[3]);
+
       // Assume current year and create a proper date
       const currentYear = new Date().getFullYear();
       const date = new Date(currentYear, month - 1, day); // month is 0-indexed
-      
+
       // Only add a year if the date is more than a month in the past
       const now = new Date();
       const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      
+
       if (date < oneMonthAgo) {
         date.setFullYear(currentYear + 1);
       }
-      
+
       return date.toISOString().split('T')[0];
     }
-    
+
     // If we can't parse it, return a fallback
     return new Date().toISOString().split('T')[0];
   }
@@ -457,13 +442,13 @@ class BerlinCinemaScraper {
     return title.replace(/\s*\([^)]*\)/g, '').trim();
   }
 
-    // Merge movies with the same base title and create the new structure
+  // Merge movies with the same base title and create the new structure
   mergeMovies(movies) {
     const movieMap = new Map();
-    
+
     movies.forEach(movie => {
       const baseTitle = this.getBaseTitle(movie.title);
-      
+
       if (!movieMap.has(baseTitle)) {
         // Create new merged movie with the new structure
         const mergedMovie = {
@@ -480,21 +465,21 @@ class BerlinCinemaScraper {
         };
         movieMap.set(baseTitle, mergedMovie);
       }
-      
+
       const mergedMovie = movieMap.get(baseTitle);
-      
+
       // Merge variants
       if (movie.variants) {
         movie.variants.forEach(variant => mergedMovie.variants.add(variant));
       }
-      
+
       // Merge cinemas
       if (movie.cinemas) {
         movie.cinemas.forEach(cinema => {
           mergedMovie.cinemas.add(JSON.stringify(cinema));
         });
       }
-      
+
       // Merge showings into organized structure
       if (movie.showings && Array.isArray(movie.showings)) {
         movie.showings.forEach(showing => {
@@ -516,15 +501,15 @@ class BerlinCinemaScraper {
                 const month = parseInt(dateMatch[3]);
                 const currentYear = new Date().getFullYear();
                 const parsedDate = new Date(currentYear, month - 1, day);
-                
+
                 // Only add a year if the date is more than a month in the past
                 const now = new Date();
                 const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-                
+
                 if (parsedDate < oneMonthAgo) {
                   parsedDate.setFullYear(currentYear + 1);
                 }
-                
+
                 formattedDate = parsedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
               } else {
                 // Fallback to original date string
@@ -534,10 +519,10 @@ class BerlinCinemaScraper {
               formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD format
             }
           }
-          
+
           // Format time as "13:50"
           const formattedTime = showing.time;
-          
+
           // Determine variant (OV, sub, Imax, EXPN)
           let variant = null;
           if (movie.variants && movie.variants.length > 0) {
@@ -548,35 +533,35 @@ class BerlinCinemaScraper {
             else if (movie.variants.includes('EXPN')) variant = 'EXPN';
             else variant = movie.variants[0]; // Take first available variant
           }
-          
+
           // Initialize date if it doesn't exist
           if (!mergedMovie.showings[formattedDate]) {
             mergedMovie.showings[formattedDate] = {};
           }
-          
+
           // Initialize time if it doesn't exist
           if (!mergedMovie.showings[formattedDate][formattedTime]) {
             mergedMovie.showings[formattedDate][formattedTime] = [];
           }
-          
+
           // Add cinema and variant info
           const showingInfo = {
             cinema: showing.cinema,
             variant: variant
           };
-          
+
           // Check if this exact showing already exists
-          const exists = mergedMovie.showings[formattedDate][formattedTime].some(s => 
+          const exists = mergedMovie.showings[formattedDate][formattedTime].some(s =>
             s.cinema === showingInfo.cinema && s.variant === showingInfo.variant
           );
-          
+
           if (!exists) {
             mergedMovie.showings[formattedDate][formattedTime].push(showingInfo);
           }
         });
       }
     });
-    
+
     // Convert Sets to arrays and format the final structure
     return Array.from(movieMap.values()).map(movie => {
       // Sort the showings object by date and time
@@ -594,7 +579,7 @@ class BerlinCinemaScraper {
               sortedShowings[date][time] = movie.showings[date][time];
             });
         });
-      
+
       return {
         ...movie,
         variants: Array.from(movie.variants),
@@ -634,12 +619,12 @@ router.get('/', async (req, res) => {
     }
 
     console.log('Starting to scrape movies...');
-    
+
     // Scrape movies
     const result = await scraper.scrapeMovies();
-    
+
     console.log(`Scraping completed. Found ${result.movies.length} movies`);
-    
+
     // Log sample data structure for debugging
     if (result.movies.length > 0) {
       const sampleMovie = result.movies[0];
@@ -661,12 +646,12 @@ router.get('/', async (req, res) => {
         console.log('- Sample showing entry:', Object.values(sampleMovie.showings)[0]);
       }
     }
-    
+
     // Return the result
     res.status(200).json(result);
   } catch (error) {
     console.error('Error in movies API:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
