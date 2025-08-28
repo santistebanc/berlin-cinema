@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import MovieDetailPage from './pages/MovieDetailPage';
+import PWAInstaller from './components/PWAInstaller';
 import { movieApi } from './services/api';
 import { Movie } from './types';
 
@@ -55,6 +56,7 @@ const App: React.FC = () => {
           <Route path="/movie/:title" element={<MovieDetailPage />} />
         </Routes>
       </main>
+      <PWAInstaller />
     </div>
   );
 };
