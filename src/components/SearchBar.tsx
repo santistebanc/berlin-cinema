@@ -184,12 +184,12 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
               }
             }}
             autoFocus
-            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cinema-500 focus:border-cinema-500 placeholder-gray-400"
+            className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-cinema-500 focus:border-cinema-500 placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
           
           {/* Search Icon */}
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+                            <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
           </div>
           
           {/* Clear Button */}
@@ -197,7 +197,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
             <button
               type="button"
               onClick={clearSearch}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
             >
               <X className="h-5 w-5" />
             </button>
@@ -207,13 +207,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
 
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
           {suggestions.map((movie, index) => (
             <div
               key={`${movie.title}-${index}`}
               onClick={() => handleSuggestionClick(movie)}
-              className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${
-                index === selectedIndex ? 'bg-cinema-50 border-l-4 border-cinema-500' : ''
+              className={`px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                index === selectedIndex ? 'bg-cinema-50 dark:bg-cinema-900 border-l-4 border-cinema-500' : ''
               }`}
             >
               <div className="flex items-center space-x-3">
@@ -232,11 +232,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
                 
                 {/* Movie Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {movie.title}
                   </div>
                   {movie.director && (
-                    <div className="text-xs text-gray-500 truncate">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       by {movie.director}
                     </div>
                   )}
@@ -245,13 +245,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
                       {movie.variants.slice(0, 3).map((variant, idx) => (
                         <span
                           key={idx}
-                          className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded"
+                          className="px-2 py-1 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 rounded"
                         >
                           {variant}
                         </span>
                       ))}
                       {movie.variants.length > 3 && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
                           +{movie.variants.length - 3} more
                         </span>
                       )}

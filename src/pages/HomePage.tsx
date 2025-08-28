@@ -116,12 +116,12 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
 
   if (loading && movies.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cinema-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading movies...</p>
+              <div className="flex items-center justify-center min-h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cinema-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading movies...</p>
+          </div>
         </div>
-      </div>
     );
   }
 
@@ -129,8 +129,8 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
     <div className="space-y-8">
       {/* Error Message */}
       {propError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{propError}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-800 dark:text-red-200">{propError}</p>
         </div>
       )}
 
@@ -138,28 +138,28 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
       <div className="mb-8">
 
 
-        {/* Search Results Summary */}
-        {searchQuery && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-blue-600">🔍</span>
-                <span className="text-blue-800">
-                  Found {sortedFilteredMovies.length} movie{sortedFilteredMovies.length !== 1 ? 's' : ''} matching "{searchQuery}"
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  navigate('/', { replace: true });
-                }}
-                className="text-blue-600 hover:text-blue-800 text-sm underline"
-              >
-                Clear search
-              </button>
+              {/* Search Results Summary */}
+      {searchQuery && (
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-blue-600 dark:text-blue-400">🔍</span>
+              <span className="text-blue-800 dark:text-blue-200">
+                Found {sortedFilteredMovies.length} movie{sortedFilteredMovies.length !== 1 ? 's' : ''} matching "{searchQuery}"
+              </span>
             </div>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                navigate('/', { replace: true });
+              }}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm underline"
+            >
+              Clear search
+            </button>
           </div>
-        )}
+        </div>
+      )}
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -167,8 +167,8 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
           </div>
         ) : sortedFilteredMovies.length === 0 ? (
           <div className="text-center py-8">
-            <Film className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">
+            <Film className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400">
               {searchQuery 
                 ? `No movies found matching "${searchQuery}". Try a different search term.`
                 : 'No movies found.'
@@ -192,7 +192,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
               <div
                 key={movie.title}
                 onClick={() => handleMovieClick(movie)}
-                className="cursor-pointer rounded-lg border-2 border-gray-200 bg-white transition-all duration-200 hover:shadow-lg hover:border-cinema-300"
+                className="cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:border-cinema-300"
               >
                 {/* Movie Poster */}
                 <div className="relative">
@@ -211,7 +211,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
                 
                 {/* Movie Info */}
                 <div className="p-3">
-                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
                     {movie.title}
                   </h3>
                   
@@ -219,7 +219,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
                   {movie.variants && movie.variants.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-2">
                       {movie.variants.map((variant, idx) => (
-                        <span key={idx} className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300 rounded-md">
+                        <span key={idx} className="px-2 py-1 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded-md">
                           {variant}
                         </span>
                       ))}
@@ -229,8 +229,8 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
 
                   
                   {/* Showtimes Count */}
-                  <div className="mt-2 pt-2 border-t border-gray-100">
-                    <span className="text-xs text-gray-600">
+                  <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                       🎬 {getTotalShowtimes(movie)} showtime{getTotalShowtimes(movie) !== 1 ? 's' : ''}
                     </span>
                   </div>
