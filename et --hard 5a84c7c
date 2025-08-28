@@ -1,0 +1,5 @@
+[33mda9365a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Restore filter button in Time column header while keeping filters section simplified
+[33m5a84c7c[m Make director and year badges smaller to match filter badge sizes (px-1 py-0.5 text-xs)
+[33m031bea4[m Remove show/hide filters button and make reset button smaller with badge-like styling
+[33me55f614[m Fix dark theme by adding dark variants to base CSS styles in index.css
+[33mc8e0863[m Make filter badges and variant badges smaller to match table badge sizes (px-1 py-0.5 text-xs)
