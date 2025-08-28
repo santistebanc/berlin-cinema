@@ -113,7 +113,14 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
         {movie.variants && movie.variants.length > 0 && (
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
             <Star className="h-4 w-4" />
-            <span>Variants: {movie.variants.join(', ')}</span>
+            <span>Variants: </span>
+            <div className="flex flex-wrap gap-1">
+              {movie.variants.map((variant, idx) => (
+                <span key={idx} className="px-1 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded">
+                  {variant}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -176,11 +183,11 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({ movie, onClose }) => {
                           <div className="flex flex-wrap gap-2">
                             {Array.isArray(timeShowings) && timeShowings.map((showing, index) => (
                               <div key={index} className="flex items-center space-x-2">
-                                <span className="px-2 py-1 bg-cinema-100 dark:bg-cinema-900/30 text-cinema-800 dark:text-cinema-200 text-xs rounded-md">
+                                <span className="px-1 py-0.5 bg-cinema-100 dark:bg-cinema-900/30 text-cinema-800 dark:text-cinema-200 text-xs rounded">
                                   {showing.cinema}
                                 </span>
                                 {showing.variant && (
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-md">
+                                  <span className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">
                                     {showing.variant}
                                   </span>
                                 )}

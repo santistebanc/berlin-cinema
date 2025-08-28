@@ -381,7 +381,7 @@ const MovieDetailPage: React.FC = () => {
                     <button
                       key={cinema}
                       onClick={() => toggleCinema(cinema)}
-                      className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
+                      className={`px-1 py-0.5 rounded text-xs font-medium border transition-colors ${
                         selectedCinemas.includes(cinema)
                           ? `${getCinemaColors()[cinema]}`
                           : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -401,7 +401,7 @@ const MovieDetailPage: React.FC = () => {
                     <button
                       key={date}
                       onClick={() => toggleDate(date)}
-                      className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
+                      className={`px-1 py-0.5 rounded text-xs font-medium border transition-colors ${
                         selectedDates.includes(date)
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-600'
                           : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -430,7 +430,7 @@ const MovieDetailPage: React.FC = () => {
                       <button
                         key={variant}
                         onClick={() => toggleVariant(variant)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium border transition-colors ${
+                        className={`px-1 py-0.5 rounded text-xs font-medium border transition-colors ${
                                                   selectedVariants.includes(variant)
                           ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border-orange-300 dark:border-orange-600'
                           : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-600'
@@ -462,7 +462,13 @@ const MovieDetailPage: React.FC = () => {
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                       <th className="text-left py-2 px-1 font-medium text-gray-700 dark:text-gray-300 min-w-[50px] sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 text-xs shadow-sm">
-                        Time
+                        <button
+                          onClick={() => setShowFilters(!showFilters)}
+                          className="inline-flex items-center justify-center w-6 h-6 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                          title={showFilters ? 'Hide Filters' : 'Show Filters'}
+                        >
+                          <Filter className="h-4 w-4" />
+                        </button>
                       </th>
                       {(() => {
                         // Only show dates that have showings after filtering
