@@ -139,6 +139,11 @@ const scraper = new BerlinCinemaScraper();
 // GET /api/movies
 router.get('/', async (req, res) => {
   try {
+    // Set cache control headers to expire after 1 hour
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600'); // 1 hour = 3600 seconds
+    res.setHeader('Expires', new Date(Date.now() + 3600000).toUTCString()); // 1 hour from now
+    res.setHeader('Pragma', 'no-cache');
+    
     console.log('GET /api/movies - Starting scrape...');
     const movies = await scraper.scrapeMovies();
     
