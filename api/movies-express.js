@@ -609,6 +609,11 @@ router.get('/', async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Set cache control headers to expire after 1 hour
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600'); // 1 hour = 3600 seconds
+    res.setHeader('Expires', new Date(Date.now() + 3600000).toUTCString()); // 1 hour from now
+    res.setHeader('Pragma', 'no-cache');
 
     console.log('Movies API called - initializing scraper...');
 
