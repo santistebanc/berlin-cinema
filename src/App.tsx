@@ -13,8 +13,42 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  const LAST_FETCH_KEY = 'movies_last_fetch';
+  const MOVIES_CACHE_KEY = 'movies_cache';
+
   useEffect(() => {
-    loadMovies();
+    const maybeLoadFromCacheOrFetch = async () => {
+      try {
+        const lastFetchString = localStorage.getItem(LAST_FETCH_KEY);
+        const cachedMoviesString = localStorage.getItem(MOVIES_CACHE_KEY);
+
+        const lastFetchAt = lastFetchString ? Number(lastFetchString) : 0;
+        const now = Date.now();
+        const isFresh = lastFetchAt > 0 && now - lastFetchAt < ONE_HOUR_MS;
+
+        if (isFresh && cachedMoviesString) {
+          try {
+            const cached: Movie[] = JSON.parse(cachedMoviesString);
+            if (Array.isArray(cached) && cached.length > 0) {
+              setMovies(cached);
+              setError(null);
+              setLoading(false);
+              return;
+            }
+          } catch {
+            // Ignore cache parse errors and proceed to fetch
+          }
+        }
+
+        await loadMovies();
+      } catch {
+        // As a fallback, attempt network fetch
+        await loadMovies();
+      }
+    };
+
+    maybeLoadFromCacheOrFetch();
   }, []);
 
   const loadMovies = async () => {
@@ -30,6 +64,14 @@ const App: React.FC = () => {
       
       setMovies(moviesResult.movies);
       setError(null);
+
+      // Update cache and last fetch timestamp on success
+      try {
+        localStorage.setItem(MOVIES_CACHE_KEY, JSON.stringify(moviesResult.movies));
+        localStorage.setItem(LAST_FETCH_KEY, String(Date.now()));
+      } catch {
+        // Ignore storage errors
+      }
     } catch (err) {
       console.error('Error loading data:', err);
       setError(`Failed to load movies: ${err instanceof Error ? err.message : 'Unknown error'}`);
