@@ -9,6 +9,27 @@ const imageProxyRouter = require('./api/image-proxy-express');
 const app = express();
 const PORT = process.env.PORT || 3003;
 
+// Handle port conflicts gracefully
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📱 Frontend: http://localhost:3002`);
+  console.log(`🔌 API: http://localhost:${PORT}/api`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`❌ Port ${PORT} is already in use. Trying port ${PORT + 1}...`);
+    const newPort = PORT + 1;
+    const newServer = app.listen(newPort, () => {
+      console.log(`🚀 Server running on port ${newPort}`);
+      console.log(`📱 Frontend: http://localhost:3002`);
+      console.log(`🔌 API: http://localhost:${newPort}/api`);
+    });
+  } else {
+    console.error('Server error:', err);
+  }
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -85,8 +106,3 @@ app.get('*', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Frontend: http://localhost:${PORT}`);
-  console.log(`🔌 API: http://localhost:${PORT}/api`);
-});
