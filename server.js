@@ -18,10 +18,14 @@ app.use(express.static(path.join(__dirname, 'dist'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year for JS files
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); // Force no cache for JS
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     } else if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
-      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year for CSS files
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); // Force no cache for CSS
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     } else if (filePath.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Cache-Control', 'no-cache'); // No cache for JSON files
@@ -45,6 +49,10 @@ app.get('/health', (req, res) => {
 // Handle old cached JS files by serving the current version
 app.get('/assets/index-19b6822e.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('ETag', `"${Date.now()}"`); // Force ETag change
   res.sendFile(path.join(__dirname, 'dist', 'assets', 'index-22b7dd5e.js'));
 });
 
@@ -65,6 +73,10 @@ app.get('/assets/index-:hash.js', (req, res) => {
   
   if (currentJsFile) {
     res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('ETag', `"${Date.now()}"`); // Force ETag change
     res.sendFile(path.join(assetsDir, currentJsFile));
   } else {
     res.status(404).send('JS file not found');
