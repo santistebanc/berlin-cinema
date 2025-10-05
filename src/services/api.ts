@@ -23,6 +23,15 @@ export const movieApi = {
     console.log(`📊 Found ${response.data.movies?.length || 0} movies`);
     console.log('🎭 Sample movie:', response.data.movies?.[0]?.title || 'No movies');
     
+    // Log the complete scraping results object
+    console.log('📋 Complete scraping results:', response.data);
+    console.log('🔍 Full response structure:', {
+      movies: response.data.movies?.length || 0,
+      count: response.data.count,
+      timestamp: response.data.timestamp,
+      sampleMovie: response.data.movies?.[0] || null
+    });
+    
     return response.data;
   },
 };
