@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, MapPin, Star, Users, Calendar } from 'lucide-react';
+import { Clock, MapPin, Star, Users, Calendar, TrendingUp } from 'lucide-react';
 import { Movie } from '../types';
 
 interface MovieCardProps {
@@ -82,15 +82,6 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
 
           {/* Enhanced Movie Information */}
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            {/* IMDb Rating */}
-            {movie.imdbRating && (
-              <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded text-xs">
-                <Star className="h-3 w-3 mr-1" />
-                <span className="font-semibold">IMDb</span>
-                <span className="ml-1 font-bold">{movie.imdbRating}</span>
-              </div>
-            )}
-            
             {/* TMDb Rating */}
             {movie.tmdbRating && (
               <div className="flex items-center bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">
@@ -100,11 +91,13 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
               </div>
             )}
             
-            {/* Runtime */}
-            {movie.runtime && (
-              <div className="flex items-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-xs">
-                <Clock className="h-3 w-3 mr-1" />
-                {movie.runtime}
+            
+            {/* Popularity */}
+            {movie.popularity && (
+              <div className="flex items-center bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-2 py-1 rounded text-xs">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                <span className="font-semibold">Popular</span>
+                <span className="ml-1 font-bold">{movie.popularity.toFixed(1)}</span>
               </div>
             )}
           </div>
