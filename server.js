@@ -13,27 +13,21 @@ const PORT = process.env.PORT || 3003;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files with proper MIME types and cache control
+// Serve static files with no caching
 app.use(express.static(path.join(__dirname, 'dist'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); // Force no cache for JS
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
     } else if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); // Force no cache for CSS
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
     } else if (filePath.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Cache-Control', 'no-cache'); // No cache for JSON files
-    } else if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); // No cache for HTML
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
     }
+    
+    // Force no caching for all files
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
   }
 }));
 
@@ -52,7 +46,6 @@ app.get('/assets/index-19b6822e.js', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  res.setHeader('ETag', `"${Date.now()}"`); // Force ETag change
   res.sendFile(path.join(__dirname, 'dist', 'assets', 'index-22b7dd5e.js'));
 });
 
@@ -76,7 +69,6 @@ app.get('/assets/index-:hash.js', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('ETag', `"${Date.now()}"`); // Force ETag change
     res.sendFile(path.join(assetsDir, currentJsFile));
   } else {
     res.status(404).send('JS file not found');
