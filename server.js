@@ -13,15 +13,22 @@ const PORT = process.env.PORT || 3003;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files with proper MIME types
+// Serve static files with proper MIME types and cache control
 app.use(express.static(path.join(__dirname, 'dist'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year for JS files
     } else if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year for CSS files
     } else if (filePath.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-cache'); // No cache for JSON files
+    } else if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); // No cache for HTML
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     }
   }
 }));
@@ -33,6 +40,12 @@ app.use('/api/image-proxy', imageProxyRouter);
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Handle old cached JS files by serving the current version
+app.get('/assets/index-19b6822e.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, 'dist', 'assets', 'index-37edccf7.js'));
 });
 
 // Serve React app for all other routes (SPA fallback)
