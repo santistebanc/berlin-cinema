@@ -10,6 +10,29 @@ export interface Movie {
   variants: string[];
   cinemas: Cinema[];
   showings: Record<string, Record<string, ShowingInfo[]>>; // Date -> Time -> Cinema+Variant[]
+  
+  // Additional movie information from external APIs
+  imdbID?: string | null;
+  imdbRating?: string | null;
+  imdbVotes?: string | null;
+  metascore?: string | null;
+  plot?: string | null;
+  runtime?: string | null;
+  genre?: string | null;
+  awards?: string | null;
+  rated?: string | null;
+  language?: string | null;
+  tmdbID?: number | null;
+  tmdbRating?: number | null;
+  tmdbVotes?: number | null;
+  overview?: string | null;
+  releaseDate?: string | null;
+  budget?: number | null;
+  revenue?: number | null;
+  popularity?: number | null;
+  genres?: string[] | null;
+  productionCompanies?: string[] | null;
+  backdropUrl?: string | null;
 }
 
 export interface Cinema {
