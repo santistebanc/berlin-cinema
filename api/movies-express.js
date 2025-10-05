@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const MovieInfoService = require('./movie-info-service');
 
 const router = express.Router();
 
@@ -14,6 +15,9 @@ class BerlinCinemaScraper {
 
     // Cookie storage - starts empty, gets populated by server responses
     this.cookies = {};
+    
+    // Movie information service for fetching additional data
+    this.movieInfoService = new MovieInfoService();
   }
 
   // Get formatted cookie string for headers
@@ -218,23 +222,6 @@ class BerlinCinemaScraper {
           if (trailerUrl && !trailerUrl.startsWith('http')) {
             trailerUrl = `https://www.critic.de${trailerUrl}`;
           }
-        } else {
-          // If no direct trailer link, try to derive from review URL
-          // Look for review link in the movie item
-          const reviewElement = $item.find('a.readcritic');
-          if (reviewElement.length > 0) {
-            const reviewUrl = reviewElement.attr('href');
-            if (reviewUrl) {
-              // Extract movie ID from review URL pattern: /film/movie-name-12345/
-              const movieIdMatch = reviewUrl.match(/\/film\/[^\/]+\-(\d+)\//);
-              if (movieIdMatch) {
-                const movieId = movieIdMatch[1];
-                // Construct trailer URL using the movie ID
-                trailerUrl = `https://www.critic.de/film/trailer/${movieId}/`;
-                console.log(`Derived trailer URL for ${title}: ${trailerUrl}`);
-              }
-            }
-          }
         }
 
         // Extract real cinema and showtime data
@@ -370,9 +357,14 @@ class BerlinCinemaScraper {
       const mergedMovies = this.mergeMovies(movies);
       console.log(`Merged ${movies.length} movies into ${mergedMovies.length} unique movies`);
 
+      // Enrich movies with additional information from external APIs
+      console.log('Enriching movies with additional information...');
+      const enrichedMovies = await this.enrichMoviesWithExternalData(mergedMovies);
+      console.log(`Enriched ${enrichedMovies.length} movies with external data`);
+
       // Process data for frontend consumption
       console.log('Processing data for frontend...');
-      const processedMovies = this.processDataForFrontend(mergedMovies);
+      const processedMovies = this.processDataForFrontend(enrichedMovies);
 
       const result = {
         movies: processedMovies,
@@ -385,6 +377,50 @@ class BerlinCinemaScraper {
       console.error('Error scraping movies:', error);
       throw error;
     }
+  }
+
+  /**
+   * Enrich movies with additional information from external APIs
+   */
+  async enrichMoviesWithExternalData(movies) {
+    const enrichedMovies = [];
+    
+    // Process movies in batches to avoid overwhelming the APIs
+    const batchSize = 5;
+    for (let i = 0; i < movies.length; i += batchSize) {
+      const batch = movies.slice(i, i + batchSize);
+      
+      const enrichedBatch = await Promise.all(
+        batch.map(async (movie) => {
+          try {
+            // Fetch additional movie information
+            const additionalInfo = await this.movieInfoService.fetchMovieInfo(
+              movie.title,
+              movie.year
+            );
+            
+            if (additionalInfo) {
+              console.log(`✓ Enriched "${movie.title}" with external data`);
+              return { ...movie, ...additionalInfo };
+            }
+            
+            return movie;
+          } catch (error) {
+            console.log(`✗ Failed to enrich "${movie.title}":`, error.message);
+            return movie;
+          }
+        })
+      );
+      
+      enrichedMovies.push(...enrichedBatch);
+      
+      // Small delay between batches to be respectful to the APIs
+      if (i + batchSize < movies.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    return enrichedMovies;
   }
 
   getDayOfWeek(dateStr) {
