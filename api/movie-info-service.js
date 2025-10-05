@@ -1,120 +1,92 @@
 const axios = require('axios');
+const movieInfo = require('movie-info');
+const movieTrailer = require('movie-trailer');
 
 class MovieInfoService {
   constructor() {
-    // OMDb API - Free tier available at http://www.omdbapi.com/
-    // You can get a free API key from: http://www.omdbapi.com/apikey.aspx
-    this.omdbApiKey = process.env.OMDB_API_KEY || '';
-    this.omdbBaseUrl = 'http://www.omdbapi.com/';
-    
-    // TMDb API - Free tier available at https://www.themoviedb.org/settings/api
-    this.tmdbApiKey = process.env.TMDB_API_KEY || '';
-    this.tmdbBaseUrl = 'https://api.themoviedb.org/3';
+    // No API keys needed - using npm packages that work directly
+    console.log('🎬 MovieInfoService initialized with npm packages');
   }
 
   /**
-   * Search for movie by title and year on OMDb
+   * Search for movie using movie-info npm package
    */
-  async fetchOMDbInfo(title, year = null) {
-    if (!this.omdbApiKey) {
-      console.log('⚠️  OMDb API key not configured. Skipping OMDb fetch.');
-      return null;
-    }
-
-    try {
-      const params = {
-        apikey: this.omdbApiKey,
-        t: title,
-        type: 'movie',
-        plot: 'full'
-      };
-      
-      if (year) {
-        params.y = year;
-      }
-
-      const response = await axios.get(this.omdbBaseUrl, { params, timeout: 5000 });
-      
-      if (response.data.Response === 'True') {
-        return {
-          imdbID: response.data.imdbID,
-          imdbRating: response.data.imdbRating !== 'N/A' ? response.data.imdbRating : null,
-          imdbVotes: response.data.imdbVotes !== 'N/A' ? response.data.imdbVotes : null,
-          metascore: response.data.Metascore !== 'N/A' ? response.data.Metascore : null,
-          plot: response.data.Plot !== 'N/A' ? response.data.Plot : null,
-          runtime: response.data.Runtime !== 'N/A' ? response.data.Runtime : null,
-          genre: response.data.Genre !== 'N/A' ? response.data.Genre : null,
-          awards: response.data.Awards !== 'N/A' ? response.data.Awards : null,
-          rated: response.data.Rated !== 'N/A' ? response.data.Rated : null,
-          language: response.data.Language !== 'N/A' ? response.data.Language : null
-        };
-      }
-      
-      return null;
-    } catch (error) {
-      console.log(`Failed to fetch OMDb info for "${title}":`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Search for movie by title on TMDb
-   */
-  async fetchTMDbInfo(title, year = null) {
-    if (!this.tmdbApiKey) {
-      console.log('⚠️  TMDb API key not configured. Skipping TMDb fetch.');
-      return null;
-    }
-
+  async fetchMovieInfoData(title, year = null) {
     try {
       // Search for the movie
-      const searchParams = {
-        api_key: this.tmdbApiKey,
-        query: title,
-        language: 'en-US'
-      };
+      const searchQuery = year ? `${title} ${year}` : title;
+      const details = await movieInfo(searchQuery);
       
-      if (year) {
-        searchParams.year = year;
-      }
-
-      const searchResponse = await axios.get(`${this.tmdbBaseUrl}/search/movie`, {
-        params: searchParams,
-        timeout: 5000
-      });
-
-      if (searchResponse.data.results && searchResponse.data.results.length > 0) {
-        const movie = searchResponse.data.results[0];
-        
-        // Fetch additional details
-        const detailsResponse = await axios.get(`${this.tmdbBaseUrl}/movie/${movie.id}`, {
-          params: {
-            api_key: this.tmdbApiKey,
-            append_to_response: 'videos,credits'
-          },
-          timeout: 5000
-        });
-
-        const details = detailsResponse.data;
-        
+      if (details) {
         return {
           tmdbID: details.id,
           tmdbRating: details.vote_average || null,
           tmdbVotes: details.vote_count || null,
           overview: details.overview || null,
           releaseDate: details.release_date || null,
-          budget: details.budget || null,
-          revenue: details.revenue || null,
           popularity: details.popularity || null,
-          genres: details.genres ? details.genres.map(g => g.name) : null,
-          productionCompanies: details.production_companies ? details.production_companies.map(c => c.name) : null,
-          backdropUrl: details.backdrop_path ? `https://image.tmdb.org/t/p/original${details.backdrop_path}` : null
+          genres: details.genre_ids ? this.mapGenreIds(details.genre_ids) : null,
+          backdropUrl: details.backdrop_path ? `${details.imageBase}${details.backdrop_path}` : null,
+          posterUrl: details.poster_path ? `${details.imageBase}${details.poster_path}` : null,
+          originalTitle: details.original_title || null,
+          originalLanguage: details.original_language || null,
+          adult: details.adult || false
         };
       }
       
       return null;
     } catch (error) {
-      console.log(`Failed to fetch TMDb info for "${title}":`, error.message);
+      console.log(`Failed to fetch movie info for "${title}":`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Map TMDb genre IDs to genre names
+   */
+  mapGenreIds(genreIds) {
+    const genreMap = {
+      28: 'Action',
+      12: 'Adventure',
+      16: 'Animation',
+      35: 'Comedy',
+      80: 'Crime',
+      99: 'Documentary',
+      18: 'Drama',
+      10751: 'Family',
+      14: 'Fantasy',
+      36: 'History',
+      27: 'Horror',
+      10402: 'Music',
+      9648: 'Mystery',
+      10749: 'Romance',
+      878: 'Science Fiction',
+      10770: 'TV Movie',
+      53: 'Thriller',
+      10752: 'War',
+      37: 'Western'
+    };
+    
+    return genreIds.map(id => genreMap[id] || 'Unknown').filter(genre => genre !== 'Unknown');
+  }
+
+  /**
+   * Fetch trailer URL using movie-trailer npm package
+   */
+  async fetchTrailerInfo(title, year = null) {
+    try {
+      const searchQuery = year ? `${title} ${year}` : title;
+      const trailerUrl = await movieTrailer(searchQuery, { timeout: 10000 });
+      
+      if (trailerUrl) {
+        return {
+          trailerUrl: trailerUrl
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.log(`Failed to fetch trailer for "${title}":`, error.message);
       return null;
     }
   }
@@ -123,19 +95,19 @@ class MovieInfoService {
    * Fetch comprehensive movie information from all available sources
    */
   async fetchMovieInfo(title, year = null) {
-    const [omdbInfo, tmdbInfo] = await Promise.allSettled([
-      this.fetchOMDbInfo(title, year),
-      this.fetchTMDbInfo(title, year)
+    const [movieInfo, trailerInfo] = await Promise.allSettled([
+      this.fetchMovieInfoData(title, year),
+      this.fetchTrailerInfo(title, year)
     ]);
 
     const result = {};
 
-    if (omdbInfo.status === 'fulfilled' && omdbInfo.value) {
-      Object.assign(result, omdbInfo.value);
+    if (movieInfo.status === 'fulfilled' && movieInfo.value) {
+      Object.assign(result, movieInfo.value);
     }
 
-    if (tmdbInfo.status === 'fulfilled' && tmdbInfo.value) {
-      Object.assign(result, tmdbInfo.value);
+    if (trailerInfo.status === 'fulfilled' && trailerInfo.value) {
+      Object.assign(result, trailerInfo.value);
     }
 
     return Object.keys(result).length > 0 ? result : null;

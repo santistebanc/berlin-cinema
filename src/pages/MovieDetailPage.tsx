@@ -21,6 +21,8 @@ const MovieDetailPage: React.FC = () => {
   const [selectedCinemaForPopup, setSelectedCinemaForPopup] = useState<{ name: string, address: string, city: string, postalCode: string, url: string } | null>(null);
   const [showCinemaPopup, setShowCinemaPopup] = useState(false);
 
+  console.log('///////////////////////////////////////////////////////////////////', movie);
+
   // Generate unique colors for each cinema
   const getCinemaColors = () => {
     if (!movie) return {};
@@ -327,18 +329,6 @@ const MovieDetailPage: React.FC = () => {
               <div className="mb-3 space-y-2">
                 {/* Ratings Row */}
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  {/* IMDb Rating */}
-                  {movie.imdbRating && (
-                    <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-md">
-                      <Star className="h-4 w-4 mr-1" />
-                      <span className="font-semibold">IMDb</span>
-                      <span className="ml-1 font-bold">{movie.imdbRating}</span>
-                      {movie.imdbVotes && (
-                        <span className="ml-1 text-xs">({movie.imdbVotes})</span>
-                      )}
-                    </div>
-                  )}
-                  
                   {/* TMDb Rating */}
                   {movie.tmdbRating && (
                     <div className="flex items-center bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-md">
@@ -351,46 +341,38 @@ const MovieDetailPage: React.FC = () => {
                     </div>
                   )}
                   
-                  {/* Metascore */}
-                  {movie.metascore && (
+                  {/* Popularity */}
+                  {movie.popularity && (
                     <div className="flex items-center bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-2 py-1 rounded-md">
                       <TrendingUp className="h-4 w-4 mr-1" />
-                      <span className="font-semibold">Meta</span>
-                      <span className="ml-1 font-bold">{movie.metascore}</span>
+                      <span className="font-semibold">Popularity</span>
+                      <span className="ml-1 font-bold">{movie.popularity.toFixed(1)}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Additional Info Row */}
                 <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                  {/* Runtime */}
-                  {movie.runtime && (
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {movie.runtime}
-                    </div>
-                  )}
-                  
-                  {/* Content Rating */}
-                  {movie.rated && (
-                    <div className="flex items-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
-                      {movie.rated}
-                    </div>
-                  )}
-                  
-                  {/* Language */}
-                  {movie.language && (
-                    <div className="flex items-center">
-                      <Globe className="h-4 w-4 mr-1" />
-                      {movie.language}
-                    </div>
-                  )}
-                  
                   {/* Release Date */}
                   {movie.releaseDate && (
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-1" />
                       {new Date(movie.releaseDate).toLocaleDateString()}
+                    </div>
+                  )}
+                  
+                  {/* Original Language */}
+                  {movie.originalLanguage && (
+                    <div className="flex items-center">
+                      <Globe className="h-4 w-4 mr-1" />
+                      {movie.originalLanguage.toUpperCase()}
+                    </div>
+                  )}
+                  
+                  {/* Adult Content */}
+                  {movie.adult && (
+                    <div className="flex items-center bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-2 py-1 rounded">
+                      <span className="text-xs font-medium">18+</span>
                     </div>
                   )}
                 </div>
@@ -430,90 +412,24 @@ const MovieDetailPage: React.FC = () => {
         </div>
 
         {/* Enhanced Movie Information Section */}
-        {(movie.plot || movie.overview || movie.awards || movie.budget || movie.revenue || movie.productionCompanies) && (
+        {(movie.overview || movie.genres) && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Movie Information</h3>
             
             <div className="space-y-4">
               {/* Plot/Overview */}
-              {(movie.plot || movie.overview) && (
+              {movie.overview && (
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plot Summary</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {movie.plot || movie.overview}
+                    {movie.overview}
                   </p>
                 </div>
               )}
 
-              {/* Awards */}
-              {movie.awards && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                    <Award className="h-4 w-4 mr-1" />
-                    Awards
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{movie.awards}</p>
-                </div>
-              )}
-
-              {/* Financial Information */}
-              {(movie.budget || movie.revenue) && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                    <DollarSign className="h-4 w-4 mr-1" />
-                    Box Office
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {movie.budget && (
-                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Budget</div>
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          ${movie.budget.toLocaleString()}
-                        </div>
-                      </div>
-                    )}
-                    {movie.revenue && (
-                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Revenue</div>
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          ${movie.revenue.toLocaleString()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Production Companies */}
-              {movie.productionCompanies && movie.productionCompanies.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                    <Building className="h-4 w-4 mr-1" />
-                    Production Companies
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {movie.productionCompanies.map((company, idx) => (
-                      <span key={idx} className="px-2 py-1 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700 rounded">
-                        {company}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* External Links */}
               <div className="flex flex-wrap gap-2">
-                {movie.imdbID && (
-                  <a
-                    href={`https://www.imdb.com/title/${movie.imdbID}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-3 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border border-yellow-300 dark:border-yellow-700 rounded hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    IMDb
-                  </a>
-                )}
                 {movie.tmdbID && (
                   <a
                     href={`https://www.themoviedb.org/movie/${movie.tmdbID}`}
