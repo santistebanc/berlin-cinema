@@ -210,6 +210,16 @@ class BerlinCinemaScraper {
           posterUrl = `https://www.critic.de${posterUrl}`;
         }
 
+        // Extract trailer URL
+        let trailerUrl = null;
+        const trailerElement = $item.find('.subfilminfo.trailer a');
+        if (trailerElement.length > 0) {
+          trailerUrl = trailerElement.attr('href');
+          if (trailerUrl && !trailerUrl.startsWith('http')) {
+            trailerUrl = `https://www.critic.de${trailerUrl}`;
+          }
+        }
+
         // Extract real cinema and showtime data
         const movieCinemas = [];
         const movieShowings = [];
@@ -313,34 +323,12 @@ class BerlinCinemaScraper {
           }
 
           // Debug logging for URL construction
-          // if (cinemaUrl) {
-          //   console.log(`Cinema URL debug - ${cinemaName}:`);
-          //   console.log(`  Original: ${cinemaUrl}`);
-          //   console.log(`  Final: ${cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`}`);
-          // }
-        });
-
-        // Extract trailer link by deriving from movie URL
-        let trailerUrl = null;
-        
-        if (movieUrl) {
-          // Extract the movie slug from the URL
-          // Example: /ov-movies-berlin/movie/one-battle-after-another-410311/ -> one-battle-after-another
-          const urlMatch = movieUrl.match(/\/movie\/([^\/]+)-\d+\//);
-          
-          if (urlMatch) {
-            const movieSlug = urlMatch[1];
-            console.log(`Movie slug extracted: ${movieSlug}`);
-            
-            // Construct trailer URL using the pattern from the HTML
-            // We need to map the movie slug to the film ID used in trailer URLs
-            // For now, we'll use a simple approach and try to construct the URL
-            trailerUrl = `https://www.critic.de/film/${movieSlug}/trailer/`;
-            console.log(`Generated trailer URL: ${trailerUrl}`);
-          } else {
-            console.log(`Could not extract movie slug from URL: ${movieUrl}`);
+          if (cinemaUrl) {
+            console.log(`Cinema URL debug - ${cinemaName}:`);
+            console.log(`  Original: ${cinemaUrl}`);
+            console.log(`  Final: ${cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`}`);
           }
-        }
+        });
 
         // Create movie object with the new structure
         const movie = {
@@ -350,8 +338,8 @@ class BerlinCinemaScraper {
           country: movieDetails.country || null,
           year: movieDetails.year || null,
           posterUrl: posterUrl || null,
-          url: movieUrl.startsWith('http') ? movieUrl : `https://www.critic.de${movieUrl}`,
           trailerUrl: trailerUrl,
+          url: movieUrl.startsWith('http') ? movieUrl : `https://www.critic.de${movieUrl}`,
           variants: variants,
           cinemas: movieCinemas,
           showings: movieShowings
