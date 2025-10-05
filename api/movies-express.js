@@ -320,6 +320,18 @@ class BerlinCinemaScraper {
           }
         });
 
+        // Extract trailer link from movie URL
+        let trailerUrl = null;
+        if (movieUrl) {
+          // Convert movie URL to trailer URL
+          // Example: /film/one-battle-after-another-19183/ -> /film/one-battle-after-another-19183/trailer/
+          const fullMovieUrl = movieUrl.startsWith('http') ? movieUrl : `https://www.critic.de${movieUrl}`;
+          if (fullMovieUrl.includes('/film/')) {
+            // Remove trailing slash if present and add /trailer/
+            trailerUrl = fullMovieUrl.replace(/\/$/, '') + '/trailer/';
+          }
+        }
+
         // Create movie object with the new structure
         const movie = {
           title: title,
@@ -329,6 +341,7 @@ class BerlinCinemaScraper {
           year: movieDetails.year || null,
           posterUrl: posterUrl || null,
           url: movieUrl.startsWith('http') ? movieUrl : `https://www.critic.de${movieUrl}`,
+          trailerUrl: trailerUrl,
           variants: variants,
           cinemas: movieCinemas,
           showings: movieShowings
