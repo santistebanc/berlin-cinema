@@ -34,7 +34,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:frontend": "vite --port 3002",
+    "dev:frontend": "vite",
     "dev:server": "node server.js",
     "dev:server:watch": "nodemon --config nodemon.json",
     "dev:fullstack": "concurrently --kill-others \"npm run dev:frontend\" \"npm run dev:server:watch\"",
