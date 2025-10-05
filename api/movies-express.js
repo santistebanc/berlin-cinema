@@ -620,34 +620,11 @@ router.get('/', async (req, res) => {
       console.log('Scraper initialized');
     }
 
-    console.log('Starting to scrape movies...');
 
       // Scrape movies
       const result = await scraper.scrapeMovies();
 
-      console.log(`Scraping completed. Found ${result.movies.length} movies`);
 
-    // Log sample data structure for debugging
-    if (result.movies.length > 0) {
-      const sampleMovie = result.movies[0];
-      console.log('Sample movie structure:');
-      console.log('- Title:', sampleMovie.title);
-      console.log('- Variants:', sampleMovie.variants);
-      console.log('- Cinemas count:', sampleMovie.cinemas.length);
-      // Count total showings from the nested structure
-      let totalShowings = 0;
-      if (sampleMovie.showings && typeof sampleMovie.showings === 'object') {
-        Object.values(sampleMovie.showings).forEach(dateShowings => {
-          Object.values(dateShowings).forEach(timeShowings => {
-            totalShowings += timeShowings.length;
-          });
-        });
-      }
-      console.log('- Showings count:', totalShowings);
-      if (totalShowings > 0) {
-        console.log('- Sample showing entry:', Object.values(sampleMovie.showings)[0]);
-      }
-    }
 
     // Return the result
     res.status(200).json(result);
