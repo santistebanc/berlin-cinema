@@ -11,8 +11,6 @@ const router = express.Router();
 class BerlinCinemaScraper {
   constructor() {
     this.baseUrl = 'https://www.critic.de/ov-movies-berlin/';
-    this.cache = null;
-    this.cacheTimestamp = null;
 
     // Cookie storage - starts empty, gets populated by server responses
     this.cookies = {};
@@ -40,19 +38,8 @@ class BerlinCinemaScraper {
     }
   }
 
-  isCacheValid() {
-    if (!this.cache || !this.cacheTimestamp) return false;
-    const now = new Date();
-    const cacheAge = now.getTime() - this.cacheTimestamp.getTime();
-    return cacheAge < 60 * 60 * 1000; // 1 hour
-  }
 
   async scrapeMovies() {
-    if (this.isCacheValid()) {
-      console.log('Using cached data');
-      return this.cache;
-    }
-
     try {
       console.log('Scraping movies from:', this.baseUrl);
 
@@ -365,10 +352,6 @@ class BerlinCinemaScraper {
         scrapedAt: new Date().toISOString()
       };
 
-      // Cache the result
-      this.cache = result;
-      this.cacheTimestamp = new Date();
-
       return result;
     } catch (error) {
       console.error('Error scraping movies:', error);
@@ -607,10 +590,10 @@ router.get('/', async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
-    // Set cache control headers to expire after 1 hour
-    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600'); // 1 hour = 3600 seconds
-    res.setHeader('Expires', new Date(Date.now() + 3600000).toUTCString()); // 1 hour from now
+    // Set no-cache headers to ensure fresh data
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
 
     console.log('Movies API called - initializing scraper...');
 
