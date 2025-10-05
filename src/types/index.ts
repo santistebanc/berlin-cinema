@@ -5,39 +5,15 @@ export interface Movie {
   country: string | null;
   year: number | null;
   posterUrl: string | null;
-  trailerUrl: string | null;
   url: string | null;
   variants: string[];
   cinemas: Cinema[];
   showings: Record<string, Record<string, ShowingInfo[]>>; // Date -> Time -> Cinema+Variant[]
-  
-  // Additional movie information from npm packages
-  tmdbID?: number | null;
-  tmdbRating?: number | null;
-  tmdbVotes?: number | null;
-  overview?: string | null;
-  releaseDate?: string | null;
-  popularity?: number | null;
-  genres?: string[] | null;
-  backdropUrl?: string | null;
-  originalTitle?: string | null;
-  originalLanguage?: string | null;
-  adult?: boolean | null;
-}
-
-export interface Cinema {
-  name: string;
-  address: string;
 }
 
 export interface ShowingInfo {
   cinema: string;
   variant: string | null; // OV, sub, Imax, EXPN, etc.
-}
-
-export interface Cinema {
-  name: string;
-  address: string;
 }
 
 export interface Showing {
