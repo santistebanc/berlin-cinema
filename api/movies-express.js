@@ -320,43 +320,26 @@ class BerlinCinemaScraper {
           // }
         });
 
-        // Extract trailer link from the HTML content
+        // Extract trailer link by deriving from movie URL
         let trailerUrl = null;
         
-        // Debug: Check what links are available in this movie item
-        const allLinks = $item.find('a');
-        console.log(`Movie: ${title} - Found ${allLinks.length} links total`);
-        
-        // Look for any links containing "trailer"
-        const trailerLinks = $item.find('a[href*="trailer"]');
-        console.log(`Movie: ${title} - Found ${trailerLinks.length} trailer links`);
-        
-        if (trailerLinks.length > 0) {
-          trailerLinks.each((i, link) => {
-            const href = $(link).attr('href');
-            console.log(`Trailer link ${i + 1}: ${href}`);
-          });
-        }
-        
-        // Look for existing trailer link in the movie item
-        // First try to find it in the subfilminfo trailer container
-        let trailerLink = $item.find('.subfilminfo.trailer a[href*="/trailer/"]').first();
-        
-        // If not found there, try the broader search
-        if (trailerLink.length === 0) {
-          trailerLink = $item.find('a[href*="/trailer/"]').first();
-        }
-
-        console.log('trailerLink', trailerLink);
-        
-        if (trailerLink.length > 0) {
-          trailerUrl = trailerLink.attr('href');
-          if (trailerUrl && !trailerUrl.startsWith('http')) {
-            trailerUrl = `https://www.critic.de${trailerUrl}`;
+        if (movieUrl) {
+          // Extract the movie slug from the URL
+          // Example: /ov-movies-berlin/movie/one-battle-after-another-410311/ -> one-battle-after-another
+          const urlMatch = movieUrl.match(/\/movie\/([^\/]+)-\d+\//);
+          
+          if (urlMatch) {
+            const movieSlug = urlMatch[1];
+            console.log(`Movie slug extracted: ${movieSlug}`);
+            
+            // Construct trailer URL using the pattern from the HTML
+            // We need to map the movie slug to the film ID used in trailer URLs
+            // For now, we'll use a simple approach and try to construct the URL
+            trailerUrl = `https://www.critic.de/film/${movieSlug}/trailer/`;
+            console.log(`Generated trailer URL: ${trailerUrl}`);
+          } else {
+            console.log(`Could not extract movie slug from URL: ${movieUrl}`);
           }
-          console.log(`Found existing trailer URL: ${trailerUrl}`);
-        } else {
-          console.log(`No trailer link found for movie: ${title}`);
         }
 
         // Create movie object with the new structure
