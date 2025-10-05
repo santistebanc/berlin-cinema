@@ -323,12 +323,31 @@ class BerlinCinemaScraper {
         // Extract trailer link from movie URL
         let trailerUrl = null;
         if (movieUrl) {
+          console.log(`Processing movie URL: ${movieUrl}`);
           // Convert movie URL to trailer URL
           // Example: /film/one-battle-after-another-19183/ -> /film/one-battle-after-another-19183/trailer/
           const fullMovieUrl = movieUrl.startsWith('http') ? movieUrl : `https://www.critic.de${movieUrl}`;
+          console.log(`Full movie URL: ${fullMovieUrl}`);
+          
           if (fullMovieUrl.includes('/film/')) {
             // Remove trailing slash if present and add /trailer/
             trailerUrl = fullMovieUrl.replace(/\/$/, '') + '/trailer/';
+            console.log(`Generated trailer URL: ${trailerUrl}`);
+          } else {
+            // Try to construct trailer URL from title if no /film/ URL
+            // This is a fallback for cases where the URL structure is different
+            const titleSlug = title.toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+              .replace(/\s+/g, '-') // Replace spaces with hyphens
+              .replace(/-+/g, '-') // Replace multiple hyphens with single
+              .trim();
+            
+            if (titleSlug) {
+              trailerUrl = `https://www.critic.de/film/${titleSlug}/trailer/`;
+              console.log(`Generated trailer URL from title: ${trailerUrl}`);
+            } else {
+              console.log(`Could not generate trailer URL from title`);
+            }
           }
         }
 
