@@ -45,7 +45,30 @@ app.get('/health', (req, res) => {
 // Handle old cached JS files by serving the current version
 app.get('/assets/index-19b6822e.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
-  res.sendFile(path.join(__dirname, 'dist', 'assets', 'index-37edccf7.js'));
+  res.sendFile(path.join(__dirname, 'dist', 'assets', 'index-22b7dd5e.js'));
+});
+
+// Handle other old cached JS files
+app.get('/assets/index-37edccf7.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, 'dist', 'assets', 'index-22b7dd5e.js'));
+});
+
+// Handle any old JS files by serving the current version
+app.get('/assets/index-:hash.js', (req, res) => {
+  const fs = require('fs');
+  const assetsDir = path.join(__dirname, 'dist', 'assets');
+  
+  // Find the current JS file
+  const files = fs.readdirSync(assetsDir);
+  const currentJsFile = files.find(file => file.startsWith('index-') && file.endsWith('.js'));
+  
+  if (currentJsFile) {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(assetsDir, currentJsFile));
+  } else {
+    res.status(404).send('JS file not found');
+  }
 });
 
 // Serve React app for all other routes (SPA fallback)
