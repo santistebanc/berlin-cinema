@@ -79,6 +79,51 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
             <Users className="h-4 w-4" />
             <span className="line-clamp-1">{movie.director}</span>
           </div>
+
+          {/* Enhanced Movie Information */}
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            {/* IMDb Rating */}
+            {movie.imdbRating && (
+              <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded text-xs">
+                <Star className="h-3 w-3 mr-1" />
+                <span className="font-semibold">IMDb</span>
+                <span className="ml-1 font-bold">{movie.imdbRating}</span>
+              </div>
+            )}
+            
+            {/* TMDb Rating */}
+            {movie.tmdbRating && (
+              <div className="flex items-center bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">
+                <Star className="h-3 w-3 mr-1" />
+                <span className="font-semibold">TMDb</span>
+                <span className="ml-1 font-bold">{movie.tmdbRating.toFixed(1)}</span>
+              </div>
+            )}
+            
+            {/* Runtime */}
+            {movie.runtime && (
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-xs">
+                <Clock className="h-3 w-3 mr-1" />
+                {movie.runtime}
+              </div>
+            )}
+          </div>
+
+          {/* Genres */}
+          {movie.genres && movie.genres.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {movie.genres.slice(0, 3).map((genre, idx) => (
+                <span key={idx} className="px-1.5 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700 rounded">
+                  {genre}
+                </span>
+              ))}
+              {movie.genres.length > 3 && (
+                <span className="px-1.5 py-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  +{movie.genres.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Showtimes Summary */}
