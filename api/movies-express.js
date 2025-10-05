@@ -313,18 +313,42 @@ class BerlinCinemaScraper {
           }
 
           // Debug logging for URL construction
-          if (cinemaUrl) {
-            console.log(`Cinema URL debug - ${cinemaName}:`);
-            console.log(`  Original: ${cinemaUrl}`);
-            console.log(`  Final: ${cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`}`);
-          }
+          // if (cinemaUrl) {
+          //   console.log(`Cinema URL debug - ${cinemaName}:`);
+          //   console.log(`  Original: ${cinemaUrl}`);
+          //   console.log(`  Final: ${cinemaUrl.startsWith('http') ? cinemaUrl : `https://www.critic.de${cinemaUrl}`}`);
+          // }
         });
 
         // Extract trailer link from the HTML content
         let trailerUrl = null;
         
+        // Debug: Check what links are available in this movie item
+        const allLinks = $item.find('a');
+        console.log(`Movie: ${title} - Found ${allLinks.length} links total`);
+        
+        // Look for any links containing "trailer"
+        const trailerLinks = $item.find('a[href*="trailer"]');
+        console.log(`Movie: ${title} - Found ${trailerLinks.length} trailer links`);
+        
+        if (trailerLinks.length > 0) {
+          trailerLinks.each((i, link) => {
+            const href = $(link).attr('href');
+            console.log(`Trailer link ${i + 1}: ${href}`);
+          });
+        }
+        
         // Look for existing trailer link in the movie item
-        const trailerLink = $item.find('a[href*="/trailer/"]').first();
+        // First try to find it in the subfilminfo trailer container
+        let trailerLink = $item.find('.subfilminfo.trailer a[href*="/trailer/"]').first();
+        
+        // If not found there, try the broader search
+        if (trailerLink.length === 0) {
+          trailerLink = $item.find('a[href*="/trailer/"]').first();
+        }
+
+        console.log('trailerLink', trailerLink);
+        
         if (trailerLink.length > 0) {
           trailerUrl = trailerLink.attr('href');
           if (trailerUrl && !trailerUrl.startsWith('http')) {
