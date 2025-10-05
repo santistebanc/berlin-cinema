@@ -6,6 +6,7 @@ export interface Movie {
   year: number | null;
   posterUrl: string | null;
   url: string | null;
+  trailerUrl: string | null;
   variants: string[];
   cinemas: Cinema[];
   showings: Record<string, Record<string, ShowingInfo[]>>; // Date -> Time -> Cinema+Variant[]
