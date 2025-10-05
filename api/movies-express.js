@@ -449,6 +449,7 @@ class BerlinCinemaScraper {
           country: movie.country,
           year: movie.year,
           posterUrl: movie.posterUrl,
+          trailerUrl: movie.trailerUrl,
           url: movie.url,
           variants: new Set(),
           cinemas: new Set(),
