@@ -1,10 +1,13 @@
 {
-  "watch": ["api/", "server.js"],
+  "watch": ["api/", "server.js", "package.json"],
   "ext": "js,json",
-  "ignore": ["node_modules/", "src/", "dist/", "*.log"],
+  "ignore": ["node_modules/", "src/", "dist/", "*.log", "debug-*.html", "example.html", "response.html"],
   "exec": "node server.js",
   "env": {
     "NODE_ENV": "development"
   },
-  "delay": "1000"
+  "delay": "500",
+  "verbose": true,
+  "restartable": "rs",
+  "colours": true
 }
