@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar, Star, Clock, Award, DollarSign, TrendingUp, Users, Film, Building } from 'lucide-react';
-import { movieApi } from '../services/api';
+import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar } from 'lucide-react';
+import { useMovies } from '../contexts/MovieContext';
 import { Movie } from '../types';
 
 const MovieDetailPage: React.FC = () => {
   const { title } = useParams<{ title: string }>();
   const navigate = useNavigate();
+  const { movies, loading, error } = useMovies();
   const [movie, setMovie] = useState<Movie | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   
   // Filter states
   const [selectedCinemas, setSelectedCinemas] = useState<string[]>([]);
@@ -20,8 +19,6 @@ const MovieDetailPage: React.FC = () => {
   // Popup state
   const [selectedCinemaForPopup, setSelectedCinemaForPopup] = useState<{ name: string, address: string, city: string, postalCode: string, url: string } | null>(null);
   const [showCinemaPopup, setShowCinemaPopup] = useState(false);
-
-  console.log('///////////////////////////////////////////////////////////////////', movie);
 
   // Generate unique colors for each cinema
   const getCinemaColors = () => {
@@ -113,14 +110,7 @@ const MovieDetailPage: React.FC = () => {
   // Initialize filters when movie data loads
   useEffect(() => {
     if (movie) {
-      console.log('Movie loaded:', {
-        title: movie.title,
-        variants: movie.variants,
-        cinemas: movie.cinemas,
-        showings: movie.showings
-      });
       const { cinemas, dates, variants } = getAvailableFilters();
-              console.log('Available filters:', { cinemas, dates, variants });
       setSelectedCinemas(cinemas);
       setSelectedDates(dates);
       setSelectedVariants(variants);
@@ -128,41 +118,17 @@ const MovieDetailPage: React.FC = () => {
   }, [movie]);
 
   useEffect(() => {
-    if (title) {
-      loadMovieData(decodeURIComponent(title));
-    }
-  }, [title]);
-
-  const loadMovieData = async (movieTitle: string) => {
-    try {
-      setLoading(true);
-      const moviesResult = await movieApi.getAllMovies();
-      
-      console.log('Movies API response in MovieDetailPage:', moviesResult);
-      console.log('Total movies received:', moviesResult.movies.length);
-      console.log('Looking for movie with title:', movieTitle);
-      
-      // Backend now provides merged movies, so just find by title
-      const allMovies = moviesResult.movies;
-      const foundMovie = allMovies.find(movie => 
+    if (title && movies.length > 0) {
+      const movieTitle = decodeURIComponent(title);
+      const foundMovie = movies.find(movie => 
         movie.title.toLowerCase() === movieTitle.toLowerCase()
       );
       
       if (foundMovie) {
-        console.log('Found movie:', foundMovie);
         setMovie(foundMovie);
-        setError(null);
-      } else {
-        console.log('Movie not found. Available titles:', allMovies.map(m => m.title));
-        setError('Movie not found');
       }
-    } catch (err) {
-      setError('Failed to load movie information');
-      console.error('Error loading movie data:', err);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [title, movies]);
 
 
 
@@ -240,11 +206,26 @@ const MovieDetailPage: React.FC = () => {
     );
   }
 
-  if (error || !movie) {
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Error Loading Movies</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-4 py-2 bg-cinema-600 text-white rounded-lg hover:bg-cinema-700 transition-colors"
+        >
+          ← Back to Movies
+        </button>
+      </div>
+    );
+  }
+
+  if (!movie) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Movie Not Found</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">{error || 'The requested movie could not be found.'}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">The requested movie could not be found.</p>
         <button
           onClick={() => navigate('/')}
           className="px-4 py-2 bg-cinema-600 text-white rounded-lg hover:bg-cinema-700 transition-colors"
@@ -290,7 +271,7 @@ const MovieDetailPage: React.FC = () => {
                               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 text-left">{movie.title}</h1>
               
               {/* Movie Details */}
-              <div className="mb-3 space-y-1 text-left">
+                              <div className="mb-3 space-y-1 text-left">
                 
                 {/* Year and Country */}
                 {(movie.year || movie.country) && (
@@ -324,70 +305,6 @@ const MovieDetailPage: React.FC = () => {
                   </div>
                 )}
               </div>
-
-              {/* Enhanced Movie Information */}
-              <div className="mb-3 space-y-2">
-                {/* Ratings Row */}
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  {/* TMDb Rating */}
-                  {movie.tmdbRating && (
-                    <div className="flex items-center bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-md">
-                      <Star className="h-4 w-4 mr-1" />
-                      <span className="font-semibold">TMDb</span>
-                      <span className="ml-1 font-bold">{movie.tmdbRating.toFixed(1)}</span>
-                      {movie.tmdbVotes && (
-                        <span className="ml-1 text-xs">({movie.tmdbVotes.toLocaleString()})</span>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Popularity */}
-                  {movie.popularity && (
-                    <div className="flex items-center bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-2 py-1 rounded-md">
-                      <TrendingUp className="h-4 w-4 mr-1" />
-                      <span className="font-semibold">Popularity</span>
-                      <span className="ml-1 font-bold">{movie.popularity.toFixed(1)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Additional Info Row */}
-                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                  {/* Release Date */}
-                  {movie.releaseDate && (
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {new Date(movie.releaseDate).toLocaleDateString()}
-                    </div>
-                  )}
-                  
-                  {/* Original Language */}
-                  {movie.originalLanguage && (
-                    <div className="flex items-center">
-                      <Globe className="h-4 w-4 mr-1" />
-                      {movie.originalLanguage.toUpperCase()}
-                    </div>
-                  )}
-                  
-                  {/* Adult Content */}
-                  {movie.adult && (
-                    <div className="flex items-center bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-2 py-1 rounded">
-                      <span className="text-xs font-medium">18+</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Genres */}
-                {movie.genres && movie.genres.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {movie.genres.map((genre, idx) => (
-                      <span key={idx} className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700 rounded">
-                        {genre}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
               
               {/* Badges and Links */}
                               <div className="flex flex-col sm:flex-row items-start space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
@@ -410,52 +327,6 @@ const MovieDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Enhanced Movie Information Section */}
-        {(movie.overview || movie.genres) && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Movie Information</h3>
-            
-            <div className="space-y-4">
-              {/* Plot/Overview */}
-              {movie.overview && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plot Summary</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {movie.overview}
-                  </p>
-                </div>
-              )}
-
-
-              {/* External Links */}
-              <div className="flex flex-wrap gap-2">
-                {movie.tmdbID && (
-                  <a
-                    href={`https://www.themoviedb.org/movie/${movie.tmdbID}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-3 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    TMDb
-                  </a>
-                )}
-                {movie.trailerUrl && (
-                  <a
-                    href={movie.trailerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-3 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                  >
-                    <Play className="h-3 w-3 mr-1" />
-                    Trailer
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
         
         {/* Filters Section */}
         <div className="px-2 sm:px-4 pb-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">

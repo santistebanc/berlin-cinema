@@ -10,53 +10,29 @@
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "clsx": "^2.0.0",
-    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "imdb-api": "^4.4.1",
-    "lucide-react": "^0.263.1",
-    "movie-info": "^3.0.2",
-    "movie-trailer": "^3.2.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.8.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.9.3",
     "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
     "@types/node": "^20.8.0",
-    "@types/react": "^18.2.15",
-    "@types/react-dom": "^18.2.7",
-    "@vitejs/plugin-react": "^4.0.3",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.14",
-    "nodemon": "^3.1.10",
     "postcss": "^8.4.27",
-    "sharp": "^0.34.3",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.2.2",
-    "vite": "^4.4.5"
+    "vite": "^5.4.10"
   },
   "scripts": {
     "dev": "vite",
-    "dev:frontend": "vite",
-    "dev:server": "node server.js",
-    "dev:server:watch": "nodemon --config nodemon.json",
-    "dev:fullstack": "concurrently --kill-others \"npm run dev:frontend\" \"npm run dev:server:watch\"",
-    "dev:api": "nodemon --config nodemon.json",
     "build": "vite build",
     "start": "node server.js",
-    "preview": "vite preview",
-    "generate-icons": "node scripts/generate-icons.js"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "preview": "npm run build && npm start"
   }
 }
