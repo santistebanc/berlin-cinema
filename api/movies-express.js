@@ -218,6 +218,23 @@ class BerlinCinemaScraper {
           if (trailerUrl && !trailerUrl.startsWith('http')) {
             trailerUrl = `https://www.critic.de${trailerUrl}`;
           }
+        } else {
+          // If no direct trailer link, try to derive from review URL
+          // Look for review link in the movie item
+          const reviewElement = $item.find('a.readcritic');
+          if (reviewElement.length > 0) {
+            const reviewUrl = reviewElement.attr('href');
+            if (reviewUrl) {
+              // Extract movie ID from review URL pattern: /film/movie-name-12345/
+              const movieIdMatch = reviewUrl.match(/\/film\/[^\/]+\-(\d+)\//);
+              if (movieIdMatch) {
+                const movieId = movieIdMatch[1];
+                // Construct trailer URL using the movie ID
+                trailerUrl = `https://www.critic.de/film/trailer/${movieId}/`;
+                console.log(`Derived trailer URL for ${title}: ${trailerUrl}`);
+              }
+            }
+          }
         }
 
         // Extract real cinema and showtime data
