@@ -15,6 +15,10 @@ export default defineConfig({
   },
   server: {
     port: 3002,
+    strictPort: false, // Allow Vite to find another port if 3002 is busy
+    hmr: {
+      port: 3002,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3003',
