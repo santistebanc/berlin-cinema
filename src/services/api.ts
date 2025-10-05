@@ -12,7 +12,17 @@ const api = axios.create({
 export const movieApi = {
   // Get all movies
   async getAllMovies(): Promise<ScrapingResult> {
+    console.log('🎬 Fetching movies from API...');
+    const startTime = Date.now();
+    
     const response = await api.get('/movies');
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    
+    console.log(`✅ Movies fetched successfully in ${duration}ms`);
+    console.log(`📊 Found ${response.data.movies?.length || 0} movies`);
+    console.log('🎭 Sample movie:', response.data.movies?.[0]?.title || 'No movies');
+    
     return response.data;
   },
 };
