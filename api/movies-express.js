@@ -4,8 +4,6 @@ const cheerio = require('cheerio');
 
 const router = express.Router();
 
-// Test hot reload
-console.log('Backend server loaded at:', new Date().toISOString());
 
 
 
@@ -37,7 +35,6 @@ class BerlinCinemaScraper {
         if (cookieMatch) {
           const [, name, value] = cookieMatch;
           this.cookies[name] = value;
-          console.log(`Updated cookie: ${name}=${value}`);
         }
       });
     }
@@ -625,10 +622,10 @@ router.get('/', async (req, res) => {
 
     console.log('Starting to scrape movies...');
 
-    // Scrape movies
-    const result = await scraper.scrapeMovies();
+      // Scrape movies
+      const result = await scraper.scrapeMovies();
 
-    console.log(`Scraping completed. Found ${result.movies.length} movies`);
+      console.log(`Scraping completed. Found ${result.movies.length} movies`);
 
     // Log sample data structure for debugging
     if (result.movies.length > 0) {
