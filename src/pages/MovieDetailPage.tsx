@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
-import { movieTransitionName, withViewTransition } from '../utils/viewTransition';
+import { movieTransitionName } from '../utils/viewTransition';
 import { toPng } from 'html-to-image';
 import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar, ImageDown, LayoutGrid, Columns } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
@@ -360,7 +360,7 @@ const MovieDetailPage: React.FC = () => {
     <div className="w-full px-2 sm:px-4 space-y-2">
       {/* Back Button */}
       <button
-        onClick={() => withViewTransition(() => navigate('/'))}
+        onClick={() => navigate('/', { viewTransition: true })}
         className="inline-flex items-center text-cinema-600 hover:text-cinema-700 transition-colors"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
