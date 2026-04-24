@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Film } from 'lucide-react';
 import { Movie } from '../types';
-import { movieTransitionName } from '../utils/viewTransition';
 
 interface HomePageProps {
   movies: Movie[];
@@ -193,8 +191,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
               >
                 {/* Movie Poster */}
                 <div className="relative">
-                  <motion.img
-                    layoutId={movieTransitionName(movie.title)}
+                  <img
                     src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+'}
                     alt={movie.title}
                     className="w-full h-32 object-cover rounded-t-lg"
