@@ -11,9 +11,6 @@ The app is fully static — no server, no API at runtime.
 A GitHub Actions workflow runs daily at 4am UTC. It scrapes [critic.de](https://www.critic.de/ov-movies-berlin/) using Cheerio, writes the result to `public/movies.json`, builds the React app, and deploys to GitHub Pages. The frontend fetches that JSON file directly.
 
 Each deploy bakes a unique build ID into the JS bundle, which is used as a cache-busting query param (`/movies.json?v=<id>`), so users always get fresh data after a redeploy.
-
-You can also trigger a manual redeploy from the Actions tab → "Scrape & Deploy" → "Run workflow".
-
 ## Stack
 
 - **React 19** + **TypeScript** + **Vite**
