@@ -1,17 +1,11 @@
-import axios from 'axios';
-import { Movie, ScrapingResult } from '../types';
+import { ScrapingResult } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000, // 30 seconds timeout for scraping
-});
+const BUILD_TIME = import.meta.env.VITE_BUILD_TIME ?? 'dev';
 
 export const movieApi = {
-  // Get all movies
   async getAllMovies(): Promise<ScrapingResult> {
-    const response = await api.get('/movies');
-    return response.data;
+    const res = await fetch(`/movies.json?v=${BUILD_TIME}`);
+    if (!res.ok) throw new Error(`Failed to load movies: ${res.status}`);
+    return res.json();
   },
 };
