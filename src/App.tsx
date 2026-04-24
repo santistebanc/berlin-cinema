@@ -1,10 +1,16 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import MovieDetailPage from './pages/MovieDetailPage';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { MovieProvider, useMovies } from './contexts/MovieContext';
+
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+};
 
 const AppContent: React.FC = () => {
   const { movies, loading, error } = useMovies();
@@ -17,6 +23,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <ScrollToTop />
       <Header movies={movies} onSearch={handleSearch} />
       <main className="py-2">
         <Routes>
