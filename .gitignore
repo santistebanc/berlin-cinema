@@ -6,6 +6,11 @@ yarn-error.log*
 
 # Production build
 build/
+dist/
+dist-ssr/
+
+# TypeScript
+*.tsbuildinfo
 
 # Environment variables
 .env
