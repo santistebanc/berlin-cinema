@@ -1,25 +1,22 @@
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
+import express from 'express';
+import path from 'path';
+import cors from 'cors';
+import moviesRouter from './api/movies-express';
 
 const app = express();
 const PORT = process.env.PORT || 3003;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// API Routes
-app.use('/api/movies', require('./api/movies-express'));
+app.use('/api/movies', moviesRouter);
 
-// Serve static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Serve React app
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server: http://localhost:${PORT}`);
+  console.log(`Server: http://localhost:${PORT}`);
 });

@@ -8,6 +8,7 @@ yarn-error.log*
 build/
 dist/
 dist-ssr/
+dist-server/
 
 # TypeScript
 *.tsbuildinfo
