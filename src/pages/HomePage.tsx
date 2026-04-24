@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Film } from 'lucide-react';
 import { Movie } from '../types';
-import { movieTransitionName, withViewTransition } from '../utils/viewTransition';
+import { movieTransitionName } from '../utils/viewTransition';
 
 interface HomePageProps {
   movies: Movie[];
@@ -107,9 +107,6 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
     }
   }, [searchParams]);
 
-  const handleMovieClick = (movie: Movie) => {
-    withViewTransition(() => navigate(`/movie/${encodeURIComponent(movie.title)}`));
-  };
 
 
 
@@ -188,10 +185,11 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedFilteredMovies.map((movie) => (
-              <div
+              <Link
                 key={movie.title}
-                onClick={() => handleMovieClick(movie)}
-                className="cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:border-cinema-300"
+                to={`/movie/${encodeURIComponent(movie.title)}`}
+                viewTransition
+                className="block rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:border-cinema-300"
               >
                 {/* Movie Poster */}
                 <div className="relative">
@@ -235,7 +233,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
