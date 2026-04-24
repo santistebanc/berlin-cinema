@@ -32,9 +32,12 @@
     "vite": "^5.4.10"
   },
   "scripts": {
+    "predev": "npm run scrape",
     "dev": "vite",
+    "prebuild": "npm run scrape",
     "build": "vite build",
     "scrape": "ts-node --project tsconfig.server.json scripts/scrape.ts",
-    "preview": "npm run scrape && npm run build && vite preview"
+    "prepreview": "npm run build",
+    "preview": "vite preview"
   }
 }
