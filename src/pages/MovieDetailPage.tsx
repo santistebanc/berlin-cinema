@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
-import { movieTransitionName } from '../utils/viewTransition';
 import { toPng } from 'html-to-image';
-import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar, ImageDown, LayoutGrid, Columns } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Filter, X, Globe, Calendar, ImageDown, LayoutGrid, Columns } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
 import { Movie } from '../types';
 
@@ -374,15 +372,14 @@ const MovieDetailPage: React.FC = () => {
           <div className="flex items-start space-x-4">
             {/* Movie Poster */}
             <div className="flex-shrink-0">
-              <motion.img
-                layoutId={movieTransitionName(movie.title)}
+              <img
                 src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+'}
                 alt={movie.title}
                 className={`w-20 h-30 object-cover rounded-lg ${!movie.posterUrl ? 'border-2 border-gray-300 border-dashed' : ''}`}
-                                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtdG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
-                  }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtdG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
+                }}
               />
             </div>
             
