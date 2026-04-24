@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import MovieDetailPage from './pages/MovieDetailPage';
@@ -41,11 +42,13 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <MovieProvider>
-        <AppContent />
-      </MovieProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider>
+        <MovieProvider>
+          <AppContent />
+        </MovieProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 };
 

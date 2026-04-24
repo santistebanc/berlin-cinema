@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toPng } from 'html-to-image';
 import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar, ImageDown, LayoutGrid, Columns } from 'lucide-react';
@@ -339,7 +340,22 @@ const MovieDetailPage: React.FC = () => {
 
   const { cinemas, dates, variants } = getAvailableFilters();
 
+  const cinemaCount = movie?.cinemas?.length ?? 0;
+  const metaDescription = movie
+    ? `${movie.title} showtimes in Berlin — playing at ${cinemaCount} cinema${cinemaCount !== 1 ? 's' : ''}. Original version (OV) screenings with dates and times.`
+    : 'OV Berlin — Original version movie showtimes in Berlin.';
+  const metaTitle = movie ? `${movie.title} — OV Berlin` : 'OV Berlin';
+
   return (
+    <>
+    <Helmet>
+      <title>{metaTitle}</title>
+      <meta name="description" content={metaDescription} />
+      <meta property="og:title" content={metaTitle} />
+      <meta property="og:description" content={metaDescription} />
+      <meta property="og:url" content={`https://ovberlin.site/movie/${encodeURIComponent(movie?.title ?? '')}`} />
+      {movie?.posterUrl && <meta property="og:image" content={movie.posterUrl} />}
+    </Helmet>
     <div className="w-full px-2 sm:px-4 space-y-2">
       {/* Back Button */}
       <button
@@ -861,6 +877,7 @@ const MovieDetailPage: React.FC = () => {
       )}
     </div>
   </div>
+  </>
   );
 };
 
