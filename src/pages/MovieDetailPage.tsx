@@ -221,12 +221,7 @@ const MovieDetailPage: React.FC = () => {
         tableEl?.offsetWidth ?? 0,
         node.scrollWidth
       );
-      const fullHeight = Math.max(
-        scrollWrap?.scrollHeight ?? 0,
-        tableEl?.scrollHeight ?? 0,
-        tableEl?.offsetHeight ?? 0,
-        node.scrollHeight
-      );
+      const fullHeight = node.scrollHeight;
 
       // Temporarily remove scroll overflow from live DOM so html-to-image captures no scrollbars.
       // Only override auto/scroll — leave hidden intact so truncated text still clips.
@@ -254,44 +249,22 @@ const MovieDetailPage: React.FC = () => {
         onclone: (_doc, cloned) => {
           const root = cloned as HTMLElement;
           const clonedWrap = root.querySelector<HTMLElement>('[data-showings-scroll]');
-          const clonedTable = root.querySelector<HTMLTableElement>('table');
-          const w = Math.max(
-            clonedWrap?.scrollWidth ?? 0,
-            clonedTable?.scrollWidth ?? 0,
-            clonedTable?.offsetWidth ?? 0,
-            root.scrollWidth,
-            fullWidth
-          );
-          const h = Math.max(
-            clonedWrap?.scrollHeight ?? 0,
-            clonedTable?.scrollHeight ?? 0,
-            clonedTable?.offsetHeight ?? 0,
-            root.scrollHeight,
-            fullHeight
-          );
-          root.style.overflow = 'visible';
-          root.style.width = `${w}px`;
-          root.style.height = `${h}px`;
+          // Expand width to show full table; do NOT set height (let natural flow determine it)
+          root.style.width = `${fullWidth}px`;
           root.style.maxWidth = 'none';
+          root.style.overflow = 'visible';
           if (clonedWrap) {
-            clonedWrap.style.overflow = 'visible';
-            clonedWrap.style.width = `${w}px`;
-            clonedWrap.style.height = `${h}px`;
+            clonedWrap.style.width = `${fullWidth}px`;
             clonedWrap.style.maxWidth = 'none';
+            clonedWrap.style.overflow = 'visible';
           }
-          // Hide scrollbars in the export
+          // Hide scrollbars without touching overflow on other elements
           const noScrollStyle = _doc.createElement('style');
           noScrollStyle.textContent = `
-            * { scrollbar-width: none !important; overflow: -moz-scrollbars-none !important; }
+            * { scrollbar-width: none !important; }
             *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
           `;
           _doc.head.appendChild(noScrollStyle);
-          _doc.querySelectorAll('*').forEach(el => {
-            const hEl = el as HTMLElement;
-            hEl.style.overflow = 'visible';
-            hEl.style.overflowX = 'visible';
-            hEl.style.overflowY = 'visible';
-          });
           root.querySelectorAll('.sticky').forEach((el) => {
             const hEl = el as HTMLElement;
             hEl.style.position = 'relative';
