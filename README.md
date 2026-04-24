@@ -33,8 +33,13 @@ Each deploy bakes a unique build ID into the JS bundle, which is used as a cache
 
 ```bash
 npm install
-npm run scrape   # fetches live data → writes public/movies.json
-npm run dev      # starts Vite dev server at localhost:3000
+npm run dev      # scrapes live data, writes public/movies.json, starts Vite at localhost:3000
+```
+
+If you want to refresh the local dataset without starting the app, run:
+
+```bash
+npm run scrape
 ```
 
 To preview the production build locally:
