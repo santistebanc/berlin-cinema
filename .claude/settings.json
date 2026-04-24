@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /root/code/berlin-cinema push)"
+    ]
+  }
+}
