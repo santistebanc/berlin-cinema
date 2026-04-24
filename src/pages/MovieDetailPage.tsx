@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar, ImageDown, LayoutGrid, Columns } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
 import { Movie } from '../types';
 
@@ -16,9 +17,23 @@ const MovieDetailPage: React.FC = () => {
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   
+  // Table display mode
+  const [tableMode, setTableMode] = useState<'grid' | 'stacked'>('stacked');
+
   // Popup state
   const [selectedCinemaForPopup, setSelectedCinemaForPopup] = useState<{ name: string, address: string, city: string, postalCode: string, url: string } | null>(null);
   const [showCinemaPopup, setShowCinemaPopup] = useState(false);
+  const showingsTableRef = useRef<HTMLDivElement>(null);
+  const [imageExporting, setImageExporting] = useState(false);
+
+  // Generate readable short form from cinema name
+  const getCinemaAbbr = (name: string): string => {
+    const skip = new Set(['am', 'an', 'in', 'im', 'der', 'die', 'das', 'de', 'la', 'le', 'bei', 'beim', 'zum', 'zur', 'und', 'the', 'a', 'kino', 'berlin', 'kinowelt']);
+    const words = name.split(/[\s\|\-–/]+/).filter(w => w.length > 0);
+    const significant = words.filter(w => !skip.has(w.toLowerCase()));
+    const parts = significant.slice(0, 3).map(w => w.length > 10 ? w.slice(0, 9) + '.' : w);
+    return parts.join(' ') || name.slice(0, 15);
+  };
 
   // Generate unique colors for each cinema
   const getCinemaColors = () => {
@@ -188,6 +203,119 @@ const MovieDetailPage: React.FC = () => {
     setSelectedCinemas(cinemas);
     setSelectedDates(dates);
     setSelectedVariants(variants);
+  };
+
+  const downloadShowingsTableImage = async () => {
+    const node = showingsTableRef.current;
+    if (!node || !movie) return;
+    setImageExporting(true);
+    try {
+      const isDark = document.documentElement.classList.contains('dark');
+      const safeName = movie.title.replace(/[/\\?%*:|"<>]/g, '-').trim().slice(0, 120) || 'showtimes';
+      const scrollWrap = node.querySelector<HTMLElement>('[data-showings-scroll]');
+      const tableEl = node.querySelector<HTMLTableElement>('table');
+      // Full table lives inside overflow-x-auto; the card's scrollWidth stays viewport-wide without this.
+      const fullWidth = Math.max(
+        scrollWrap?.scrollWidth ?? 0,
+        tableEl?.scrollWidth ?? 0,
+        tableEl?.offsetWidth ?? 0,
+        node.scrollWidth
+      );
+      const fullHeight = Math.max(
+        scrollWrap?.scrollHeight ?? 0,
+        tableEl?.scrollHeight ?? 0,
+        tableEl?.offsetHeight ?? 0,
+        node.scrollHeight
+      );
+
+      // Temporarily remove scroll overflow from live DOM so html-to-image captures no scrollbars.
+      // Only override auto/scroll — leave hidden intact so truncated text still clips.
+      type SavedStyle = { el: HTMLElement; overflow: string; overflowX: string; overflowY: string };
+      const saved: SavedStyle[] = [];
+      const scrollValues = new Set(['auto', 'scroll']);
+      [node, ...Array.from(node.querySelectorAll<HTMLElement>('*'))].forEach(el => {
+        const cs = getComputedStyle(el);
+        const needsFix = scrollValues.has(cs.overflow) || scrollValues.has(cs.overflowX) || scrollValues.has(cs.overflowY);
+        if (needsFix) {
+          saved.push({ el, overflow: el.style.overflow, overflowX: el.style.overflowX, overflowY: el.style.overflowY });
+          if (scrollValues.has(cs.overflow)) el.style.overflow = 'visible';
+          if (scrollValues.has(cs.overflowX)) el.style.overflowX = 'visible';
+          if (scrollValues.has(cs.overflowY)) el.style.overflowY = 'visible';
+        }
+      });
+
+      const dataUrl = await toPng(node, {
+        pixelRatio: 2,
+        cacheBust: true,
+        skipFonts: true,
+        backgroundColor: isDark ? '#1f2937' : '#ffffff',
+        width: fullWidth,
+        height: fullHeight,
+        onclone: (_doc, cloned) => {
+          const root = cloned as HTMLElement;
+          const clonedWrap = root.querySelector<HTMLElement>('[data-showings-scroll]');
+          const clonedTable = root.querySelector<HTMLTableElement>('table');
+          const w = Math.max(
+            clonedWrap?.scrollWidth ?? 0,
+            clonedTable?.scrollWidth ?? 0,
+            clonedTable?.offsetWidth ?? 0,
+            root.scrollWidth,
+            fullWidth
+          );
+          const h = Math.max(
+            clonedWrap?.scrollHeight ?? 0,
+            clonedTable?.scrollHeight ?? 0,
+            clonedTable?.offsetHeight ?? 0,
+            root.scrollHeight,
+            fullHeight
+          );
+          root.style.overflow = 'visible';
+          root.style.width = `${w}px`;
+          root.style.height = `${h}px`;
+          root.style.maxWidth = 'none';
+          if (clonedWrap) {
+            clonedWrap.style.overflow = 'visible';
+            clonedWrap.style.width = `${w}px`;
+            clonedWrap.style.height = `${h}px`;
+            clonedWrap.style.maxWidth = 'none';
+          }
+          // Hide scrollbars in the export
+          const noScrollStyle = _doc.createElement('style');
+          noScrollStyle.textContent = `
+            * { scrollbar-width: none !important; overflow: -moz-scrollbars-none !important; }
+            *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+          `;
+          _doc.head.appendChild(noScrollStyle);
+          _doc.querySelectorAll('*').forEach(el => {
+            const hEl = el as HTMLElement;
+            hEl.style.overflow = 'visible';
+            hEl.style.overflowX = 'visible';
+            hEl.style.overflowY = 'visible';
+          });
+          root.querySelectorAll('.sticky').forEach((el) => {
+            const hEl = el as HTMLElement;
+            hEl.style.position = 'relative';
+            hEl.style.left = 'auto';
+            hEl.style.boxShadow = 'none';
+          });
+        },
+      });
+      // Restore live DOM overflow styles
+      saved.forEach(({ el, overflow, overflowX, overflowY }) => {
+        el.style.overflow = overflow;
+        el.style.overflowX = overflowX;
+        el.style.overflowY = overflowY;
+      });
+
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${safeName}-showtimes.png`;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export showings table image:', err);
+    } finally {
+      setImageExporting(false);
+    }
   };
 
   // Check if a date should be displayed
@@ -425,32 +553,120 @@ const MovieDetailPage: React.FC = () => {
 
         {/* Showtimes Table - Single Table with Dates as Columns */}
         <div className="overflow-x-auto relative">
+          {movie.showings && Object.keys(movie.showings).length > 0 ? (
+            <>
+              {/* Toolbar */}
+              <div className="flex items-center justify-between mb-2 px-1">
+                <div className="flex items-center gap-2">
+                {/* Filter toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`inline-flex items-center justify-center w-7 h-7 rounded border transition-colors ${
+                    showFilters
+                      ? 'bg-cinema-600 text-white border-cinema-600'
+                      : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                  title={showFilters ? 'Hide Filters' : 'Show Filters'}
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                </button>
+                {/* Mode toggle */}
+                <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setTableMode('stacked')}
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium transition-colors ${
+                      tableMode === 'stacked'
+                        ? 'bg-cinema-600 text-white'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                    title="Stacked view"
+                  >
+                    <Columns className="h-3.5 w-3.5 shrink-0" />
+                    Stacked
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableMode('grid')}
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border-l border-gray-300 dark:border-gray-600 transition-colors ${
+                      tableMode === 'grid'
+                        ? 'bg-cinema-600 text-white'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                    title="Grid view"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+                    Grid
+                  </button>
+                </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadShowingsTableImage}
+                  disabled={imageExporting}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                  title="Save the current showtimes grid (respects filters) as a PNG"
+                >
+                  <ImageDown className="h-3.5 w-3.5 shrink-0" />
+                  {imageExporting ? 'Generating…' : 'Download table as image'}
+                </button>
+              </div>
 
-          
-                      {movie.showings && Object.keys(movie.showings).length > 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="overflow-x-auto relative">
-                <table className="w-full min-w-max relative">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-2 px-1 font-medium text-gray-700 dark:text-gray-300 min-w-[50px] sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 text-xs shadow-sm">
-                        <button
-                          onClick={() => setShowFilters(!showFilters)}
-                          className="inline-flex items-center justify-center w-6 h-6 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-                          title={showFilters ? 'Hide Filters' : 'Show Filters'}
-                        >
-                          <Filter className="h-4 w-4" />
-                        </button>
-                      </th>
+              <div
+                ref={showingsTableRef}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+              >
+              {tableMode === 'grid' ? (
+                /* ── Grid mode ── */
+                <div className="overflow-x-auto relative" data-showings-scroll>
+                  <table className="w-full relative">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                        <th className="text-left py-1.5 px-1 font-medium text-gray-700 dark:text-gray-300 w-[50px] sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 text-xs shadow-sm whitespace-nowrap">
+                          Time
+                        </th>
+                        {(() => {
+                          const datesWithShowings = Object.keys(movie.showings)
+                            .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
+                            .filter(date => {
+                              const dateShowings = movie.showings[date];
+                              return Object.keys(dateShowings).some(time => {
+                                const timeShowings = dateShowings[time] || [];
+                                return timeShowings.some(showing => {
+                                  const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                                  const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                                  return cinemaMatch && variantMatch;
+                                });
+                              });
+                            })
+                            .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+                          return datesWithShowings.map(date => (
+                            <th key={date} className="text-center py-1.5 px-0.5 font-medium text-gray-700 dark:text-gray-300 min-w-[60px] max-w-[200px] w-[200px]">
+                              <div className="text-xs font-semibold whitespace-nowrap">
+                                {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+                                <span className="font-normal text-gray-600 dark:text-gray-400">
+                                  {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </th>
+                          ));
+                        })()}
+                      </tr>
+                    </thead>
+                    <tbody>
                       {(() => {
-                        // Only show dates that have showings after filtering
+                        const allTimes = new Set<string>();
+                        Object.values(movie.showings).forEach(dateShowings => {
+                          Object.keys(dateShowings).forEach(time => allTimes.add(time));
+                        });
+
                         const datesWithShowings = Object.keys(movie.showings)
                           .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
                           .filter(date => {
-                            // Check if this date has any showings that match the filters
                             const dateShowings = movie.showings[date];
-                            return Object.keys(dateShowings).some(time => {
-                              const timeShowings = dateShowings[time] || [];
+                            return Object.keys(dateShowings).some(t => {
+                              const timeShowings = dateShowings[t] || [];
                               return timeShowings.some(showing => {
                                 const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
                                 const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
@@ -458,111 +674,43 @@ const MovieDetailPage: React.FC = () => {
                               });
                             });
                           })
-                          .sort((a, b) => {
-                            const dateA = new Date(a);
-                            const dateB = new Date(b);
-                            return dateA.getTime() - dateB.getTime();
-                          });
-                        
-                        return datesWithShowings.map(date => (
-                          <th key={date} className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
-                            <div className="text-xs">
-                              <div className="font-semibold">
-                                {new Date(date).toLocaleDateString('en-US', { 
-                                  weekday: 'short'
-                                })}
-                              </div>
-                              <div className="text-gray-600 dark:text-gray-400">
-                                {new Date(date).toLocaleDateString('en-US', { 
-                                  month: 'short', 
-                                  day: 'numeric' 
-                                })}
-                              </div>
-                            </div>
-                          </th>
-                        ));
-                      })()}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      // Get all unique times across all dates
-                      const allTimes = new Set<string>();
-                      Object.values(movie.showings).forEach(dateShowings => {
-                        Object.keys(dateShowings).forEach(time => {
-                          allTimes.add(time);
-                        });
-                      });
-                      
-                      const sortedTimes = Array.from(allTimes).sort();
-                      
-                      return sortedTimes
-                        .filter(time => {
-                          // Check if this time has any showings that match ALL filters (dates, cinemas, variants)
-                          return Object.keys(movie.showings)
-                            .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
-                            .some(date => {
+                          .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+                        return Array.from(allTimes).sort()
+                          .filter(time =>
+                            datesWithShowings.some(date => {
                               const dateShowings = movie.showings[date];
                               if (!dateShowings[time]) return false;
-                              
                               return dateShowings[time].some(showing => {
                                 const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
                                 const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
                                 return cinemaMatch && variantMatch;
                               });
-                            });
-                        })
-                        .map(time => (
-                          <tr key={time} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="py-1 px-1 font-mono text-sm text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800 z-10 shadow-sm">
-                              {time}
-                            </td>
-                            {(() => {
-                              // Use the same filtered dates as the header
-                              const datesWithShowings = Object.keys(movie.showings)
-                                .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
-                                .filter(date => {
-                                  // Check if this date has any showings that match the filters
-                                  const dateShowings = movie.showings[date];
-                                  return Object.keys(dateShowings).some(time => {
-                                    const timeShowings = dateShowings[time] || [];
-                                    return timeShowings.some(showing => {
-                                      const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
-                                      const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
-                                      return cinemaMatch && variantMatch;
-                                    });
-                                  });
-                                })
-                                .sort((a, b) => {
-                                  const dateA = new Date(a);
-                                  const dateB = new Date(b);
-                                  return dateA.getTime() - dateB.getTime();
-                                });
-                              
-                              return datesWithShowings.map(date => {
-                                const dateShowings = movie.showings[date];
-                                const timeShowings = dateShowings[time] || [];
-                                
-                                // Filter showings based on selected cinemas and variants
-                                const filteredShowings = timeShowings.filter(showing => {
+                            })
+                          )
+                          .map(time => (
+                            <tr key={time} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="py-0.5 px-1 font-mono text-sm text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 shadow-sm w-[50px] shrink-0 whitespace-nowrap">
+                                {time}
+                              </td>
+                              {datesWithShowings.map(date => {
+                                const filteredShowings = (movie.showings[date][time] || []).filter(showing => {
                                   const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
                                   const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
                                   return cinemaMatch && variantMatch;
                                 });
-                                
-                                // Always render the cell, even if empty
                                 return (
-                                  <td key={date} className="py-1 px-1 text-center">
+                                  <td key={date} className="py-1 px-1 text-center max-w-[200px]">
                                     {filteredShowings.length > 0 ? (
                                       <div className="flex flex-col gap-0.5">
                                         {filteredShowings.map((showing, idx) => (
-                                          <div key={idx} className="flex items-center justify-center gap-1">
+                                          <div key={idx} className="flex items-center justify-center gap-1 min-w-0">
                                             <button
                                               onClick={() => handleCinemaClick(showing.cinema)}
-                                              className={`px-1 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-[250px]`}
+                                              className={`px-0.5 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate max-w-full`}
                                               title={showing.cinema}
                                             >
-                                              {showing.cinema}
+                                              {getCinemaAbbr(showing.cinema)}
                                             </button>
                                             {showing.variant && (
                                               <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded">
@@ -573,22 +721,107 @@ const MovieDetailPage: React.FC = () => {
                                         ))}
                                       </div>
                                     ) : (
-                                      // Show empty cell with subtle styling
-                                      <div className="text-gray-300 dark:text-gray-600 text-xs">
-                                        —
-                                      </div>
+                                      <div className="text-gray-300 dark:text-gray-600 text-xs">—</div>
                                     )}
                                   </td>
                                 );
-                              });
-                            })()}
-                          </tr>
-                        ));
-                    })()}
-                  </tbody>
-                </table>
+                              })}
+                            </tr>
+                          ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                /* ── Stacked mode: one table per date ── */
+                (() => {
+                  const filteredDates = Object.keys(movie.showings)
+                    .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
+                    .filter(date => {
+                      const dateShowings = movie.showings[date];
+                      return Object.keys(dateShowings).some(time =>
+                        (dateShowings[time] || []).some(showing => {
+                          const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                          const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                          return cinemaMatch && variantMatch;
+                        })
+                      );
+                    })
+                    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+                  return (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredDates.map(date => {
+                        const dateShowings = movie.showings[date];
+                        const filteredTimes = Object.keys(dateShowings)
+                          .filter(time =>
+                            (dateShowings[time] || []).some(showing => {
+                              const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                              const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                              return cinemaMatch && variantMatch;
+                            })
+                          )
+                          .sort();
+
+                        return (
+                          <div key={date}>
+                            {/* Date header */}
+                            <div className="py-1.5 px-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}
+                              </span>
+                              <span className="ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                            {/* Table with same structure as grid mode */}
+                            <table className="w-full">
+                              <tbody>
+                                {filteredTimes.map(time => {
+                                  const showings = (dateShowings[time] || []).filter(showing => {
+                                    const cinemaMatch = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+                                    const variantMatch = selectedVariants.length === 0 || (showing.variant && selectedVariants.includes(showing.variant));
+                                    return cinemaMatch && variantMatch;
+                                  });
+                                  return (
+                                    <tr key={time} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                      <td className="py-1 px-1 font-mono text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 w-[50px] shrink-0">
+                                        {time}
+                                      </td>
+                                      <td className="py-1 px-2">
+                                        <div className="flex flex-wrap gap-0">
+                                          {showings.map((showing, idx) => (
+                                            <div key={idx} className="flex items-center gap-1 min-w-0 border-r border-gray-200 dark:border-gray-600 px-2 last:border-r-0">
+                                              <button
+                                                onClick={() => handleCinemaClick(showing.cinema)}
+                                                className={`px-1.5 py-0.5 rounded text-xs font-medium ${getCinemaColors()[showing.cinema]} cursor-pointer hover:opacity-80 transition-opacity truncate`}
+                                                title={showing.cinema}
+                                              >
+                                                {showing.cinema}
+                                              </button>
+                                              {showing.variant && (
+                                                <span className="px-0.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700 rounded shrink-0">
+                                                  {showing.variant}
+                                                </span>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()
+              )}
               </div>
-            </div>
+            </>
           ) : (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               No showtimes available for the selected filters.
