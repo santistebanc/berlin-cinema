@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Film } from 'lucide-react';
 import { Movie } from '../types';
-import { movieTransitionName } from '../utils/viewTransition';
+import { movieTransitionName, withViewTransition } from '../utils/viewTransition';
 
 interface HomePageProps {
   movies: Movie[];
@@ -108,7 +108,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
   }, [searchParams]);
 
   const handleMovieClick = (movie: Movie) => {
-    navigate(`/movie/${encodeURIComponent(movie.title)}`, { viewTransition: true });
+    withViewTransition(() => navigate(`/movie/${encodeURIComponent(movie.title)}`));
   };
 
 
@@ -199,7 +199,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
                     src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+'}
                     alt={movie.title}
                     className="w-full h-32 object-cover rounded-t-lg"
-                    style={{ viewTransitionName: movieTransitionName(movie.title) }}
+                    style={{ viewTransitionName: movieTransitionName(movie.title) } as React.CSSProperties}
                                           onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
