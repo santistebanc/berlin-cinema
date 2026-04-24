@@ -1,7 +1,7 @@
 [build]
-buildCommand = "npm install"
+buildCommand = "npm install && npm run build:server"
 
 [deploy]
-startCommand = "node server.js"
+startCommand = "node dist-server/server.js"
 healthcheckPath = "/api/movies"
 restartPolicyType = "on_failure"

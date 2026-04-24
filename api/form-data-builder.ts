@@ -1,5 +1,5 @@
 class FormDataBuilder {
-  static buildSearchForm() {
+  static buildSearchForm(): URLSearchParams {
     const formData = new URLSearchParams();
     formData.append('tx_criticde_pi5[ovsearch_cinema]', '');
     formData.append('tx_criticde_pi5[ovsearch_cinema_show]', '');
@@ -16,4 +16,4 @@ class FormDataBuilder {
   }
 }
 
-module.exports = FormDataBuilder;
+export default FormDataBuilder;
