@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
-import { movieTransitionName } from '../utils/viewTransition';
+import { movieTransitionName, withViewTransition } from '../utils/viewTransition';
 import { toPng } from 'html-to-image';
 import { ArrowLeft, Play, ExternalLink, Filter, X, Globe, Calendar, ImageDown, LayoutGrid, Columns } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
@@ -360,7 +360,7 @@ const MovieDetailPage: React.FC = () => {
     <div className="w-full px-2 sm:px-4 space-y-2">
       {/* Back Button */}
       <button
-        onClick={() => navigate('/', { viewTransition: true })}
+        onClick={() => withViewTransition(() => navigate('/'))}
         className="inline-flex items-center text-cinema-600 hover:text-cinema-700 transition-colors"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -377,7 +377,7 @@ const MovieDetailPage: React.FC = () => {
                 src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+'}
                 alt={movie.title}
                 className={`w-20 h-30 object-cover rounded-lg ${!movie.posterUrl ? 'border-2 border-gray-300 border-dashed' : ''}`}
-                style={{ viewTransitionName: movieTransitionName(movie.title) }}
+                style={{ viewTransitionName: movieTransitionName(movie.title) } as React.CSSProperties}
                                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtdG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
