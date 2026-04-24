@@ -4,6 +4,16 @@ Browse original version (OV) movies playing in Berlin cinemas, with showtimes by
 
 Live at **[ovberlin.site](https://ovberlin.site)**
 
+## Screenshots
+
+| Movie listing | Search results |
+|---|---|
+| ![Movie listing](docs/screenshot1.png) | ![Search results](docs/screenshot4.png) |
+
+| Movie detail — stacked view | Movie detail — grid view |
+|---|---|
+| ![Stacked view](docs/screenshot2.png) | ![Grid view](docs/screenshot3.png) |
+
 ## How it works
 
 The app is fully static — no server, no API at runtime.
