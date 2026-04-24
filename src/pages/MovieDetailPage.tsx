@@ -608,7 +608,7 @@ const MovieDetailPage: React.FC = () => {
                   title="Save the current showtimes grid (respects filters) as a PNG"
                 >
                   <ImageDown className="h-3.5 w-3.5 shrink-0" />
-                  {imageExporting ? 'Generating…' : 'Download table as image'}
+                  {imageExporting ? 'Generating…' : 'Screenshot table'}
                 </button>
               </div>
 
