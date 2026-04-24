@@ -1,120 +1,59 @@
-# Berlin Cinema App
+# Berlin OV Cinema
 
-A modern React frontend for discovering OV (Original Version) movies playing in Berlin cinemas.
+Browse original version (OV) movies playing in Berlin cinemas, with showtimes by date and cinema.
 
-## Features
+Live at **[ovberlin.site](https://ovberlin.site)**
 
-- 🎬 Browse all available OV movies
-- 🔍 Search movies by title
-- 🏢 Filter movies by cinema
-- 📅 Filter movies by date
-- 🎭 Detailed movie information with showtimes
-- 🎪 Cinema-specific movie listings
-- 📱 Responsive design for all devices
-- 🎨 Modern UI with Tailwind CSS
+## How it works
 
-## Screenshots
+The app is fully static — no server, no API at runtime.
 
-The app features a clean, modern interface with:
-- Hero section with search functionality
-- Movie grid with detailed cards
-- Filter options for cinemas and dates
-- Detailed movie pages with showtimes
-- Cinema-specific pages
+A GitHub Actions workflow runs daily at 4am UTC. It scrapes [critic.de](https://www.critic.de/ov-movies-berlin/) using Cheerio, writes the result to `public/movies.json`, builds the React app, and deploys to GitHub Pages. The frontend fetches that JSON file directly.
 
-## Setup
+Each deploy bakes a unique build ID into the JS bundle, which is used as a cache-busting query param (`/movies.json?v=<id>`), so users always get fresh data after a redeploy.
 
-1. Install dependencies:
+You can also trigger a manual redeploy from the Actions tab → "Scrape & Deploy" → "Run workflow".
+
+## Stack
+
+- **React 19** + **TypeScript** + **Vite**
+- **Tailwind CSS** + **Lucide React**
+- **Cheerio** for scraping (runs at build time only)
+- **GitHub Actions** for cron scheduling and deployment
+- **GitHub Pages** for hosting
+
+## Local development
+
 ```bash
 npm install
+npm run scrape   # fetches live data → writes public/movies.json
+npm run dev      # starts Vite dev server at localhost:3000
 ```
 
-2. Start the development server:
+To preview the production build locally:
+
 ```bash
-npm run dev
+npm run preview  # scrape + build + vite preview
 ```
 
-The app will be available at `http://localhost:3000`
-
-3. Build for production:
-```bash
-npm run build
-```
-
-## Prerequisites
-
-Make sure the Berlin Cinema API backend is running on `http://localhost:3001` before starting the frontend.
-
-## Project Structure
+## Project structure
 
 ```
+api/                      # Scraper modules (Node/TypeScript, build-time only)
+  berlin-cinema-scraper.ts
+  http-client.ts
+  movie-parser.ts
+  movie-merger.ts
+  form-data-builder.ts
+scripts/
+  scrape.ts               # Entry point: runs scraper, writes public/movies.json
 src/
-├── components/          # Reusable UI components
-│   ├── Header.tsx      # Navigation header
-│   ├── MovieCard.tsx   # Movie display card
-│   └── SearchFilters.tsx # Search and filter controls
-├── pages/              # Page components
-│   ├── HomePage.tsx    # Main movie listing page
-│   ├── MovieDetailPage.tsx # Individual movie details
-│   └── CinemaPage.tsx  # Cinema-specific movie listings
-├── services/           # API communication
-│   └── api.ts         # API service functions
-├── types/              # TypeScript type definitions
-│   └── index.ts       # Shared types and interfaces
-├── App.tsx             # Main app component with routing
-├── main.tsx            # React entry point
-└── index.css           # Global styles with Tailwind CSS
+  pages/
+    HomePage.tsx          # Movie listing with search and filters
+    MovieDetailPage.tsx   # Showtimes table (grid + stacked view, PNG export)
+    CinemaPage.tsx        # Movies filtered by cinema
+  services/api.ts         # Fetches /movies.json
+  types/index.ts
+.github/workflows/
+  deploy.yml              # Cron (4am UTC), push, and manual trigger
 ```
-
-## Technologies Used
-
-- **React 18** - Modern React with hooks
-- **TypeScript** - Type-safe development
-- **React Router** - Client-side routing
-- **Tailwind CSS** - Utility-first CSS framework
-- **Lucide React** - Beautiful icons
-- **Vite** - Fast build tool and dev server
-- **Axios** - HTTP client for API calls
-
-## API Integration
-
-The app communicates with the Berlin Cinema API to:
-- Fetch movie listings
-- Search for specific movies
-- Get cinema information
-- Filter movies by various criteria
-
-## Development
-
-The app uses Vite for fast development with:
-- Hot module replacement
-- TypeScript support
-- CSS preprocessing
-- Proxy configuration for API calls
-
-## Styling
-
-Built with Tailwind CSS featuring:
-- Custom color palette for cinema theme
-- Responsive design utilities
-- Component-based styling
-- Dark mode ready (can be easily extended)
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details
