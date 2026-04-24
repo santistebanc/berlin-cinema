@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Film } from 'lucide-react';
 import { Movie } from '../types';
 import { movieTransitionName } from '../utils/viewTransition';
@@ -188,20 +189,19 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
               <Link
                 key={movie.title}
                 to={`/movie/${encodeURIComponent(movie.title)}`}
-                viewTransition
                 className="block rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all duration-200 hover:shadow-lg hover:border-cinema-300"
               >
                 {/* Movie Poster */}
                 <div className="relative">
-                  <img
+                  <motion.img
+                    layoutId={movieTransitionName(movie.title)}
                     src={movie.posterUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+'}
                     alt={movie.title}
                     className="w-full h-32 object-cover rounded-t-lg"
-                    style={{ viewTransitionName: movieTransitionName(movie.title) } as React.CSSProperties}
-                                          onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
-                      }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
+                    }}
                   />
                   
                     
