@@ -38,8 +38,9 @@
     "dev": "vite",
     "build": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
+    "scrape": "ts-node --project tsconfig.server.json scripts/scrape.ts",
     "start": "node dist-server/server.js",
     "start:dev": "ts-node --project tsconfig.server.json server.ts",
-    "preview": "npm run build && npm start"
+    "preview": "npm run scrape && npm run build && npm run start"
   }
 }

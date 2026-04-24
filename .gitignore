@@ -10,6 +10,9 @@ dist/
 dist-ssr/
 dist-server/
 
+# Generated at build time
+public/movies.json
+
 # TypeScript
 *.tsbuildinfo
 
