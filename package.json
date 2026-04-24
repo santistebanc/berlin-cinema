@@ -10,11 +10,8 @@
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "clsx": "^2.0.0",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.468.0",
-    "node-cron": "^4.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.9.3",
@@ -22,7 +19,6 @@
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
-    "@types/express": "^5.0.6",
     "@types/node": "^20.8.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -37,10 +33,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:server": "tsc -p tsconfig.server.json",
     "scrape": "ts-node --project tsconfig.server.json scripts/scrape.ts",
-    "start": "node dist-server/server.js",
-    "start:dev": "ts-node --project tsconfig.server.json server.ts",
-    "preview": "npm run scrape && npm run build && npm run start"
+    "preview": "npm run scrape && npm run build && vite preview"
   }
 }
