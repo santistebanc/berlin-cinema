@@ -1,35 +1,31 @@
-const axios = require('axios');
+import axios, { AxiosResponse } from 'axios';
+import https from 'https';
 
 class HttpClient {
-  constructor() {
-    this.cookies = {};
+  private cookies: Record<string, string> = {};
+
+  getCookieString(): string {
+    const entries = Object.entries(this.cookies);
+    return entries.length > 0 ? entries.map(([k, v]) => `${k}=${v}`).join('; ') : '';
   }
 
-  getCookieString() {
-    const cookieEntries = Object.entries(this.cookies);
-    return cookieEntries.length > 0
-      ? cookieEntries.map(([name, value]) => `${name}=${value}`).join('; ')
-      : '';
-  }
-
-  updateCookiesFromResponse(response) {
+  updateCookiesFromResponse(response: AxiosResponse): void {
     const setCookieHeaders = response.headers['set-cookie'];
     if (setCookieHeaders) {
-      setCookieHeaders.forEach(cookieHeader => {
-        const cookieMatch = cookieHeader.match(/^([^=]+)=([^;]+)/);
-        if (cookieMatch) {
-          const [, name, value] = cookieMatch;
-          this.cookies[name] = value;
+      setCookieHeaders.forEach((header: string) => {
+        const match = header.match(/^([^=]+)=([^;]+)/);
+        if (match) {
+          this.cookies[match[1]] = match[2];
         }
       });
     }
   }
 
-  ensureAbsoluteUrl(url) {
+  ensureAbsoluteUrl(url: string | undefined): string | undefined {
     return url && !url.startsWith('http') ? `https://www.critic.de${url}` : url;
   }
 
-  async post(url, formData) {
+  async post(url: string, formData: URLSearchParams): Promise<AxiosResponse> {
     const response = await axios.post(url, formData, {
       headers: {
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -52,14 +48,12 @@ class HttpClient {
         'cookie': this.getCookieString()
       },
       timeout: 30000,
-      httpsAgent: new (require('https').Agent)({
+      httpsAgent: new https.Agent({
         rejectUnauthorized: false,
         secureProtocol: 'TLSv1_2_method'
       }),
       maxRedirects: 5,
-      validateStatus: function (status) {
-        return status >= 200 && status < 400;
-      }
+      validateStatus: (status) => status >= 200 && status < 400
     });
 
     this.updateCookiesFromResponse(response);
@@ -67,4 +61,4 @@ class HttpClient {
   }
 }
 
-module.exports = HttpClient;
+export default HttpClient;

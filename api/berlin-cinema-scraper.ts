@@ -1,11 +1,14 @@
-const HttpClient = require('./http-client');
-const FormDataBuilder = require('./form-data-builder');
-const MovieParser = require('./movie-parser');
-const MovieMerger = require('./movie-merger');
+import HttpClient from './http-client';
+import FormDataBuilder from './form-data-builder';
+import MovieParser from './movie-parser';
+import MovieMerger from './movie-merger';
 
 class BerlinCinemaScraper {
+  private baseUrl = 'https://www.critic.de/ov-movies-berlin/';
+  private httpClient: HttpClient;
+  private movieParser: MovieParser;
+
   constructor() {
-    this.baseUrl = 'https://www.critic.de/ov-movies-berlin/';
     this.httpClient = new HttpClient();
     this.movieParser = new MovieParser(this.httpClient);
   }
@@ -14,9 +17,8 @@ class BerlinCinemaScraper {
     try {
       const formData = FormDataBuilder.buildSearchForm();
       const response = await this.httpClient.post(this.baseUrl, formData);
-      
       const movies = this.movieParser.parseMovies(response.data);
-      const mergedMovies = MovieMerger.mergeMovies(movies);
+      const mergedMovies = MovieMerger.mergeMovies(movies as any);
 
       return {
         movies: mergedMovies,
@@ -30,4 +32,4 @@ class BerlinCinemaScraper {
   }
 }
 
-module.exports = BerlinCinemaScraper;
+export default BerlinCinemaScraper;
