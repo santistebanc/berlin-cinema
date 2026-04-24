@@ -1,0 +1,7 @@
+[build]
+buildCommand = "npm install"
+
+[deploy]
+startCommand = "node server.js"
+healthcheckPath = "/api/movies"
+restartPolicyType = "on_failure"
