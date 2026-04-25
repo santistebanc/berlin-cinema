@@ -37,6 +37,7 @@
     "predev": "npm run scrape",
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "ts-node --project tsconfig.server.json scripts/generate-og-pages.ts",
     "scrape": "ts-node --project tsconfig.server.json scripts/scrape.ts",
     "scrape:force": "ts-node --project tsconfig.server.json scripts/scrape.ts --force-enrich",
     "prepreview": "npm run build",
