@@ -5,6 +5,10 @@ import { Movie } from '../src/types';
 import fs from 'fs';
 import path from 'path';
 
+function toSlug(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-');
+}
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY || '';
 const tmdb = TMDB_API_KEY ? new TmdbClient(TMDB_API_KEY) : null;
 
@@ -14,7 +18,7 @@ const MOVIES_JSON_PATH = path.join(__dirname, '../public/movies.json');
 function writeSitemap(movieTitles: string[]) {
   const today = new Date().toISOString().split('T')[0];
   const movieUrls = movieTitles.map(title => {
-    const slug = encodeURIComponent(title);
+    const slug = toSlug(title);
     return `
   <url>
     <loc>${BASE_URL}/movie/${slug}</loc>

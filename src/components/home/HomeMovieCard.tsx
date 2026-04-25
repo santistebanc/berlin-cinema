@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Movie } from '../../types';
 import { getMovieShowtimeCount } from '../../hooks/useHomePageMovies';
+import { toSlug } from '../../utils/cinemaUtils';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 import MoviePoster from '../ui/MoviePoster';
@@ -15,7 +16,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
 
   return (
     <Link
-      to={`/movie/${encodeURIComponent(movie.title)}`}
+      to={`/movie/${toSlug(movie.title)}`}
       className="block h-full"
     >
       <Card className="flex h-full flex-col overflow-hidden border-2 hover:border-[rgb(var(--accent)/0.35)] hover:shadow-lg">
