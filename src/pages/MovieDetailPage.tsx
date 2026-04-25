@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2 } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
-import { buildCinemaColors } from '../utils/cinemaUtils';
+import { buildCinemaColors, toSlug } from '../utils/cinemaUtils';
 import { useShowtimeFilters } from '../hooks/useShowtimeFilters';
 import MovieHeader from '../components/MovieHeader';
 import FiltersPanel from '../components/FiltersPanel';
@@ -24,7 +24,7 @@ const MovieDetailPage: React.FC = () => {
     }
 
     const decodedTitle = decodeURIComponent(title);
-    return movies.find((candidate) => candidate.title.toLowerCase() === decodedTitle.toLowerCase()) ?? null;
+    return movies.find((candidate) => toSlug(candidate.title) === decodedTitle) ?? null;
   }, [movies, title]);
 
   const filters = useShowtimeFilters(movie);
@@ -80,9 +80,13 @@ const MovieDetailPage: React.FC = () => {
   }
 
   const cinemaCount = movie.cinemas?.length ?? 0;
-  const metaTitle = `${movie.title} — OV Berlin`;
-  const metaDescription = `${movie.title} showtimes in Berlin — playing at ${cinemaCount} cinema${cinemaCount !== 1 ? 's' : ''}. Original version (OV) screenings with dates and times.`;
-  const shareUrl = `https://ovberlin.site/movie/${encodeURIComponent(movie.title)}`;
+  const displayTitle = movie.tmdbTitle || movie.title;
+  const metaTitle = `${displayTitle} — OV Berlin`;
+  const metaDescription = `${displayTitle} playing at ${cinemaCount} Berlin cinema${cinemaCount !== 1 ? 's' : ''} in original version (OV).`;
+  const shareUrl = `https://ovberlin.site/movie/${toSlug(movie.title)}`;
+  const ogImage = movie.backdropUrl || movie.posterUrl;
+  const ogImageWidth = movie.backdropUrl ? '1280' : '500';
+  const ogImageHeight = movie.backdropUrl ? '720' : '750';
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -97,10 +101,18 @@ const MovieDetailPage: React.FC = () => {
       <Helmet>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="OV Berlin" />
         <meta property="og:title" content={metaTitle} />
         <meta property="og:description" content={metaDescription} />
-        <meta property="og:url" content={`https://ovberlin.site/movie/${encodeURIComponent(movie.title)}`} />
-        {movie.posterUrl && <meta property="og:image" content={movie.posterUrl} />}
+        <meta property="og:url" content={shareUrl} />
+        {ogImage && <meta property="og:image" content={ogImage} />}
+        {ogImage && <meta property="og:image:width" content={ogImageWidth} />}
+        {ogImage && <meta property="og:image:height" content={ogImageHeight} />}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        {ogImage && <meta name="twitter:image" content={ogImage} />}
       </Helmet>
 
       <div className="page-shell">
