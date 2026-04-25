@@ -139,9 +139,13 @@ async function main() {
         movie.backdropUrl = tmdbData.backdropUrl;
         movie.ageRating = tmdbData.ageRating;
         movie.keywords = tmdbData.keywords;
+        movie.tmdbFetched = true;
+      } else {
+        skippedCount++;
+        // ✓ TMDB explicitly returned NO MATCH for this title - mark as fetched so we don't try again
+        // ✗ For network errors / timeouts / rate limits: enrichMovie returns undefined, so we retry next run
+        movie.tmdbFetched = tmdbData === null;
       }
-      movie.tmdbFetched = true;
-      if (!tmdbData) skippedCount++;
     }
     console.log(`Cache hits: ${cacheHits} | Newly enriched: ${enrichedCount} | No match: ${skippedCount}`);
   } else {
