@@ -1,5 +1,14 @@
 import { Movie, ShowingInfo } from '../types';
 
+export function toSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 const CINEMA_BADGE_COUNT = 16;
 
 const cinemaColorClass = (index: number) =>
