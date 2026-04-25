@@ -1,11 +1,9 @@
 import React from 'react';
-import { Columns, Filter, ImageDown, LayoutGrid } from 'lucide-react';
+import { Columns, Filter, LayoutGrid } from 'lucide-react';
 import { cn } from '../utils/cn';
 import Button from './ui/Button';
 
 interface ShowtimesToolbarProps {
-  imageExporting: boolean;
-  onDownloadImage: () => void;
   onToggleFilters: () => void;
   setTableMode: (mode: 'grid' | 'stacked') => void;
   showFilters: boolean;
@@ -13,15 +11,13 @@ interface ShowtimesToolbarProps {
 }
 
 const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
-  imageExporting,
-  onDownloadImage,
   onToggleFilters,
   setTableMode,
   showFilters,
   tableMode,
 }) => {
   return (
-    <div className="mb-3 flex items-center justify-between px-3 py-2 sm:px-5">
+    <div className="mb-3 flex items-center px-3 py-2 sm:px-5">
       <div className="flex items-center gap-2">
         <Button
           onClick={onToggleFilters}
@@ -74,18 +70,6 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
           </button>
         </div>
       </div>
-
-      <Button
-        onClick={onDownloadImage}
-        disabled={imageExporting}
-        variant="outline"
-        size="sm"
-        className="h-10 gap-1.5 rounded-md"
-        title="Save the current showtimes grid (respects filters) as a PNG"
-      >
-        <ImageDown className="h-3.5 w-3.5 shrink-0" />
-        {imageExporting ? 'Generating…' : 'Export image'}
-      </Button>
     </div>
   );
 };
