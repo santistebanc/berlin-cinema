@@ -90,7 +90,7 @@ const MovieDetailPage: React.FC = () => {
 
   const handleShare = async () => {
     if (navigator.share) {
-      await navigator.share({ title: metaTitle, text: metaDescription, url: shareUrl });
+      await navigator.share({ url: shareUrl });
     } else {
       await navigator.clipboard.writeText(shareUrl);
     }
