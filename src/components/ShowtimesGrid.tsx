@@ -44,7 +44,7 @@ const ShowtimesGrid: React.FC<Props> = ({
     <div className="relative overflow-x-auto" data-showings-scroll>
       <table className="relative w-full">
         <thead>
-          <tr className="border-b" style={{ backgroundColor: 'rgb(var(--surface-muted))', borderColor: 'rgb(var(--border))' }}>
+          <tr className="border-b" style={{ backgroundColor: 'rgb(var(--surface-muted))', borderColor: 'rgb(var(--border) / 0.4)' }}>
             <th
               className="sticky left-0 z-10 w-[56px] whitespace-nowrap px-2 py-2 text-left text-xs font-semibold shadow-sm"
               style={{ backgroundColor: 'rgb(var(--surface-muted))', color: 'rgb(var(--text))' }}
@@ -71,8 +71,8 @@ const ShowtimesGrid: React.FC<Props> = ({
           {allTimes.map(time => (
             <tr
               key={time}
-              className="border-b transition-colors hover:bg-[rgb(var(--surface-muted))]"
-              style={{ borderColor: 'rgb(var(--border))' }}
+              className="border-b transition-colors hover:bg-[rgb(var(--surface-muted)/0.5)]"
+              style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
             >
               <td
                 className="tabular sticky left-0 z-10 w-[56px] whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 py-1.5 font-mono text-sm shadow-sm"

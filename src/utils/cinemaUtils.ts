@@ -14,7 +14,10 @@ const CINEMA_BADGE_COUNT = 16;
 const cinemaColorClass = (index: number) =>
   `cinema-badge cinema-badge-${index % CINEMA_BADGE_COUNT}`;
 
+const ABBR_THRESHOLD = 20;
+
 export function getCinemaAbbr(name: string): string {
+  if (name.length <= ABBR_THRESHOLD) return name;
   const skip = new Set(['am', 'an', 'in', 'im', 'der', 'die', 'das', 'de', 'la', 'le', 'bei', 'beim', 'zum', 'zur', 'und', 'the', 'a', 'kino', 'berlin', 'kinowelt']);
   const words = name.split(/[\s\|\-–/]+/).filter(w => w.length > 0);
   const significant = words.filter(w => !skip.has(w.toLowerCase()));
