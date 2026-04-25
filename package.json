@@ -10,7 +10,6 @@
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "clsx": "^2.0.0",
-    "html-to-image": "^1.11.13",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
