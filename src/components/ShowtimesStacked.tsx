@@ -69,11 +69,11 @@ const ShowtimesStacked: React.FC<Props> = ({
                         {time}
                       </td>
                       <td className="px-2 py-1.5">
-                        <div className="flex flex-wrap gap-y-1">
+                        <div className="flex flex-wrap gap-x-2 gap-y-1">
                           {showingsList.map((showing, idx) => (
                             <div
                               key={idx}
-                              className="flex min-w-0 items-center border-r px-2 first:pl-0 last:border-r-0"
+                              className="flex min-w-0 items-center border-r pr-2 last:border-r-0"
                               style={{ borderColor: 'rgb(var(--border))' }}
                             >
                               <ShowingEntry
