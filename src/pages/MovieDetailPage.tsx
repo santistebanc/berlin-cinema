@@ -79,10 +79,16 @@ const MovieDetailPage: React.FC = () => {
     );
   }
 
-  const cinemaCount = movie.cinemas?.length ?? 0;
   const displayTitle = movie.tmdbTitle || movie.title;
   const metaTitle = `${displayTitle} — OV Berlin`;
-  const metaDescription = `${displayTitle} playing at ${cinemaCount} Berlin cinema${cinemaCount !== 1 ? 's' : ''} in original version (OV).`;
+  const metaParts = [
+    movie.year && `${movie.year}`,
+    movie.runtime && `${movie.runtime} min`,
+    movie.rating != null && `★ ${movie.rating.toFixed(1)}`,
+    movie.genres?.length && movie.genres.slice(0, 2).join(', '),
+    movie.variants?.length && movie.variants.join(', '),
+  ].filter(Boolean);
+  const metaDescription = metaParts.join(' · ');
   const shareUrl = `https://ovberlin.site/movie/${toSlug(movie.title)}`;
   const ogImage = movie.backdropUrl || movie.posterUrl;
   const ogImageWidth = movie.backdropUrl ? '1280' : '500';

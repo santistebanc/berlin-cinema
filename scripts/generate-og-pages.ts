@@ -19,9 +19,15 @@ let count = 0;
 for (const movie of moviesData.movies) {
   const slug = toSlug(movie.title);
   const displayTitle: string = movie.tmdbTitle || movie.title;
-  const cinemaCount: number = movie.cinemas?.length ?? 0;
   const title = `${displayTitle} — OV Berlin`;
-  const description = `${displayTitle} playing at ${cinemaCount} Berlin cinema${cinemaCount !== 1 ? 's' : ''} in original version (OV).`;
+  const parts = [
+    movie.year && String(movie.year),
+    movie.runtime && `${movie.runtime} min`,
+    movie.rating != null && `★ ${(movie.rating as number).toFixed(1)}`,
+    movie.genres?.length && (movie.genres as string[]).slice(0, 2).join(', '),
+    movie.variants?.length && (movie.variants as string[]).join(', '),
+  ].filter(Boolean);
+  const description = parts.join(' · ');
   const url = `${BASE_URL}/movie/${slug}`;
   const image: string | null = movie.backdropUrl || movie.posterUrl || null;
   const imageWidth = movie.backdropUrl ? '1280' : '500';
