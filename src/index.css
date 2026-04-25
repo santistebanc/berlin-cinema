@@ -90,7 +90,13 @@
   .page-shell {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .page-shell {
+      gap: 2rem;
+    }
   }
 
   .page-intro {

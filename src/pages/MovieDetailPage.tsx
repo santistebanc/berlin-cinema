@@ -95,7 +95,7 @@ const MovieDetailPage: React.FC = () => {
       </Helmet>
 
       <div className="page-shell">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5 sm:gap-3">
           <Button
             onClick={() => navigate('/')}
             variant="link"

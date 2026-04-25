@@ -16,15 +16,15 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(var(--bg))' }}>
       <Header movies={movies} onSearch={() => {}} />
-      <main className="py-6">
+      <main className="py-3 sm:py-6">
         <Routes>
           <Route path="/" element={
-            <div className="px-4 sm:px-6 lg:px-8">
+            <div className="px-3 sm:px-6 lg:px-8">
               <HomePage movies={movies} loading={loading} error={error} />
             </div>
           } />
           <Route path="/movie/:title" element={
-            <div className="px-4 sm:px-6 lg:px-8">
+            <div className="px-3 sm:px-6 lg:px-8">
               <MovieDetailPage />
             </div>
           } />
