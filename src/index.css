@@ -322,19 +322,19 @@
 .cinema-badge-14 { background-color: #fecdd3; color: #9f1239; border-color: #fda4af; }
 .cinema-badge-15 { background-color: #bae6fd; color: #0c4a6e; border-color: #7dd3fc; }
 
-.dark .cinema-badge-0  { background-color: rgb(127 29 29 / 0.35);  color: #fca5a5; border-color: #b91c1c; }
-.dark .cinema-badge-1  { background-color: rgb(30 58 138 / 0.35);  color: #93c5fd; border-color: #1d4ed8; }
-.dark .cinema-badge-2  { background-color: rgb(20 83 45 / 0.35);   color: #86efac; border-color: #15803d; }
-.dark .cinema-badge-3  { background-color: rgb(113 63 18 / 0.35);  color: #fde047; border-color: #a16207; }
-.dark .cinema-badge-4  { background-color: rgb(88 28 135 / 0.35);  color: #d8b4fe; border-color: #7e22ce; }
-.dark .cinema-badge-5  { background-color: rgb(131 24 67 / 0.35);  color: #f9a8d4; border-color: #be185d; }
-.dark .cinema-badge-6  { background-color: rgb(55 48 163 / 0.35);  color: #a5b4fc; border-color: #4338ca; }
-.dark .cinema-badge-7  { background-color: rgb(19 78 74 / 0.35);   color: #5eead4; border-color: #0f766e; }
-.dark .cinema-badge-8  { background-color: rgb(124 45 18 / 0.35);  color: #fdba74; border-color: #c2410c; }
-.dark .cinema-badge-9  { background-color: rgb(21 94 117 / 0.35);  color: #67e8f9; border-color: #0e7490; }
-.dark .cinema-badge-10 { background-color: rgb(63 98 18 / 0.35);   color: #bef264; border-color: #4d7c0f; }
-.dark .cinema-badge-11 { background-color: rgb(120 53 15 / 0.35);  color: #fcd34d; border-color: #b45309; }
-.dark .cinema-badge-12 { background-color: rgb(6 78 59 / 0.35);    color: #6ee7b7; border-color: #047857; }
-.dark .cinema-badge-13 { background-color: rgb(76 29 149 / 0.35);  color: #c4b5fd; border-color: #6d28d9; }
-.dark .cinema-badge-14 { background-color: rgb(159 18 57 / 0.35);  color: #fda4af; border-color: #be123c; }
-.dark .cinema-badge-15 { background-color: rgb(12 74 110 / 0.35);  color: #7dd3fc; border-color: #0369a1; }
+.dark .cinema-badge-0  { background-color: oklch(0.22 0.04 16  / 0.6); color: oklch(0.70 0.07 16 ); border-color: oklch(0.38 0.06 16  / 0.7); }
+.dark .cinema-badge-1  { background-color: oklch(0.22 0.04 245 / 0.6); color: oklch(0.70 0.07 245); border-color: oklch(0.38 0.06 245 / 0.7); }
+.dark .cinema-badge-2  { background-color: oklch(0.22 0.05 148 / 0.6); color: oklch(0.72 0.08 148); border-color: oklch(0.38 0.07 148 / 0.7); }
+.dark .cinema-badge-3  { background-color: oklch(0.24 0.05 88  / 0.6); color: oklch(0.74 0.09 88 ); border-color: oklch(0.40 0.07 88  / 0.7); }
+.dark .cinema-badge-4  { background-color: oklch(0.22 0.04 300 / 0.6); color: oklch(0.70 0.07 300); border-color: oklch(0.38 0.06 300 / 0.7); }
+.dark .cinema-badge-5  { background-color: oklch(0.22 0.04 352 / 0.6); color: oklch(0.70 0.07 352); border-color: oklch(0.38 0.06 352 / 0.7); }
+.dark .cinema-badge-6  { background-color: oklch(0.22 0.04 265 / 0.6); color: oklch(0.70 0.07 265); border-color: oklch(0.38 0.06 265 / 0.7); }
+.dark .cinema-badge-7  { background-color: oklch(0.22 0.05 180 / 0.6); color: oklch(0.72 0.08 180); border-color: oklch(0.38 0.07 180 / 0.7); }
+.dark .cinema-badge-8  { background-color: oklch(0.23 0.05 58  / 0.6); color: oklch(0.72 0.09 58 ); border-color: oklch(0.39 0.07 58  / 0.7); }
+.dark .cinema-badge-9  { background-color: oklch(0.22 0.05 200 / 0.6); color: oklch(0.72 0.08 200); border-color: oklch(0.38 0.07 200 / 0.7); }
+.dark .cinema-badge-10 { background-color: oklch(0.23 0.05 128 / 0.6); color: oklch(0.73 0.09 128); border-color: oklch(0.39 0.07 128 / 0.7); }
+.dark .cinema-badge-11 { background-color: oklch(0.24 0.05 80  / 0.6); color: oklch(0.74 0.09 80 ); border-color: oklch(0.40 0.07 80  / 0.7); }
+.dark .cinema-badge-12 { background-color: oklch(0.22 0.05 162 / 0.6); color: oklch(0.72 0.08 162); border-color: oklch(0.38 0.07 162 / 0.7); }
+.dark .cinema-badge-13 { background-color: oklch(0.22 0.04 285 / 0.6); color: oklch(0.70 0.07 285); border-color: oklch(0.38 0.06 285 / 0.7); }
+.dark .cinema-badge-14 { background-color: oklch(0.22 0.04 8   / 0.6); color: oklch(0.70 0.07 8  ); border-color: oklch(0.38 0.06 8   / 0.7); }
+.dark .cinema-badge-15 { background-color: oklch(0.22 0.04 225 / 0.6); color: oklch(0.70 0.07 225); border-color: oklch(0.38 0.06 225 / 0.7); }
