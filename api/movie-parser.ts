@@ -22,18 +22,29 @@ class MovieParser {
 
   parseMovieItem($item: any, $: any) {
     const titleElement = $item.find('h2 a, h1 a').first();
-    const title = titleElement.text().trim();
+    const titleAttr = titleElement.attr('title');
+    const displayTitle = titleElement.text().trim();
+    // Title attribute format: "Original Title (OmU) - Kinoprogramm"
+    // Strip the suffix and the trailing variant in parens to get the clean title
+    const rawTitle = titleAttr
+      ? titleAttr.replace(/\s+-\s+Kinoprogramm$/, '').replace(/\s*\([^)]*\)\s*$/, '')
+      : displayTitle.replace(/\s*\([^)]*\)\s*$/, '');
+    const title = rawTitle.trim();
+    // Keep the inner text (English display title) as a search alias
+    const criticTitle = displayTitle.replace(/\s*\([^)]*\)\s*$/, '').trim();
     const movieUrl = titleElement.attr('href');
 
     if (!title || !movieUrl) return null;
 
     const movieDetails = this.extractMovieDetails($item, $);
-    const variants = this.extractVariants(title);
+    // Extract variants from the display text — it uses English codes like "(OV w/ sub)"
+    const variants = this.extractVariants(displayTitle);
     const posterUrl = this.extractPosterUrl($item);
     const { cinemas, showings } = this.extractCinemaData($item, $);
 
     return {
       title,
+      criticTitle: criticTitle !== title ? criticTitle : null,
       director: movieDetails.director || null,
       cast: movieDetails.cast ? movieDetails.cast.split(',').map((s: string) => s.trim()) : null,
       country: movieDetails.country || null,

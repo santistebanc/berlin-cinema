@@ -14,16 +14,20 @@ const AppContent: React.FC = () => {
   useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen" style={{ backgroundColor: 'rgb(var(--bg))' }}>
       <Header movies={movies} onSearch={() => {}} />
-      <main className="py-2">
+      <main className="py-6">
         <Routes>
           <Route path="/" element={
-            <div className="container mx-auto px-4">
+            <div className="px-4 sm:px-6 lg:px-8">
               <HomePage movies={movies} loading={loading} error={error} />
             </div>
           } />
-          <Route path="/movie/:title" element={<MovieDetailPage />} />
+          <Route path="/movie/:title" element={
+            <div className="px-4 sm:px-6 lg:px-8">
+              <MovieDetailPage />
+            </div>
+          } />
         </Routes>
       </main>
     </div>

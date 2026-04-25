@@ -42,6 +42,17 @@ If you want to refresh the local dataset without starting the app, run:
 npm run scrape
 ```
 
+### TMDb enrichment (optional)
+
+To fetch movie posters and details from TMDb during local scraping, copy `.env.example` to `.env` and add your free TMDb API key:
+
+```bash
+cp .env.example .env
+# Edit .env and replace the placeholder with your key from https://www.themoviedb.org/settings/api
+```
+
+Without a key, the scraper skips enrichment and falls back to the basic data from critic.de.
+
 To preview the production build locally:
 
 ```bash
