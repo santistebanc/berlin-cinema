@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
         boxShadow: 'var(--shadow-sm)',
       }}
     >
-      <div className="px-4 sm:px-6 lg:px-8">
+      <div className="px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link
             to="/"

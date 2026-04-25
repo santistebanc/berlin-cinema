@@ -26,7 +26,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
           className='aspect-[2/3] w-full'
         />
 
-        <article className='flex flex-1 flex-col p-3 sm:p-4'>
+        <article className='flex flex-1 flex-col p-2 sm:p-4'>
           <h3
             className='mb-2 line-clamp-2 flex-1 text-base font-semibold leading-snug tracking-[-0.01em]'
             style={{ color: 'rgb(var(--text))' }}
