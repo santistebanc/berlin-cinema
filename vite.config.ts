@@ -8,6 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
         // Precache the app shell
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         runtimeCaching: [
