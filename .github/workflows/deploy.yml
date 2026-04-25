@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
+    inputs:
+      force_enrich:
+        description: 'Force re-enrich all movies (bypass TMDB cache)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -33,7 +38,7 @@ jobs:
       - run: npm install
 
       - name: Scrape movies
-        run: npx ts-node --project tsconfig.server.json scripts/scrape.ts
+        run: npx ts-node --project tsconfig.server.json scripts/scrape.ts ${{ inputs.force_enrich == 'true' && '--force-enrich' || '' }}
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
 
