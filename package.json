@@ -35,7 +35,6 @@
   "scripts": {
     "predev": "npm run scrape",
     "dev": "vite",
-    "prebuild": "npm run scrape",
     "build": "vite build",
     "scrape": "ts-node --project tsconfig.server.json scripts/scrape.ts",
     "scrape:force": "ts-node --project tsconfig.server.json scripts/scrape.ts --force-enrich",
