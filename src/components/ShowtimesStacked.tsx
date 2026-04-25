@@ -50,7 +50,7 @@ const ShowtimesStacked: React.FC<Props> = ({
                 {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <tbody>
                 {filteredTimes.map(time => {
                   const showingsList = dateShowings[time].filter(s =>
@@ -63,12 +63,12 @@ const ShowtimesStacked: React.FC<Props> = ({
                       style={{ borderColor: 'rgb(var(--border))' }}
                     >
                       <td
-                        className="tabular w-px whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 py-1.5 font-mono text-sm"
+                        className="tabular w-14 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 py-1.5 font-mono text-sm"
                         style={{ color: 'rgb(var(--text-muted))' }}
                       >
                         {time}
                       </td>
-                      <td className="px-2 py-1.5">
+                      <td className="w-full px-2 py-1.5">
                         <div className="flex flex-wrap gap-x-2 gap-y-1">
                           {showingsList.map((showing, idx) => (
                             <div
