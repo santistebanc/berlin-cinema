@@ -36,7 +36,7 @@ const FiltersPanel: React.FC<Props> = ({
   if (!visible) return null;
 
   return (
-    <div className="ui-muted-surface space-y-4 border-b px-3 py-4 sm:px-5">
+    <div className="space-y-4 border-b px-3 py-4 sm:px-5" style={{ backgroundColor: 'rgb(var(--surface))' }}>
       <h2 className="section-title">Filters</h2>
 
       <FilterSection title="Cinemas">
