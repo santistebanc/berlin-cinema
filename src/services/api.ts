@@ -1,7 +1,7 @@
 import { ScrapingResult } from '../types';
 
 const BUILD_TIME = import.meta.env.VITE_BUILD_TIME ?? 'dev';
-const MOVIES_URL = `${import.meta.env.BASE_URL}movies.json/`;
+const MOVIES_URL = `/movies.json`;
 
 export const movieApi = {
   async getAllMovies(): Promise<ScrapingResult> {
