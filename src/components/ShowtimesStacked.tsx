@@ -59,8 +59,8 @@ const ShowtimesStacked: React.FC<Props> = ({
                   return (
                     <tr
                       key={time}
-                      className="border-b transition-colors hover:bg-[rgb(var(--surface-muted))]"
-                      style={{ borderColor: 'rgb(var(--border))' }}
+                      className="border-b transition-colors hover:bg-[rgb(var(--surface-muted)/0.5)]"
+                      style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
                     >
                       <td
                         className="tabular w-14 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 py-1.5 font-mono text-sm"
@@ -73,8 +73,7 @@ const ShowtimesStacked: React.FC<Props> = ({
                           {showingsList.map((showing, idx) => (
                             <div
                               key={idx}
-                              className="flex min-w-0 items-center border-r pr-2 last:border-r-0"
-                              style={{ borderColor: 'rgb(var(--border))' }}
+                              className="flex min-w-0 items-center"
                             >
                               <ShowingEntry
                                 cinema={showing.cinema}
