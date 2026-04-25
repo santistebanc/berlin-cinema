@@ -46,6 +46,10 @@ export interface Cinema {
   city: string;
   postalCode: string;
   url: string;
+  websiteUrl?: string;
+  osmFetched?: boolean;
+  lat?: number;
+  lon?: number;
   showtimes: Showtime[];
 }
 
