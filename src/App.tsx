@@ -24,7 +24,7 @@ const AppContent: React.FC = () => {
             </div>
           } />
           <Route path="/movie/:title" element={
-            <div className="px-3 sm:px-6 lg:px-8">
+            <div className="px-0 sm:px-6 lg:px-8">
               <MovieDetailPage />
             </div>
           } />
