@@ -778,7 +778,7 @@ const MovieDetailPage: React.FC = () => {
                                         {time}
                                       </td>
                                       <td className="py-1 px-2">
-                                        <div className="flex flex-wrap gap-0">
+                                        <div className="flex flex-wrap gap-y-1.5 gap-x-0">
                                           {showings.map((showing, idx) => (
                                             <div key={idx} className="flex items-center gap-1 min-w-0 border-r border-gray-200 dark:border-gray-600 px-2 last:border-r-0">
                                               <button
