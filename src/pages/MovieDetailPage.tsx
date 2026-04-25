@@ -105,12 +105,12 @@ const MovieDetailPage: React.FC = () => {
             Back to Movies
           </Button>
 
-          <Card className="overflow-hidden rounded-xl">
-            <MovieHeader movie={movie} plot={movie.plot} />
-          </Card>
+           <Card className="overflow-hidden sm:rounded-xl rounded-none">
+             <MovieHeader movie={movie} plot={movie.plot} />
+           </Card>
         </div>
 
-        <Card className="overflow-hidden rounded-xl">
+         <Card className="overflow-hidden sm:rounded-xl rounded-none">
           <FiltersPanel
             visible={filters.showFilters}
             availableCinemas={filters.availableCinemas}
