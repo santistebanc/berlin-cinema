@@ -21,8 +21,8 @@ interface RawMovie {
   cast: string[] | null;
   country: string | null;
   year: string | null;
-  posterUrl: string | undefined;
-  url: string | undefined;
+  posterUrl: string | null;
+  url: string | null;
   variants: string[];
   cinemas: Cinema[];
   showings: Showing[];
@@ -38,16 +38,16 @@ interface MergedMovieInternal {
   director: string | null;
   cast: string[] | null;
   country: string | null;
-  year: string | null;
-  posterUrl: string | undefined;
-  url: string | undefined;
+  year: number | null;
+  posterUrl: string | null;
+  url: string | null;
   variants: Set<string>;
   cinemas: Set<string>;
   showings: Record<string, Record<string, ShowingInfo[]>>;
 }
 
 class MovieMerger {
-  static mergeMovies(movies: RawMovie[]) {
+  static mergeMovies(movies: RawMovie[]): any[] {
     const movieMap = new Map<string, MergedMovieInternal>();
 
     movies.forEach(movie => {
@@ -59,7 +59,7 @@ class MovieMerger {
           director: movie.director,
           cast: movie.cast,
           country: movie.country,
-          year: movie.year,
+          year: movie.year ? parseInt(movie.year) : null,
           posterUrl: movie.posterUrl,
           url: movie.url,
           variants: new Set(),
@@ -91,7 +91,13 @@ class MovieMerger {
       ...movie,
       variants: Array.from(movie.variants),
       cinemas: Array.from(movie.cinemas).map(s => JSON.parse(s) as Cinema),
-      showings: this.sortShowings(movie.showings)
+      showings: this.sortShowings(movie.showings),
+      plot: null,
+      runtime: null,
+      rating: null,
+      genres: null,
+      originalLanguage: null,
+      tmdbFetched: false,
     }));
   }
 

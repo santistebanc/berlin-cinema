@@ -20,29 +20,315 @@
 }
 
 @layer base {
+  :root {
+    --bg: 248 250 252;
+    --surface: 255 255 255;
+    --surface-muted: 241 245 249;
+    --surface-elevated: 255 255 255;
+    --text: 15 23 42;
+    --text-muted: 71 85 105;
+    --text-soft: 100 116 139;
+    --border: 226 232 240;
+    --border-strong: 203 213 225;
+    --accent: 234 88 12;
+    --accent-strong: 194 65 12;
+    --accent-soft: 255 237 213;
+    --accent-text: 154 52 18;
+    --info-soft: 219 234 254;
+    --info-border: 147 197 253;
+    --info-text: 30 64 175;
+    --danger-soft: 254 242 242;
+    --danger-border: 254 202 202;
+    --danger-text: 153 27 27;
+    --overlay: 15 23 42;
+    --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06);
+    --shadow-lg: 0 12px 28px -14px rgb(15 23 42 / 0.28);
+  }
+
+  .dark {
+    --bg: 3 7 18;
+    --surface: 17 24 39;
+    --surface-muted: 31 41 55;
+    --surface-elevated: 17 24 39;
+    --text: 243 244 246;
+    --text-muted: 209 213 219;
+    --text-soft: 156 163 175;
+    --border: 55 65 81;
+    --border-strong: 75 85 99;
+    --accent: 251 146 60;
+    --accent-strong: 249 115 22;
+    --accent-soft: 67 20 7;
+    --accent-text: 254 215 170;
+    --info-soft: 30 41 59;
+    --info-border: 30 64 175;
+    --info-text: 191 219 254;
+    --danger-soft: 69 10 10;
+    --danger-border: 127 29 29;
+    --danger-text: 254 202 202;
+    --overlay: 0 0 0;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.24);
+    --shadow-lg: 0 12px 28px -14px rgb(0 0 0 / 0.5);
+  }
+
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-optical-sizing: auto;
+    font-kerning: normal;
+    font-feature-settings: 'kern' 1, 'liga' 1;
   }
   
   body {
-    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+    background-color: rgb(var(--bg));
+    color: rgb(var(--text));
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer components {
+  .page-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .page-intro {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(var(--text-soft));
+  }
+
+  .font-display {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .page-title {
+    font-size: 1.875rem;
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: rgb(var(--text));
+  }
+
+  .section-title {
+    font-size: 1rem;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: rgb(var(--text));
+  }
+
+  .body-muted {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: rgb(var(--text-muted));
+  }
+
+  .caption {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: rgb(var(--text-soft));
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  .ui-card {
+    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ui-muted-surface {
+    background-color: rgb(var(--surface-muted));
+    border-color: rgb(var(--border));
+  }
+
+  .ui-input {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(var(--border-strong));
+    background-color: rgb(var(--surface));
+    color: rgb(var(--text));
+    padding: 0.5rem 0.75rem;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+  }
+
+  .ui-input::placeholder {
+    color: rgb(var(--text-soft));
+  }
+
+  .ui-input:focus {
+    outline: none;
+    border-color: rgb(var(--accent));
+    box-shadow: 0 0 0 3px rgb(var(--accent) / 0.18);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+  }
+
+  .btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
   .btn-primary {
-    @apply bg-cinema-600 hover:bg-cinema-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    background-color: rgb(var(--accent));
+    color: white;
   }
-  
-  .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+
+  .btn-primary:hover {
+    background-color: rgb(var(--accent-strong));
   }
-  
-  .card {
-    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden;
+
+  .btn-outline {
+    border: 1px solid rgb(var(--border-strong));
+    background-color: rgb(var(--surface));
+    color: rgb(var(--text-muted));
   }
-  
-  .input {
-    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cinema-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+
+  .btn-outline:hover {
+    background-color: rgb(var(--surface-muted));
   }
+
+  .btn-subtle {
+    background-color: rgb(var(--surface-muted));
+    color: rgb(var(--text-muted));
+  }
+
+  .btn-subtle:hover {
+    background-color: rgb(var(--border));
+  }
+
+  .btn-ghost {
+    color: rgb(var(--text-muted));
+  }
+
+  .btn-ghost:hover {
+    background-color: rgb(var(--surface-muted));
+  }
+
+  .btn-link {
+    color: rgb(var(--accent));
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .btn-link:hover {
+    color: rgb(var(--accent-strong));
+    text-decoration: underline;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1rem;
+  }
+
+  .badge-accent {
+    background-color: rgb(var(--accent-soft));
+    border-color: rgb(var(--accent) / 0.4);
+    color: rgb(var(--accent-text));
+  }
+
+  .badge-info {
+    background-color: rgb(var(--info-soft));
+    border-color: rgb(var(--info-border));
+    color: rgb(var(--info-text));
+  }
+
+  .badge-muted,
+  .badge-neutral {
+    background-color: rgb(var(--surface-muted));
+    border-color: rgb(var(--border));
+    color: rgb(var(--text-muted));
+  }
+
+  .status-banner {
+    border-radius: 0.75rem;
+    border: 1px solid rgb(var(--border));
+    padding: 1rem;
+  }
+
+  .status-banner-danger {
+    background-color: rgb(var(--danger-soft));
+    border-color: rgb(var(--danger-border));
+    color: rgb(var(--danger-text));
+  }
+
+  .status-banner-info {
+    background-color: rgb(var(--info-soft));
+    border-color: rgb(var(--info-border));
+    color: rgb(var(--info-text));
+  }
+
+  .poster-fallback {
+    border: 2px dashed rgb(var(--border-strong));
+  }
+
 }
+
+/* ── Cinema label palette ───────────────────────────────────────
+   Outside @layer so these beat all Tailwind utilities.
+   Each cinema gets a stable hue for at-a-glance identification.
+──────────────────────────────────────────────────────────────── */
+.cinema-badge { border: 1px solid transparent; }
+
+.cinema-badge-0  { background-color: #fecaca; color: #991b1b; border-color: #fca5a5; }
+.cinema-badge-1  { background-color: #bfdbfe; color: #1e40af; border-color: #93c5fd; }
+.cinema-badge-2  { background-color: #bbf7d0; color: #166534; border-color: #86efac; }
+.cinema-badge-3  { background-color: #fde68a; color: #854d0e; border-color: #fcd34d; }
+.cinema-badge-4  { background-color: #e9d5ff; color: #6b21a8; border-color: #d8b4fe; }
+.cinema-badge-5  { background-color: #fbcfe8; color: #9d174d; border-color: #f9a8d4; }
+.cinema-badge-6  { background-color: #c7d2fe; color: #3730a3; border-color: #a5b4fc; }
+.cinema-badge-7  { background-color: #99f6e4; color: #134e4a; border-color: #5eead4; }
+.cinema-badge-8  { background-color: #fed7aa; color: #9a3412; border-color: #fdba74; }
+.cinema-badge-9  { background-color: #a5f3fc; color: #155e75; border-color: #67e8f9; }
+.cinema-badge-10 { background-color: #d9f99d; color: #3f6212; border-color: #bef264; }
+.cinema-badge-11 { background-color: #fde68a; color: #92400e; border-color: #fcd34d; }
+.cinema-badge-12 { background-color: #a7f3d0; color: #064e3b; border-color: #6ee7b7; }
+.cinema-badge-13 { background-color: #ddd6fe; color: #4c1d95; border-color: #c4b5fd; }
+.cinema-badge-14 { background-color: #fecdd3; color: #9f1239; border-color: #fda4af; }
+.cinema-badge-15 { background-color: #bae6fd; color: #0c4a6e; border-color: #7dd3fc; }
+
+.dark .cinema-badge-0  { background-color: rgb(127 29 29 / 0.35);  color: #fca5a5; border-color: #b91c1c; }
+.dark .cinema-badge-1  { background-color: rgb(30 58 138 / 0.35);  color: #93c5fd; border-color: #1d4ed8; }
+.dark .cinema-badge-2  { background-color: rgb(20 83 45 / 0.35);   color: #86efac; border-color: #15803d; }
+.dark .cinema-badge-3  { background-color: rgb(113 63 18 / 0.35);  color: #fde047; border-color: #a16207; }
+.dark .cinema-badge-4  { background-color: rgb(88 28 135 / 0.35);  color: #d8b4fe; border-color: #7e22ce; }
+.dark .cinema-badge-5  { background-color: rgb(131 24 67 / 0.35);  color: #f9a8d4; border-color: #be185d; }
+.dark .cinema-badge-6  { background-color: rgb(55 48 163 / 0.35);  color: #a5b4fc; border-color: #4338ca; }
+.dark .cinema-badge-7  { background-color: rgb(19 78 74 / 0.35);   color: #5eead4; border-color: #0f766e; }
+.dark .cinema-badge-8  { background-color: rgb(124 45 18 / 0.35);  color: #fdba74; border-color: #c2410c; }
+.dark .cinema-badge-9  { background-color: rgb(21 94 117 / 0.35);  color: #67e8f9; border-color: #0e7490; }
+.dark .cinema-badge-10 { background-color: rgb(63 98 18 / 0.35);   color: #bef264; border-color: #4d7c0f; }
+.dark .cinema-badge-11 { background-color: rgb(120 53 15 / 0.35);  color: #fcd34d; border-color: #b45309; }
+.dark .cinema-badge-12 { background-color: rgb(6 78 59 / 0.35);    color: #6ee7b7; border-color: #047857; }
+.dark .cinema-badge-13 { background-color: rgb(76 29 149 / 0.35);  color: #c4b5fd; border-color: #6d28d9; }
+.dark .cinema-badge-14 { background-color: rgb(159 18 57 / 0.35);  color: #fda4af; border-color: #be123c; }
+.dark .cinema-badge-15 { background-color: rgb(12 74 110 / 0.35);  color: #7dd3fc; border-color: #0369a1; }

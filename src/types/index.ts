@@ -1,5 +1,6 @@
 export interface Movie {
   title: string;
+  criticTitle: string | null;
   director: string | null;
   cast: string[] | null;
   country: string | null;
@@ -9,6 +10,21 @@ export interface Movie {
   variants: string[];
   cinemas: Cinema[];
   showings: Record<string, Record<string, ShowingInfo[]>>; // Date -> Time -> Cinema+Variant[]
+  // TMDb-enriched fields
+  tmdbTitle: string | null;
+  tagline: string | null;
+  plot: string | null;
+  runtime: number | null;
+  rating: number | null;
+  voteCount: number | null;
+  genres: string[] | null;
+  originalLanguage: string | null;
+  trailerUrl: string | null;
+  imdbId: string | null;
+  backdropUrl: string | null;
+  ageRating: string | null;
+  keywords: string[];
+  tmdbFetched?: boolean;
 }
 
 export interface ShowingInfo {
