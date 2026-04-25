@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { ExternalLink, X } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import Button from './ui/Button';
 import Card from './ui/Card';
 
@@ -9,6 +10,9 @@ export interface CinemaPopupInfo {
   city: string;
   postalCode: string;
   url: string;
+  websiteUrl?: string;
+  lat?: number;
+  lon?: number;
 }
 
 interface Props {
@@ -17,6 +21,7 @@ interface Props {
 }
 
 const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
+  const { theme } = useTheme();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = 'cinema-popup-title';
@@ -72,9 +77,22 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="mx-2 w-full max-w-md p-3 shadow-xl sm:mx-4 sm:p-4"
-        style={{ boxShadow: 'var(--shadow-lg)' }}
+        className="mx-2 flex w-full max-w-xl flex-col overflow-hidden shadow-xl sm:mx-4"
+        style={{ maxHeight: '90dvh', boxShadow: 'var(--shadow-lg)' }}
       >
+        <iframe
+          title={`Map of ${cinema.name}`}
+          src={cinema.lat != null && cinema.lon != null
+            ? `https://maps.google.com/maps?q=${cinema.lat},${cinema.lon}&z=16&output=embed`
+            : `https://maps.google.com/maps?q=${encodeURIComponent(`${cinema.address}, ${cinema.postalCode} Berlin`)}&z=15&output=embed&iwloc=`
+          }
+          className="w-full shrink-0 border-0 h-[40dvh] sm:h-[52dvh] lg:h-[62dvh]"
+          style={theme === 'dark' ? { filter: 'invert(1) hue-rotate(180deg)' } : undefined}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+
+        <div className="p-3 sm:p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 id={titleId} className="text-lg font-semibold" style={{ color: 'rgb(var(--text))' }}>
             {cinema.name}
@@ -109,10 +127,10 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
             </div>
           )}
 
-          {cinema.url && (
+          {cinema.websiteUrl && (
             <div className="pt-2">
               <a
-                href={cinema.url}
+                href={cinema.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary px-4 py-2 text-sm"
@@ -122,6 +140,7 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
               </a>
             </div>
           )}
+        </div>
         </div>
       </Card>
     </div>
