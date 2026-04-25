@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import BerlinCinemaScraper from '../api/berlin-cinema-scraper';
 import TmdbClient from '../api/tmdb-client';
+import { fetchBerlinCinemaWebsites, matchCinemaWebsite, geocodeCinema } from '../api/osm-client';
 import { Movie } from '../src/types';
 import fs from 'fs';
 import path from 'path';
@@ -156,6 +157,89 @@ async function main() {
     console.log('No TMDB_API_KEY found — skipping enrichment');
     for (const movie of data.movies) {
       initTmdbFields(movie);
+    }
+  }
+
+  // Build a map of existing cinema website data for caching
+  const existingCinemaWebsites = new Map<string, { websiteUrl?: string; osmFetched: boolean }>();
+  for (const movie of existingMovies.values()) {
+    for (const cinema of (movie.cinemas ?? [])) {
+      if ((cinema as any).osmFetched && !existingCinemaWebsites.has(cinema.name)) {
+        existingCinemaWebsites.set(cinema.name, {
+          websiteUrl: (cinema as any).websiteUrl,
+          osmFetched: true,
+        });
+      }
+    }
+  }
+
+  // Collect cinema names that still need OSM lookup
+  const allCinemas = new Set<string>();
+  for (const movie of data.movies) {
+    for (const cinema of (movie.cinemas ?? [])) {
+      if (!existingCinemaWebsites.has(cinema.name)) allCinemas.add(cinema.name);
+    }
+  }
+
+  // Fetch from OSM only if there are unresolved cinemas
+  let osmMap: Map<string, string> | null = null;
+  if (allCinemas.size > 0) {
+    console.log(`[osm] Looking up websites for ${allCinemas.size} new cinemas...`);
+    try {
+      osmMap = await fetchBerlinCinemaWebsites();
+    } catch (e) {
+      console.warn('[osm] Failed to fetch from Overpass API:', (e as Error).message);
+    }
+  } else {
+    console.log('[osm] All cinemas already resolved — skipping fetch');
+  }
+
+  // Apply website URLs to all cinema objects
+  for (const movie of data.movies) {
+    for (const cinema of (movie.cinemas ?? [])) {
+      const cached = existingCinemaWebsites.get(cinema.name);
+      if (cached) {
+        (cinema as any).websiteUrl = cached.websiteUrl;
+        (cinema as any).osmFetched = true;
+      } else if (osmMap) {
+        const website = matchCinemaWebsite(cinema.name, osmMap);
+        (cinema as any).websiteUrl = website ?? undefined;
+        (cinema as any).osmFetched = true;
+      }
+    }
+  }
+
+  // Geocode cinemas that don't have coordinates yet (cached by name)
+  const existingCoords = new Map<string, { lat: number; lon: number }>();
+  for (const movie of existingMovies.values()) {
+    for (const cinema of (movie.cinemas ?? [])) {
+      if (cinema.lat != null && cinema.lon != null && !existingCoords.has(cinema.name)) {
+        existingCoords.set(cinema.name, { lat: cinema.lat, lon: cinema.lon });
+      }
+    }
+  }
+
+  const geocodedNames = new Set<string>();
+  for (const movie of data.movies) {
+    for (const cinema of (movie.cinemas ?? [])) {
+      const cached = existingCoords.get(cinema.name);
+      if (cached) {
+        cinema.lat = cached.lat;
+        cinema.lon = cached.lon;
+      } else if (!geocodedNames.has(cinema.name)) {
+        geocodedNames.add(cinema.name);
+        const coords = await geocodeCinema(cinema.address, cinema.postalCode, cinema.city);
+        if (coords) {
+          existingCoords.set(cinema.name, coords);
+          cinema.lat = coords.lat;
+          cinema.lon = coords.lon;
+          console.log(`[nominatim] Geocoded "${cinema.name}": ${coords.lat}, ${coords.lon}`);
+        }
+      } else {
+        // Already geocoded this name in this run — apply from cache
+        const coords = existingCoords.get(cinema.name);
+        if (coords) { cinema.lat = coords.lat; cinema.lon = coords.lon; }
+      }
     }
   }
 

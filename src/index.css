@@ -153,7 +153,6 @@
   .ui-card {
     background-color: rgb(var(--surface));
     border: 1px solid rgb(var(--border));
-    border-radius: 0.75rem;
     box-shadow: var(--shadow-sm);
   }
 
@@ -164,7 +163,6 @@
 
   .ui-input {
     width: 100%;
-    border-radius: 0.75rem;
     border: 1px solid rgb(var(--border-strong));
     background-color: rgb(var(--surface));
     color: rgb(var(--text));
@@ -187,7 +185,6 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 0.75rem;
     font-weight: 500;
     line-height: 1.2;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
