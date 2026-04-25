@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Share2 } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
 import { buildCinemaColors } from '../utils/cinemaUtils';
 import { useShowtimeFilters } from '../hooks/useShowtimeFilters';
@@ -82,6 +82,15 @@ const MovieDetailPage: React.FC = () => {
   const cinemaCount = movie.cinemas?.length ?? 0;
   const metaTitle = `${movie.title} — OV Berlin`;
   const metaDescription = `${movie.title} showtimes in Berlin — playing at ${cinemaCount} cinema${cinemaCount !== 1 ? 's' : ''}. Original version (OV) screenings with dates and times.`;
+  const shareUrl = `https://ovberlin.site/movie/${encodeURIComponent(movie.title)}`;
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      await navigator.share({ title: metaTitle, text: metaDescription, url: shareUrl });
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+    }
+  };
 
   return (
     <>
@@ -96,14 +105,24 @@ const MovieDetailPage: React.FC = () => {
 
       <div className="page-shell">
         <div className="flex flex-col gap-1.5 sm:gap-3">
-          <Button
-            onClick={() => navigate('/')}
-            variant="link"
-            className="justify-start"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Movies
-          </Button>
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={() => navigate('/')}
+              variant="link"
+              className="justify-start"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Movies
+            </Button>
+            <Button
+              onClick={handleShare}
+              variant="ghost"
+              size="icon"
+              aria-label="Share this movie"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
 
            <Card className="overflow-hidden sm:rounded-xl rounded-none">
              <MovieHeader movie={movie} plot={movie.plot} />
