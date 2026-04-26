@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Rating {
   source: string;
@@ -26,6 +26,21 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
   const displayRating = imdbRating ?? tmdbRating;
   const displayVotes = imdbVotes ?? tmdbVotes;
   const hasExtra = allRatings && allRatings.length > 1;
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, [open]);
 
   if (displayRating == null) return null;
 
@@ -36,21 +51,29 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
     : null;
 
   return (
-    <span className={`group relative inline-flex items-center gap-1 ${className}`}>
-      <StarIcon />
-      <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>
-        {displayRating.toFixed(1)}
-      </span>
-      {votesLabel && (
-        <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>
-      )}
-      {imdbRating != null && (
-        <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>
-      )}
+    <span ref={ref} className={`relative inline-flex items-center gap-1 ${className}`}>
+      <button
+        type="button"
+        onClick={() => hasExtra && setOpen(v => !v)}
+        className={`inline-flex items-center gap-1 ${hasExtra ? 'cursor-pointer' : 'cursor-default'}`}
+        aria-expanded={hasExtra ? open : undefined}
+        aria-haspopup={hasExtra ? 'true' : undefined}
+      >
+        <StarIcon />
+        <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>
+          {displayRating.toFixed(1)}
+        </span>
+        {votesLabel && (
+          <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>
+        )}
+        {imdbRating != null && (
+          <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>
+        )}
+      </button>
 
-      {hasExtra && (
+      {hasExtra && open && (
         <span
-          className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-44 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100"
+          className="absolute bottom-full left-0 z-50 mb-2 w-44"
           style={{
             backgroundColor: 'rgb(var(--surface))',
             border: '1px solid rgb(var(--border))',
