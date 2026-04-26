@@ -31,7 +31,7 @@ const MoviePoster: React.FC<MoviePosterProps> = ({ alt, title, className, loadin
           lang="de"
           className="px-[8cqi] text-center font-semibold leading-snug tracking-wide"
           style={{
-            fontSize: 'clamp(0.75rem, 18cqi, 2rem)',
+            fontSize: '14cqi',
             color: 'rgba(255,255,255,0.8)',
             textShadow: '0 1px 4px rgba(0,0,0,0.6)',
             display: '-webkit-box',
