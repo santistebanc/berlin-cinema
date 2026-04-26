@@ -41,12 +41,12 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
             </p>
           )}
 
-          {(movie.rating != null || movie.year || movie.runtime) && (
+          {((movie.imdbRating ?? movie.rating) != null || movie.year || movie.runtime) && (
             <div className="mb-2 flex items-center gap-1.5 text-xs tabular" style={{ color: 'rgb(var(--text-soft))' }}>
-              {movie.rating != null && (
-                <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>★ {movie.rating.toFixed(1)}</span>
+              {(movie.imdbRating ?? movie.rating) != null && (
+                <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>★ {(movie.imdbRating ?? movie.rating)!.toFixed(1)}</span>
               )}
-              {movie.rating != null && (movie.year || movie.runtime) && <span>·</span>}
+              {(movie.imdbRating ?? movie.rating) != null && (movie.year || movie.runtime) && <span>·</span>}
               {movie.year && <span>{movie.year}</span>}
               {movie.year && movie.runtime && <span>·</span>}
               {movie.runtime && <span>{movie.runtime} min</span>}

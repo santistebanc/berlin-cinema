@@ -87,7 +87,7 @@ const MovieDetailPage: React.FC = () => {
   const metaParts = [
     movie.year && `${movie.year}`,
     movie.runtime && `${movie.runtime} min`,
-    movie.rating != null && `★ ${movie.rating.toFixed(1)}`,
+    (movie.imdbRating ?? movie.rating) != null && `★ ${(movie.imdbRating ?? movie.rating)!.toFixed(1)}`,
     movie.genres?.length && movie.genres.slice(0, 2).join(', '),
     movie.variants?.length && movie.variants.join(', '),
   ].filter(Boolean);
