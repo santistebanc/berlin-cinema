@@ -194,7 +194,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
             >
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
-                  <MoviePoster src={movie.posterUrl} alt={movie.title} className="h-15 w-10" />
+                  <MoviePoster src={movie.posterUrl} alt={movie.title} title={movie.tmdbTitle || movie.altTitle || movie.title} className="h-15 w-10" />
                 </div>
 
                 <div className="min-w-0 flex-1">
