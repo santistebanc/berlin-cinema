@@ -1,10 +1,4 @@
 import https from 'https';
-import http from 'http';
-
-interface OsmCinema {
-  name: string;
-  website: string;
-}
 
 function normalize(name: string): string {
   return name
@@ -14,9 +8,8 @@ function normalize(name: string): string {
 }
 
 function fetchJson(url: string): Promise<any> {
-  const client = url.startsWith('https') ? https : http;
   return new Promise((resolve, reject) => {
-    const req = client.get(url, { headers: { 'User-Agent': 'berlin-cinema-app/1.0' } }, res => {
+    const req = https.get(url, { headers: { 'User-Agent': 'berlin-cinema-app/1.0' } }, res => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
@@ -26,20 +19,6 @@ function fetchJson(url: string): Promise<any> {
     });
     req.on('error', reject);
   });
-}
-
-export async function geocodeCinema(address: string, postalCode: string, city: string): Promise<{ lat: number; lon: number } | null> {
-  const q = encodeURIComponent(`${address}, ${postalCode} ${city}, Germany`);
-  const url = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=de`;
-  try {
-    const results = await fetchJson(url);
-    if (results && results.length > 0) {
-      return { lat: parseFloat(results[0].lat), lon: parseFloat(results[0].lon) };
-    }
-  } catch (e) {
-    console.warn(`[nominatim] Geocoding failed for "${address}":`, (e as Error).message);
-  }
-  return null;
 }
 
 export async function fetchBerlinCinemaWebsites(): Promise<Map<string, string>> {
