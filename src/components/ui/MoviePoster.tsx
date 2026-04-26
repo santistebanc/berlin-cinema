@@ -1,24 +1,51 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
 
-const FALLBACK_POSTER =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDEyOCAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PC9zdmc+';
+function titleToGradient(title: string): string {
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = (hash * 31 + title.charCodeAt(i)) >>> 0;
+  }
+  const h1 = hash % 360;
+  const h2 = (h1 + 40 + (hash >> 8) % 80) % 360;
+  return `linear-gradient(160deg, hsl(${h1},45%,22%) 0%, hsl(${h2},50%,15%) 100%)`;
+}
 
 interface MoviePosterProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string | null;
+  title?: string;
 }
 
-const MoviePoster: React.FC<MoviePosterProps> = ({ alt, className, loading = 'lazy', src, ...props }) => {
+const MoviePoster: React.FC<MoviePosterProps> = ({ alt, title, className, loading = 'lazy', src, ...props }) => {
+  const [failed, setFailed] = React.useState(false);
+
+  if (!src || failed) {
+    const label = title || alt || '';
+    return (
+      <div
+        className={cn('flex items-center justify-center overflow-hidden', className)}
+        style={{ background: titleToGradient(label) }}
+        aria-label={label}
+      >
+        <span
+          className="px-3 text-center text-sm font-semibold leading-snug tracking-wide"
+          style={{ color: 'rgba(255,255,255,0.75)', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}
+        >
+          {label}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <img
-      src={src || FALLBACK_POSTER}
+      src={src}
       alt={alt}
+      title={title}
       loading={loading}
       decoding="async"
-      className={cn('object-cover', !src && 'poster-fallback', className)}
-      onError={(event) => {
-        event.currentTarget.src = FALLBACK_POSTER;
-      }}
+      className={cn('object-cover', className)}
+      onError={() => setFailed(true)}
       {...props}
     />
   );
