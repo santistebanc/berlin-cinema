@@ -48,6 +48,15 @@ async function main() {
   await page.screenshot({ path: `${OUT_DIR}/screenshot3.png` });
   console.log('✓ screenshot3.png — detail grid view');
 
+  // 5 — Cinema popup with map (desktop)
+  await page.goto(`${BASE_URL}${href}`, { waitUntil: 'networkidle' });
+  await wait(600);
+  const cinemaBtn = page.locator('button[title]').filter({ hasText: /\S/ }).first();
+  await cinemaBtn.click();
+  await wait(1500); // wait for map iframe to load
+  await page.screenshot({ path: `${OUT_DIR}/screenshot5.png` });
+  console.log('✓ screenshot5.png — cinema popup with map');
+
   await desktop.close();
 
   // ── Mobile context ───────────────────────────────────────────────────────
@@ -59,6 +68,15 @@ async function main() {
   await wait(600);
   await mpage.screenshot({ path: `${OUT_DIR}/screenshot2.png` });
   console.log('✓ screenshot2.png — detail stacked view (mobile)');
+
+  // 6 — Search autocomplete (mobile)
+  await mpage.goto(BASE_URL, { waitUntil: 'networkidle' });
+  await mpage.waitForSelector('.ui-card', { timeout: 15000 });
+  await wait(400);
+  await mpage.fill('input[type="text"]', 'love');
+  await wait(900);
+  await mpage.screenshot({ path: `${OUT_DIR}/screenshot6.png` });
+  console.log('✓ screenshot6.png — search autocomplete (mobile)');
 
   await mobile.close();
   await browser.close();
