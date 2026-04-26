@@ -36,6 +36,7 @@ class MovieParser {
     if (!title || !movieUrl) return null;
 
     const movieDetails = this.extractMovieDetails($item, $);
+    const isSpecial = this.detectSpecial(title, movieUrl);
     // Extract variants from the display text — it uses English codes like "(OV w/ sub)"
     const variants = this.extractVariants(displayTitle);
     const posterUrl = this.extractPosterUrl($item);
@@ -52,8 +53,15 @@ class MovieParser {
       url: this.httpClient.ensureAbsoluteUrl(movieUrl),
       variants,
       cinemas,
-      showings
+      showings,
+      isSpecial,
     };
+  }
+
+  detectSpecial(title: string, url: string): boolean {
+    if (!url.includes('/movie/')) return true;
+    const lower = title.toLowerCase();
+    return /sneak|kurzfilm|festival|sonderprogramm|filmreihe|kurzfilmprogramm/.test(lower);
   }
 
   extractMovieDetails($item: any, $: any) {
