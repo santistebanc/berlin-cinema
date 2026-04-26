@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import BerlinCinemaScraper from '../api/berlin-cinema-scraper';
 import TmdbClient from '../api/tmdb-client';
-import { fetchBerlinCinemaWebsites, matchCinemaWebsite, geocodeCinema } from '../api/osm-client';
+import { fetchBerlinCinemaWebsites, matchCinemaWebsite } from '../api/osm-client';
 import { fetchOmdbData } from '../api/omdb-client';
 import { Movie } from '../src/types';
 import fs from 'fs';
@@ -231,40 +231,6 @@ async function main() {
         const website = matchCinemaWebsite(cinema.name, osmMap);
         (cinema as any).websiteUrl = website ?? undefined;
         (cinema as any).osmFetched = true;
-      }
-    }
-  }
-
-  // Geocode cinemas that don't have coordinates yet (cached by name)
-  const existingCoords = new Map<string, { lat: number; lon: number }>();
-  for (const movie of existingMovies.values()) {
-    for (const cinema of (movie.cinemas ?? [])) {
-      if (cinema.lat != null && cinema.lon != null && !existingCoords.has(cinema.name)) {
-        existingCoords.set(cinema.name, { lat: cinema.lat, lon: cinema.lon });
-      }
-    }
-  }
-
-  const geocodedNames = new Set<string>();
-  for (const movie of data.movies) {
-    for (const cinema of (movie.cinemas ?? [])) {
-      const cached = existingCoords.get(cinema.name);
-      if (cached) {
-        cinema.lat = cached.lat;
-        cinema.lon = cached.lon;
-      } else if (!geocodedNames.has(cinema.name)) {
-        geocodedNames.add(cinema.name);
-        const coords = await geocodeCinema(cinema.address, cinema.postalCode, cinema.city);
-        if (coords) {
-          existingCoords.set(cinema.name, coords);
-          cinema.lat = coords.lat;
-          cinema.lon = coords.lon;
-          console.log(`[nominatim] Geocoded "${cinema.name}": ${coords.lat}, ${coords.lon}`);
-        }
-      } else {
-        // Already geocoded this name in this run — apply from cache
-        const coords = existingCoords.get(cinema.name);
-        if (coords) { cinema.lat = coords.lat; cinema.lon = coords.lon; }
       }
     }
   }

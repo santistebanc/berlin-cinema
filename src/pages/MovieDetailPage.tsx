@@ -40,8 +40,6 @@ const MovieDetailPage: React.FC = () => {
         postalCode: cinema.postalCode || '',
         url: cinema.url || '',
         websiteUrl: cinema.websiteUrl,
-        lat: cinema.lat,
-        lon: cinema.lon,
       });
     }
   };

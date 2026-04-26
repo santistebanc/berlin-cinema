@@ -51,8 +51,6 @@ export interface Cinema {
   url: string;
   websiteUrl?: string;
   osmFetched?: boolean;
-  lat?: number;
-  lon?: number;
   showtimes: Showtime[];
 }
 
