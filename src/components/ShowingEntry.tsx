@@ -14,7 +14,7 @@ const ShowingEntry: React.FC<Props> = ({ cinema, variant, colorClass, label, onC
     <button
       onClick={() => onCinemaClick(cinema)}
       className={cn(
-        'flex max-w-full items-center gap-1 truncate rounded-md px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-80',
+        'flex max-w-full items-center gap-1 truncate px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-80',
         colorClass
       )}
       title={cinema}

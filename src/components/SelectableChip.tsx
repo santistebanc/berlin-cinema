@@ -24,7 +24,7 @@ const SelectableChip: React.FC<SelectableChipProps> = ({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded border px-2 py-1.5 text-xs font-medium transition-colors',
+        'border px-2 py-1.5 text-xs font-medium transition-colors',
         active ? className : inactiveClassName
       )}
     >

@@ -29,7 +29,7 @@ const HomePageEmptyState: React.FC<HomePageEmptyStateProps> = ({ onClearSearch, 
       </p>
 
       <div
-        className="mb-5 rounded-xl border p-4"
+        className="mb-5 border p-4"
         style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgb(var(--surface))' }}
       >
         <p className="caption mb-3 font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>
