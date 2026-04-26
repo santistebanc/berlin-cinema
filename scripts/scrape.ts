@@ -145,7 +145,7 @@ async function main() {
         continue;
       }
 
-      const tmdbData = await tmdb.enrichMovie(movie.title);
+      const tmdbData = await tmdb.enrichMovie(movie.title, movie.altTitle);
       if (tmdbData) {
         enrichedCount++;
         movie.tmdbTitle = tmdbData.tmdbTitle;

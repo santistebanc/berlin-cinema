@@ -158,8 +158,20 @@ class TmdbClient {
     return `${TMDB_IMAGE_BASE_URL}/${size}${posterPath}`;
   }
 
-  async enrichMovie(title: string): Promise<TmdbMovieData | null> {
-    const searchResult = await this.searchMovie(title);
+  async enrichMovie(title: string, altTitle?: string | null): Promise<TmdbMovieData | null> {
+    let searchResult = await this.searchMovie(title);
+
+    if (!searchResult && title.includes(' - ')) {
+      const baseTitle = title.split(' - ')[0].trim();
+      console.log(`  Retrying TMDb search with base title: "${baseTitle}"`);
+      searchResult = await this.searchMovie(baseTitle);
+    }
+
+    if (!searchResult && altTitle) {
+      console.log(`  Retrying TMDb search with altTitle: "${altTitle}"`);
+      searchResult = await this.searchMovie(altTitle);
+    }
+
     if (!searchResult) {
       console.log(`  No TMDb match for "${title}"`);
       return null;
