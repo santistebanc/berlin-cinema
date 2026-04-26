@@ -12,6 +12,7 @@ dist-server/
 
 # Generated at build time
 public/movies.json
+public/sitemap.xml
 
 # TypeScript
 *.tsbuildinfo
