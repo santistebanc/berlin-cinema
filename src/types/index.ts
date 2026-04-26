@@ -30,6 +30,7 @@ export interface Movie {
   ageRating: string | null;
   keywords: string[];
   tmdbFetched?: boolean;
+  omdbFetchedAt?: string;
 }
 
 export interface ShowingInfo {

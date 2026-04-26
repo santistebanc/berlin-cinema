@@ -181,16 +181,21 @@ async function main() {
     }
   }
 
-  // Fetch ratings via OMDb only for movies missing cached data
+  // Fetch ratings via OMDb; cache for 24h to stay within free tier limits
   if (OMDB_API_KEY) {
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
     let omdbFetched = 0;
+    let omdbCached = 0;
     for (const movie of data.movies) {
       if (!movie.imdbId) continue;
       const cached = existingMovies.get(movie.title.toLowerCase());
-      if (!forceEnrich && cached?.imdbRating != null) {
+      const age = cached?.omdbFetchedAt ? Date.now() - new Date(cached.omdbFetchedAt).getTime() : Infinity;
+      if (!forceEnrich && cached?.imdbRating != null && age < ONE_DAY_MS) {
         movie.imdbRating = cached.imdbRating;
         movie.imdbVotes = cached.imdbVotes ?? null;
         movie.allRatings = cached.allRatings ?? null;
+        movie.omdbFetchedAt = cached.omdbFetchedAt;
+        omdbCached++;
         continue;
       }
       const omdb = await fetchOmdbData(movie.imdbId, OMDB_API_KEY);
@@ -198,10 +203,11 @@ async function main() {
         movie.imdbRating = omdb.imdbRating;
         movie.imdbVotes = omdb.imdbVotes;
         movie.allRatings = omdb.ratings.length > 0 ? omdb.ratings : null;
+        movie.omdbFetchedAt = new Date().toISOString();
         omdbFetched++;
       }
     }
-    console.log(`OMDb — fetched: ${omdbFetched}`);
+    console.log(`OMDb — fetched: ${omdbFetched}, cached: ${omdbCached}`);
   } else {
     console.log('No OMDB_API_KEY found — skipping IMDb ratings');
   }
