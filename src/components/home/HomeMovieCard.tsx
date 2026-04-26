@@ -6,6 +6,7 @@ import { toSlug } from '../../utils/cinemaUtils';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 import MoviePoster from '../ui/MoviePoster';
+import RatingBadge from '../ui/RatingBadge';
 
 interface HomeMovieCardProps {
   movie: Movie;
@@ -43,9 +44,13 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
 
           {((movie.imdbRating ?? movie.rating) != null || movie.year || movie.runtime) && (
             <div className="mb-2 flex items-center gap-1.5 text-xs tabular" style={{ color: 'rgb(var(--text-soft))' }}>
-              {(movie.imdbRating ?? movie.rating) != null && (
-                <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>★ {(movie.imdbRating ?? movie.rating)!.toFixed(1)}</span>
-              )}
+              <RatingBadge
+                imdbRating={movie.imdbRating ?? null}
+                tmdbRating={movie.rating}
+                imdbVotes={movie.imdbVotes ?? null}
+                tmdbVotes={movie.voteCount}
+                allRatings={movie.allRatings ?? null}
+              />
               {(movie.imdbRating ?? movie.rating) != null && (movie.year || movie.runtime) && <span>·</span>}
               {movie.year && <span>{movie.year}</span>}
               {movie.year && movie.runtime && <span>·</span>}

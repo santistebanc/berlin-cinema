@@ -17,6 +17,8 @@ export interface Movie {
   runtime: number | null;
   rating: number | null;
   imdbRating: number | null;
+  imdbVotes: number | null;
+  allRatings: { source: string; value: string }[] | null;
   voteCount: number | null;
   genres: string[] | null;
   originalLanguage: string | null;

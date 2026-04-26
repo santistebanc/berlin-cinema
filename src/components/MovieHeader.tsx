@@ -3,6 +3,7 @@ import { ChevronDown, ExternalLink, Play } from 'lucide-react';
 import { Movie } from '../types';
 import Badge from './ui/Badge';
 import MoviePoster from './ui/MoviePoster';
+import RatingBadge from './ui/RatingBadge';
 
 interface Props {
   movie: Movie;
@@ -37,17 +38,13 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
                 {movie.year && <span>{movie.year}</span>}
                 {movie.runtime && <span>{movie.runtime} min</span>}
-                {(movie.imdbRating ?? movie.rating) != null && (
-                  <span className="inline-flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-yellow-500"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    {(movie.imdbRating ?? movie.rating)!.toFixed(1)}
-                    {movie.voteCount != null && (
-                      <span style={{ color: 'rgb(var(--text-soft))' }}>
-                        ({movie.voteCount >= 1000 ? `${(movie.voteCount / 1000).toFixed(0)}k` : movie.voteCount})
-                      </span>
-                    )}
-                  </span>
-                )}
+                <RatingBadge
+                  imdbRating={movie.imdbRating ?? null}
+                  tmdbRating={movie.rating}
+                  imdbVotes={movie.imdbVotes ?? null}
+                  tmdbVotes={movie.voteCount}
+                  allRatings={movie.allRatings ?? null}
+                />
                 {movie.ageRating && <span>{movie.ageRating}</span>}
                 {movie.originalLanguage && <span>{movie.originalLanguage.toUpperCase()}</span>}
                 {movie.country && <span>{movie.country}</span>}
