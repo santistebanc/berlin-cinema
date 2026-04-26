@@ -181,11 +181,18 @@ async function main() {
     }
   }
 
-  // Fetch all ratings via OMDb for movies that have an imdbId but no cached data
+  // Fetch ratings via OMDb only for movies missing cached data
   if (OMDB_API_KEY) {
     let omdbFetched = 0;
     for (const movie of data.movies) {
       if (!movie.imdbId) continue;
+      const cached = existingMovies.get(movie.title.toLowerCase());
+      if (!forceEnrich && cached?.imdbRating != null) {
+        movie.imdbRating = cached.imdbRating;
+        movie.imdbVotes = cached.imdbVotes ?? null;
+        movie.allRatings = cached.allRatings ?? null;
+        continue;
+      }
       const omdb = await fetchOmdbData(movie.imdbId, OMDB_API_KEY);
       if (omdb) {
         movie.imdbRating = omdb.imdbRating;
