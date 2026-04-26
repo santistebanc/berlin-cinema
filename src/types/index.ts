@@ -31,6 +31,7 @@ export interface Movie {
   keywords: string[];
   tmdbFetched?: boolean;
   omdbFetchedAt?: string;
+  isSpecial?: boolean;
 }
 
 export interface ShowingInfo {

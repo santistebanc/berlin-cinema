@@ -137,6 +137,11 @@ async function main() {
     for (const movie of data.movies) {
       initTmdbFields(movie);
 
+      if ((movie as any).isSpecial) {
+        movie.tmdbFetched = true;
+        continue;
+      }
+
       const oldMovie = existingMovies.get(movie.title.toLowerCase());
 
       if (!forceEnrich && oldMovie?.tmdbFetched) {
@@ -187,7 +192,7 @@ async function main() {
     let omdbFetched = 0;
     let omdbCached = 0;
     for (const movie of data.movies) {
-      if (!movie.imdbId) continue;
+      if (!movie.imdbId || (movie as any).isSpecial) continue;
       const cached = existingMovies.get(movie.title.toLowerCase());
       const age = cached?.omdbFetchedAt ? Date.now() - new Date(cached.omdbFetchedAt).getTime() : Infinity;
       if (!forceEnrich && cached?.imdbRating != null && age < ONE_DAY_MS) {
