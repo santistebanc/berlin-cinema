@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Movie } from '../../types';
-import { getMovieShowtimeCount } from '../../hooks/useHomePageMovies';
 import { toSlug } from '../../utils/cinemaUtils';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
@@ -13,8 +12,6 @@ interface HomeMovieCardProps {
 }
 
 const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
-  const showtimeCount = getMovieShowtimeCount(movie);
-
   return (
     <Link
       to={`/movie/${toSlug(movie.title)}`}
@@ -68,11 +65,6 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
             </div>
           )}
 
-          <footer className="mt-auto pt-1">
-            <span className="text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
-              {showtimeCount} showtime{showtimeCount !== 1 ? 's' : ''}
-            </span>
-          </footer>
         </article>
       </Card>
     </Link>
