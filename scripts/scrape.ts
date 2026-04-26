@@ -2,6 +2,7 @@ import 'dotenv/config';
 import BerlinCinemaScraper from '../api/berlin-cinema-scraper';
 import TmdbClient from '../api/tmdb-client';
 import { fetchBerlinCinemaWebsites, matchCinemaWebsite, geocodeCinema } from '../api/osm-client';
+import { fetchImdbRating } from '../api/omdb-client';
 import { Movie } from '../src/types';
 import fs from 'fs';
 import path from 'path';
@@ -11,6 +12,7 @@ function toSlug(title: string): string {
 }
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || '';
+const OMDB_API_KEY = process.env.OMDB_API_KEY || '';
 const tmdb = TMDB_API_KEY ? new TmdbClient(TMDB_API_KEY) : null;
 
 const BASE_URL = 'https://ovberlin.site';
@@ -67,6 +69,7 @@ function initTmdbFields(movie: Movie) {
   movie.plot = null;
   movie.runtime = null;
   movie.rating = null;
+  movie.imdbRating = null;
   movie.voteCount = null;
   movie.genres = null;
   movie.originalLanguage = null;
@@ -85,6 +88,7 @@ function copyTmdbFields(from: Movie, to: Movie) {
   to.plot = from.plot;
   to.runtime = from.runtime;
   to.rating = from.rating;
+  to.imdbRating = from.imdbRating;
   to.voteCount = from.voteCount;
   to.genres = from.genres;
   to.year = from.year || to.year;
@@ -158,6 +162,26 @@ async function main() {
     for (const movie of data.movies) {
       initTmdbFields(movie);
     }
+  }
+
+  // Fetch IMDb ratings via OMDb for movies that have an imdbId but no cached imdbRating
+  if (OMDB_API_KEY) {
+    let omdbHits = 0;
+    let omdbFetched = 0;
+    for (const movie of data.movies) {
+      if (!movie.imdbId) continue;
+      const oldMovie = existingMovies.get(movie.title.toLowerCase());
+      if (oldMovie?.imdbRating != null) {
+        movie.imdbRating = oldMovie.imdbRating;
+        omdbHits++;
+        continue;
+      }
+      movie.imdbRating = await fetchImdbRating(movie.imdbId, OMDB_API_KEY);
+      if (movie.imdbRating != null) omdbFetched++;
+    }
+    console.log(`OMDb — cache hits: ${omdbHits} | fetched: ${omdbFetched}`);
+  } else {
+    console.log('No OMDB_API_KEY found — skipping IMDb ratings');
   }
 
   // Build a map of existing cinema website data for caching
