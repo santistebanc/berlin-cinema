@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const OMDB_BASE_URL = 'http://www.omdbapi.com';
+const OMDB_BASE_URL = 'https://www.omdbapi.com';
 
 interface OmdbResponse {
   Response: 'True' | 'False';
