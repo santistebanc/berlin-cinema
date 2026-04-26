@@ -52,26 +52,29 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
 
   return (
     <span ref={ref} className={`relative inline-flex items-center gap-1 ${className}`}>
-      <button
-        type="button"
-        onClick={e => { if (!hasExtra) return; e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
-        onMouseEnter={() => hasExtra && setOpen(true)}
-        onMouseLeave={() => hasExtra && setOpen(false)}
-        className={`inline-flex items-center gap-1 ${hasExtra ? 'cursor-pointer' : 'cursor-default'}`}
-        aria-expanded={hasExtra ? open : undefined}
-        aria-haspopup={hasExtra ? 'true' : undefined}
-      >
-        <StarIcon />
-        <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>
-          {displayRating.toFixed(1)}
+      {hasExtra ? (
+        <button
+          type="button"
+          onClick={e => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+          className="inline-flex cursor-pointer items-center gap-1"
+          aria-expanded={open}
+          aria-haspopup="true"
+        >
+          <StarIcon />
+          <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{displayRating.toFixed(1)}</span>
+          {votesLabel && <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>}
+          {imdbRating != null && <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>}
+        </button>
+      ) : (
+        <span className="inline-flex items-center gap-1">
+          <StarIcon />
+          <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{displayRating.toFixed(1)}</span>
+          {votesLabel && <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>}
+          {imdbRating != null && <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>}
         </span>
-        {votesLabel && (
-          <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>
-        )}
-        {imdbRating != null && (
-          <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>
-        )}
-      </button>
+      )}
 
       {hasExtra && open && (
         <span
