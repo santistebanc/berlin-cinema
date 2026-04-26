@@ -47,9 +47,9 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
               <RatingBadge
                 imdbRating={movie.imdbRating ?? null}
                 tmdbRating={movie.rating}
-                imdbVotes={movie.imdbVotes ?? null}
-                tmdbVotes={movie.voteCount}
-                allRatings={movie.allRatings ?? null}
+                imdbVotes={null}
+                tmdbVotes={null}
+                allRatings={null}
               />
               {(movie.imdbRating ?? movie.rating) != null && (movie.year || movie.runtime) && <span>·</span>}
               {movie.year && <span>{movie.year}</span>}
