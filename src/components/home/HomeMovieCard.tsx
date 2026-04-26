@@ -20,6 +20,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
         <MoviePoster
           src={movie.posterUrl}
           alt={movie.title}
+          title={movie.tmdbTitle || movie.altTitle || movie.title}
           loading='lazy'
           className='aspect-[2/3] w-full'
         />

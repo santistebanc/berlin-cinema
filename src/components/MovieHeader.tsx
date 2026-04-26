@@ -58,7 +58,7 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
           {/* Poster + title row */}
           <div className="mb-3 flex gap-3 sm:gap-5">
             <div className="flex-shrink-0">
-              <MoviePoster src={movie.posterUrl} alt={movie.title} className="h-28 w-[75px] sm:h-40 sm:w-[107px]" />
+              <MoviePoster src={movie.posterUrl} alt={movie.title} title={movie.tmdbTitle || movie.altTitle || movie.title} className="h-28 w-[75px] sm:h-40 sm:w-[107px]" />
             </div>
             <div className="min-w-0 flex-1">
               <h1
