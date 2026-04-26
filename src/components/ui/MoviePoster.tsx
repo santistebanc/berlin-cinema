@@ -8,7 +8,7 @@ function titleToGradient(title: string): string {
   }
   const h1 = hash % 360;
   const h2 = (h1 + 40 + (hash >> 8) % 80) % 360;
-  return `linear-gradient(160deg, hsl(${h1},45%,22%) 0%, hsl(${h2},50%,15%) 100%)`;
+  return `linear-gradient(160deg, hsl(${h1},40%,30%) 0%, hsl(${h2},45%,20%) 100%)`;
 }
 
 interface MoviePosterProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -23,7 +23,7 @@ const MoviePoster: React.FC<MoviePosterProps> = ({ alt, title, className, loadin
     const label = title || alt || '';
     return (
       <div
-        className={cn('flex items-center justify-center overflow-hidden', className)}
+        className={cn('aspect-[2/3] flex items-center justify-center overflow-hidden', className)}
         style={{ background: titleToGradient(label), containerType: 'inline-size' }}
         aria-label={label}
       >
