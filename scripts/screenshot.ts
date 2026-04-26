@@ -32,9 +32,11 @@ async function main() {
   // 2 — Cinema popup with map (desktop)
   await page.goto(`${BASE_URL}${href}`, { waitUntil: 'networkidle' });
   await wait(600);
-  const cinemaBtn = page.locator('button[title]').filter({ hasText: /\S/ }).first();
+  const cinemaBtn = page.locator('tr button[title]').first();
+  await cinemaBtn.scrollIntoViewIfNeeded();
+  await wait(300);
   await cinemaBtn.click();
-  await wait(1500);
+  await wait(2000); // wait for map iframe to load
   await page.screenshot({ path: `${OUT_DIR}/screenshot2.png` });
   console.log('✓ screenshot2.png — cinema popup with map');
 
