@@ -26,7 +26,7 @@ async function main() {
   console.log('✓ screenshot1.png — movie listing');
 
   // Navigate to first movie detail page
-  const firstCard = page.locator('a[href^="/movie/"]').first();
+  const firstCard = page.locator('main a[href^="/"]').first();
   const href = await firstCard.getAttribute('href');
 
   // 2 — Cinema popup with map (desktop)

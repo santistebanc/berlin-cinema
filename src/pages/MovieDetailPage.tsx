@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2 } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
-import { buildCinemaColors, toSlug } from '../utils/cinemaUtils';
+import { buildCinemaColors } from '../utils/cinemaUtils';
 import { useShowtimeFilters } from '../hooks/useShowtimeFilters';
 import MovieHeader from '../components/MovieHeader';
 import FiltersPanel from '../components/FiltersPanel';
@@ -24,7 +24,7 @@ const MovieDetailPage: React.FC = () => {
     }
 
     const decodedTitle = decodeURIComponent(title);
-    return movies.find((candidate) => toSlug(candidate.title) === decodedTitle) ?? null;
+    return movies.find((candidate) => candidate.slug === decodedTitle) ?? null;
   }, [movies, title]);
 
   const filters = useShowtimeFilters(movie);
@@ -80,7 +80,7 @@ const MovieDetailPage: React.FC = () => {
     );
   }
 
-  const displayTitle = movie.tmdbTitle || movie.title;
+  const displayTitle = movie.tmdbTitle || movie.altTitle || movie.title;
   const metaTitle = `${displayTitle} — OV Berlin`;
   const metaParts = [
     movie.year && `${movie.year}`,
@@ -90,7 +90,7 @@ const MovieDetailPage: React.FC = () => {
     movie.variants?.length && movie.variants.join(', '),
   ].filter(Boolean);
   const metaDescription = metaParts.join(' · ');
-  const shareUrl = `https://ovberlin.site/movie/${toSlug(movie.title)}`;
+  const shareUrl = `https://ovberlin.site/${movie.slug}`;
   const ogImage = movie.backdropUrl || movie.posterUrl;
   const ogImageWidth = movie.backdropUrl ? '1280' : '500';
   const ogImageHeight = movie.backdropUrl ? '720' : '750';

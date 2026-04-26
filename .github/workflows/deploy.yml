@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       force_enrich:
-        description: 'Force re-enrich all movies (bypass TMDB cache)'
+        description: 'Force re-fetch all data (bypass TMDb and OSM caches)'
         type: boolean
         default: false
 

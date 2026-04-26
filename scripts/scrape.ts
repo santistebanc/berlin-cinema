@@ -18,18 +18,31 @@ const tmdb = TMDB_API_KEY ? new TmdbClient(TMDB_API_KEY) : null;
 const BASE_URL = 'https://ovberlin.site';
 const MOVIES_JSON_PATH = path.join(__dirname, '../public/movies.json');
 
-function writeSitemap(movieTitles: string[]) {
+function assignSlugs(movies: Movie[]) {
+  const baseSlugs = movies.map(m => toSlug(m.tmdbTitle || m.title));
+  const slugCount = new Map<string, number>();
+  for (const s of baseSlugs) slugCount.set(s, (slugCount.get(s) ?? 0) + 1);
+
+  const slugSeen = new Map<string, number>();
+  for (let i = 0; i < movies.length; i++) {
+    const movie = movies[i];
+    const base = baseSlugs[i];
+    let slug = slugCount.get(base)! > 1 && movie.year ? `${base}-${movie.year}` : base;
+    if (slugSeen.has(slug)) slug = `${slug}-${slugSeen.get(slug)! + 1}`;
+    slugSeen.set(slug, (slugSeen.get(slug) ?? 0) + 1);
+    movie.slug = slug;
+  }
+}
+
+function writeSitemap(movies: Movie[]) {
   const today = new Date().toISOString().split('T')[0];
-  const movieUrls = movieTitles.map(title => {
-    const slug = toSlug(title);
-    return `
+  const movieUrls = movies.map(m => `
   <url>
-    <loc>${BASE_URL}/movie/${slug}</loc>
+    <loc>${BASE_URL}/${m.slug}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
-  </url>`;
-  }).join('');
+  </url>`).join('');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -43,7 +56,7 @@ function writeSitemap(movieTitles: string[]) {
 
   const outPath = path.join(__dirname, '../public/sitemap.xml');
   fs.writeFileSync(outPath, xml);
-  console.log(`Written ${outPath} — ${movieTitles.length + 1} URLs`);
+  console.log(`Written ${outPath} — ${movies.length + 1} URLs`);
 }
 
 function loadExistingMovies(): Map<string, Movie> {
@@ -186,15 +199,17 @@ async function main() {
     console.log('No OMDB_API_KEY found — skipping IMDb ratings');
   }
 
-  // Build a map of existing cinema website data for caching
+  // Build a map of existing cinema website data for caching (skipped on force)
   const existingCinemaWebsites = new Map<string, { websiteUrl?: string; osmFetched: boolean }>();
-  for (const movie of existingMovies.values()) {
-    for (const cinema of (movie.cinemas ?? [])) {
-      if ((cinema as any).osmFetched && !existingCinemaWebsites.has(cinema.name)) {
-        existingCinemaWebsites.set(cinema.name, {
-          websiteUrl: (cinema as any).websiteUrl,
-          osmFetched: true,
-        });
+  if (!forceEnrich) {
+    for (const movie of existingMovies.values()) {
+      for (const cinema of (movie.cinemas ?? [])) {
+        if ((cinema as any).osmFetched && !existingCinemaWebsites.has(cinema.name)) {
+          existingCinemaWebsites.set(cinema.name, {
+            websiteUrl: (cinema as any).websiteUrl,
+            osmFetched: true,
+          });
+        }
       }
     }
   }
@@ -210,7 +225,7 @@ async function main() {
   // Fetch from OSM only if there are unresolved cinemas
   let osmMap: Map<string, string> | null = null;
   if (allCinemas.size > 0) {
-    console.log(`[osm] Looking up websites for ${allCinemas.size} new cinemas...`);
+    console.log(`[osm] Looking up websites for ${allCinemas.size} cinemas${forceEnrich ? ' (forced)' : ''}...`);
     try {
       osmMap = await fetchBerlinCinemaWebsites();
     } catch (e) {
@@ -235,10 +250,21 @@ async function main() {
     }
   }
 
+  // Set criticTitle to the critic.de title when it differs from the TMDb title
+  for (const movie of data.movies) {
+    const criticName = movie.title.trim();
+    const tmdbName = movie.tmdbTitle?.trim();
+    movie.criticTitle = tmdbName && criticName.toLowerCase() !== tmdbName.toLowerCase()
+      ? criticName
+      : null;
+  }
+
+  assignSlugs(data.movies);
+
   fs.writeFileSync(MOVIES_JSON_PATH, JSON.stringify(data));
   console.log(`Written movies.json — ${data.total} movies`);
 
-  writeSitemap(data.movies.map((m: any) => m.title));
+  writeSitemap(data.movies);
 }
 
 main().catch(err => {
