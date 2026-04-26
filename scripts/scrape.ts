@@ -139,7 +139,7 @@ async function main() {
 
       const oldMovie = existingMovies.get(movie.title.toLowerCase());
 
-      if (!forceEnrich && oldMovie?.tmdbFetched) {
+      if (!forceEnrich && oldMovie?.tmdbFetched && oldMovie?.tmdbTitle) {
         copyTmdbFields(oldMovie, movie);
         cacheHits++;
         continue;
