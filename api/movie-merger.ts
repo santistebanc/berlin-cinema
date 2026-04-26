@@ -17,6 +17,8 @@ interface Cinema {
 
 interface RawMovie {
   title: string;
+  criticTitle: string | null;
+  altTitle: string | null;
   director: string | null;
   cast: string[] | null;
   country: string | null;
@@ -35,6 +37,8 @@ interface ShowingInfo {
 
 interface MergedMovieInternal {
   title: string;
+  criticTitle: string | null;
+  altTitle: string | null;
   director: string | null;
   cast: string[] | null;
   country: string | null;
@@ -56,6 +60,8 @@ class MovieMerger {
       if (!movieMap.has(baseTitle)) {
         movieMap.set(baseTitle, {
           title: baseTitle,
+          criticTitle: movie.criticTitle ?? null,
+          altTitle: movie.altTitle ?? null,
           director: movie.director,
           cast: movie.cast,
           country: movie.country,
@@ -92,6 +98,8 @@ class MovieMerger {
       variants: Array.from(movie.variants),
       cinemas: Array.from(movie.cinemas).map(s => JSON.parse(s) as Cinema),
       showings: this.sortShowings(movie.showings),
+      criticTitle: movie.criticTitle,
+      altTitle: movie.altTitle,
       plot: null,
       runtime: null,
       rating: null,

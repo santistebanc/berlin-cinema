@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Movie } from '../../types';
-import { toSlug } from '../../utils/cinemaUtils';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 import MoviePoster from '../ui/MoviePoster';
@@ -14,7 +13,7 @@ interface HomeMovieCardProps {
 const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
   return (
     <Link
-      to={`/movie/${toSlug(movie.title)}`}
+      to={`/${movie.slug}`}
       className="block h-full"
     >
       <Card className="flex h-full flex-col overflow-hidden border-2 hover:border-[rgb(var(--accent)/0.35)] hover:shadow-lg">
@@ -30,12 +29,12 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
             className='mb-1 line-clamp-2 text-base font-semibold leading-snug tracking-[-0.01em]'
             style={{ color: 'rgb(var(--text))' }}
           >
-            {movie.tmdbTitle || movie.title}
+            {movie.tmdbTitle || movie.altTitle || movie.title}
           </h3>
 
-          {movie.director && (
+          {movie.criticTitle && (
             <p className="mb-2 truncate text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
-              {movie.director}
+              {movie.criticTitle}
             </p>
           )}
 

@@ -23,7 +23,7 @@ const AppContent: React.FC = () => {
               <HomePage movies={movies} loading={loading} error={error} />
             </div>
           } />
-          <Route path="/movie/:title" element={
+          <Route path="/:title" element={
             <div className="px-0 sm:px-6 lg:px-8">
               <MovieDetailPage />
             </div>

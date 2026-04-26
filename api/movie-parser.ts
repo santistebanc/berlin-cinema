@@ -30,8 +30,7 @@ class MovieParser {
       ? titleAttr.replace(/\s+-\s+Kinoprogramm$/, '').replace(/\s*\([^)]*\)\s*$/, '')
       : displayTitle.replace(/\s*\([^)]*\)\s*$/, '');
     const title = rawTitle.trim();
-    // Keep the inner text (English display title) as a search alias
-    const criticTitle = displayTitle.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    const altTitle = displayTitle.replace(/\s*\([^)]*\)\s*$/, '').trim();
     const movieUrl = titleElement.attr('href');
 
     if (!title || !movieUrl) return null;
@@ -44,7 +43,7 @@ class MovieParser {
 
     return {
       title,
-      criticTitle: criticTitle !== title ? criticTitle : null,
+      altTitle: altTitle !== title ? altTitle : null,
       director: movieDetails.director || null,
       cast: movieDetails.cast ? movieDetails.cast.split(',').map((s: string) => s.trim()) : null,
       country: movieDetails.country || null,

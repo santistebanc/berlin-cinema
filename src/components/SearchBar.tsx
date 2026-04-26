@@ -70,7 +70,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
     setSearchQuery(movie.title);
     setShowSuggestions(false);
     setSelectedIndex(-1);
-    navigate(`/movie/${encodeURIComponent(movie.title)}`);
+    navigate(`/${movie.slug}`);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -102,12 +102,12 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
     }
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!searchQuery.trim()) return;
 
     if (suggestions.length > 0) {
-      navigate(`/movie/${encodeURIComponent(suggestions[0].title)}`);
+      navigate(`/${suggestions[0].slug}`);
     } else {
       onSearch(searchQuery);
       navigate(`/?search=${encodeURIComponent(searchQuery)}`, { replace: true });
@@ -199,8 +199,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
 
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium" style={{ color: 'rgb(var(--text))' }}>
-                    {movie.tmdbTitle || movie.title}
+                    {movie.tmdbTitle || movie.altTitle || movie.title}
                   </div>
+                  {movie.criticTitle && (
+                    <div className="truncate text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+                      {movie.criticTitle}
+                    </div>
+                  )}
                   {movie.director && (
                     <div className="truncate text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
                       Directed by {movie.director}

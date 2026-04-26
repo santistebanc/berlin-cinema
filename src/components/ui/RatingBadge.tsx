@@ -56,8 +56,8 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
         <button
           type="button"
           onClick={e => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
+          onPointerEnter={e => { if (e.pointerType === 'mouse') setOpen(true); }}
+          onPointerLeave={e => { if (e.pointerType === 'mouse') setOpen(false); }}
           className="inline-flex cursor-pointer items-center gap-1"
           aria-expanded={open}
           aria-haspopup="true"
