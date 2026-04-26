@@ -12,7 +12,7 @@ async function wait(ms: number) {
 async function main() {
   console.log(`Capturing screenshots from ${BASE_URL}...`);
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: VIEWPORT });
+  const ctx = await browser.newContext({ viewport: VIEWPORT, colorScheme: 'dark' });
   const page = await ctx.newPage();
 
   // 1 — Homepage: movie listing
