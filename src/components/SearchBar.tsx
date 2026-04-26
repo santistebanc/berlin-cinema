@@ -1,16 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Movie } from '../types';
+import { createMovieFuse } from '../utils/movieSearch';
 import Badge from './ui/Badge';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import MoviePoster from './ui/MoviePoster';
 import TextInput from './ui/TextInput';
-
-interface ScoredMovie extends Movie {
-  score: number;
-}
 
 interface SearchBarProps {
   movies: Movie[];
@@ -25,6 +22,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const fuse = useMemo(() => createMovieFuse(movies), [movies]);
 
   useEffect(() => {
     const searchParam = searchParams.get('search');
@@ -48,31 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
 
   const generateSuggestions = (query: string): Movie[] => {
     if (!query.trim() || !movies) return [];
-
-    const searchTerm = query.toLowerCase().trim();
-    const results: ScoredMovie[] = [];
-
-    movies.forEach((movie) => {
-      let score = 0;
-
-      if (movie.title?.toLowerCase().includes(searchTerm)) score += 100;
-      if (movie.tmdbTitle?.toLowerCase().includes(searchTerm)) score += 100;
-      if (movie.criticTitle?.toLowerCase().includes(searchTerm)) score += 100;
-      if (movie.director?.toLowerCase().includes(searchTerm)) score += 50;
-      if (movie.cast?.some((actor) => actor?.toLowerCase().includes(searchTerm))) score += 30;
-      if (movie.genres?.some((g) => g?.toLowerCase().includes(searchTerm))) score += 25;
-      if (movie.variants?.some((variant) => variant?.toLowerCase().includes(searchTerm))) score += 20;
-      if (movie.country?.toLowerCase().includes(searchTerm)) score += 10;
-      if (movie.originalLanguage?.toLowerCase().includes(searchTerm)) score += 10;
-      if (movie.year?.toString().includes(searchTerm)) score += 5;
-      if (movie.keywords?.some((k) => k?.toLowerCase().includes(searchTerm))) score += 15;
-
-      if (score > 0) {
-        results.push({ ...movie, score });
-      }
-    });
-
-    return results.sort((a, b) => b.score - a.score).slice(0, 8);
+    return fuse.search(query, { limit: 8 }).map(r => r.item);
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
