@@ -2,7 +2,7 @@ import 'dotenv/config';
 import BerlinCinemaScraper from '../api/berlin-cinema-scraper';
 import TmdbClient from '../api/tmdb-client';
 import { fetchBerlinCinemaWebsites, matchCinemaWebsite, geocodeCinema } from '../api/osm-client';
-import { fetchImdbRating } from '../api/omdb-client';
+import { fetchOmdbData } from '../api/omdb-client';
 import { Movie } from '../src/types';
 import fs from 'fs';
 import path from 'path';
@@ -70,6 +70,8 @@ function initTmdbFields(movie: Movie) {
   movie.runtime = null;
   movie.rating = null;
   movie.imdbRating = null;
+  movie.imdbVotes = null;
+  movie.allRatings = null;
   movie.voteCount = null;
   movie.genres = null;
   movie.originalLanguage = null;
@@ -89,6 +91,8 @@ function copyTmdbFields(from: Movie, to: Movie) {
   to.runtime = from.runtime;
   to.rating = from.rating;
   to.imdbRating = from.imdbRating;
+  to.imdbVotes = from.imdbVotes;
+  to.allRatings = from.allRatings;
   to.voteCount = from.voteCount;
   to.genres = from.genres;
   to.year = from.year || to.year;
@@ -164,20 +168,27 @@ async function main() {
     }
   }
 
-  // Fetch IMDb ratings via OMDb for movies that have an imdbId but no cached imdbRating
+  // Fetch all ratings via OMDb for movies that have an imdbId but no cached data
   if (OMDB_API_KEY) {
     let omdbHits = 0;
     let omdbFetched = 0;
     for (const movie of data.movies) {
       if (!movie.imdbId) continue;
       const oldMovie = existingMovies.get(movie.title.toLowerCase());
-      if (oldMovie?.imdbRating != null) {
+      if (oldMovie?.imdbRating != null || oldMovie?.allRatings != null) {
         movie.imdbRating = oldMovie.imdbRating;
+        movie.imdbVotes = oldMovie.imdbVotes ?? null;
+        movie.allRatings = oldMovie.allRatings ?? null;
         omdbHits++;
         continue;
       }
-      movie.imdbRating = await fetchImdbRating(movie.imdbId, OMDB_API_KEY);
-      if (movie.imdbRating != null) omdbFetched++;
+      const omdb = await fetchOmdbData(movie.imdbId, OMDB_API_KEY);
+      if (omdb) {
+        movie.imdbRating = omdb.imdbRating;
+        movie.imdbVotes = omdb.imdbVotes;
+        movie.allRatings = omdb.ratings.length > 0 ? omdb.ratings : null;
+        omdbFetched++;
+      }
     }
     console.log(`OMDb — cache hits: ${omdbHits} | fetched: ${omdbFetched}`);
   } else {
