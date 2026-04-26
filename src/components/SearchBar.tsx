@@ -139,7 +139,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
             aria-expanded={showSuggestions}
             aria-controls={listboxId}
             aria-activedescendant={selectedIndex >= 0 ? `search-option-${selectedIndex}` : undefined}
-            placeholder="Search title, director, actor, or format…"
+            placeholder="Search title, director, actor, genre…"
             value={searchQuery}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
