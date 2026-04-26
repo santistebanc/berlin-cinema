@@ -46,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
 
   const generateSuggestions = (query: string): Movie[] => {
     if (!query.trim() || !movies) return [];
-    return fuse.search(query, { limit: 8 }).map(r => r.item);
+    return fuse.search(query, { limit: 10 }).map(r => r.item);
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
