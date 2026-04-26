@@ -21,7 +21,10 @@ export async function fetchOmdbData(imdbId: string, apiKey: string): Promise<Omd
       params: { i: imdbId, apikey: apiKey },
       timeout: 8000,
     });
-    if (data.Response !== 'True') return null;
+    if (data.Response !== 'True') {
+      console.warn(`OMDb rejected ${imdbId}: ${(data as any).Error ?? 'unknown'}`);
+      return null;
+    }
 
     const imdbRating = data.imdbRating && data.imdbRating !== 'N/A'
       ? parseFloat(data.imdbRating) || null
@@ -43,7 +46,8 @@ export async function fetchOmdbData(imdbId: string, apiKey: string): Promise<Omd
     }));
 
     return { imdbRating, imdbVotes, ratings };
-  } catch {
+  } catch (err: any) {
+    console.warn(`OMDb error for ${imdbId}: ${err?.message ?? err}`);
     return null;
   }
 }
