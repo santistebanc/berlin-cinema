@@ -25,17 +25,18 @@ async function main() {
   await page.screenshot({ path: `${OUT_DIR}/screenshot1.png` });
   console.log('✓ screenshot1.png — movie listing');
 
-  // 4 — Search results
-  await page.fill('input[type="text"]', 'drama');
-  await wait(800);
-  await page.screenshot({ path: `${OUT_DIR}/screenshot4.png` });
-  console.log('✓ screenshot4.png — search results');
-
   // Navigate to first movie detail page
-  await page.fill('input[type="text"]', '');
-  await wait(400);
   const firstCard = page.locator('a[href^="/movie/"]').first();
   const href = await firstCard.getAttribute('href');
+
+  // 2 — Cinema popup with map (desktop)
+  await page.goto(`${BASE_URL}${href}`, { waitUntil: 'networkidle' });
+  await wait(600);
+  const cinemaBtn = page.locator('button[title]').filter({ hasText: /\S/ }).first();
+  await cinemaBtn.click();
+  await wait(1500);
+  await page.screenshot({ path: `${OUT_DIR}/screenshot2.png` });
+  console.log('✓ screenshot2.png — cinema popup with map');
 
   // 3 — Detail page: grid view, scrolled to showtimes
   await page.goto(`${BASE_URL}${href}`, { waitUntil: 'networkidle' });
@@ -48,35 +49,26 @@ async function main() {
   await page.screenshot({ path: `${OUT_DIR}/screenshot3.png` });
   console.log('✓ screenshot3.png — detail grid view');
 
-  // 5 — Cinema popup with map (desktop)
-  await page.goto(`${BASE_URL}${href}`, { waitUntil: 'networkidle' });
-  await wait(600);
-  const cinemaBtn = page.locator('button[title]').filter({ hasText: /\S/ }).first();
-  await cinemaBtn.click();
-  await wait(1500); // wait for map iframe to load
-  await page.screenshot({ path: `${OUT_DIR}/screenshot5.png` });
-  console.log('✓ screenshot5.png — cinema popup with map');
-
   await desktop.close();
 
   // ── Mobile context ───────────────────────────────────────────────────────
   const mobile = await browser.newContext({ viewport: MOBILE, colorScheme: 'dark' });
   const mpage = await mobile.newPage();
 
-  // 2 — Detail page stacked view at mobile size
+  // 4 — Detail page stacked view at mobile size
   await mpage.goto(`${BASE_URL}${href}`, { waitUntil: 'networkidle' });
   await wait(600);
-  await mpage.screenshot({ path: `${OUT_DIR}/screenshot2.png` });
-  console.log('✓ screenshot2.png — detail stacked view (mobile)');
+  await mpage.screenshot({ path: `${OUT_DIR}/screenshot4.png` });
+  console.log('✓ screenshot4.png — detail stacked view (mobile)');
 
-  // 6 — Search autocomplete (mobile)
+  // 5 — Search autocomplete (mobile)
   await mpage.goto(BASE_URL, { waitUntil: 'networkidle' });
   await mpage.waitForSelector('.ui-card', { timeout: 15000 });
   await wait(400);
   await mpage.fill('input[type="text"]', 'love');
   await wait(900);
-  await mpage.screenshot({ path: `${OUT_DIR}/screenshot6.png` });
-  console.log('✓ screenshot6.png — search autocomplete (mobile)');
+  await mpage.screenshot({ path: `${OUT_DIR}/screenshot5.png` });
+  console.log('✓ screenshot5.png — search autocomplete (mobile)');
 
   await mobile.close();
   await browser.close();

@@ -8,8 +8,8 @@ Live at **[ovberlin.site](https://ovberlin.site)**
 
 | | |
 |---|---|
-| ![](docs/screenshot1.png) | ![](docs/screenshot5.png) |
-| ![](docs/screenshot3.png) | <img src="docs/screenshot2.png" width="48%"> <img src="docs/screenshot6.png" width="48%"> |
+| ![](docs/screenshot1.png) | ![](docs/screenshot2.png) |
+| ![](docs/screenshot3.png) | <img src="docs/screenshot4.png" width="48%"> <img src="docs/screenshot5.png" width="48%"> |
 
 ## Features
 
