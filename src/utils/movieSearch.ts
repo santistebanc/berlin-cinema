@@ -10,6 +10,7 @@ export function createMovieFuse(movies: Movie[]) {
     keys: [
       { name: 'title', weight: 10 },
       { name: 'tmdbTitle', weight: 10 },
+      { name: 'altTitle', weight: 8 },
       { name: 'criticTitle', weight: 8 },
       { name: 'director', weight: 5 },
       { name: 'cast', weight: 3 },

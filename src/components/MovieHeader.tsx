@@ -1,9 +1,45 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, Play } from 'lucide-react';
 import { Movie } from '../types';
 import Badge from './ui/Badge';
 import MoviePoster from './ui/MoviePoster';
 import RatingBadge from './ui/RatingBadge';
+
+const PlotSection: React.FC<{ plot: string }> = ({ plot }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setClamped(el.scrollHeight > el.clientHeight);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [plot]);
+
+  return (
+    <div>
+      <p
+        ref={ref}
+        className={`body-muted text-sm leading-relaxed ${expanded ? '' : 'line-clamp-3'}`}
+      >
+        {plot}
+      </p>
+      {(clamped || expanded) && (
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="mt-1 text-xs font-medium transition-colors"
+          style={{ color: 'rgb(var(--accent))' }}
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+};
 
 interface Props {
   movie: Movie;
@@ -12,6 +48,7 @@ interface Props {
 
 const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
   const [plotOpen, setPlotOpen] = useState(false);
+
 
   return (
     <div className="ui-muted-surface p-3 sm:p-6">
@@ -28,11 +65,11 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
                 className="mb-1 text-left text-[1.5rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[2.25rem]"
                 style={{ color: 'rgb(var(--text))' }}
               >
-                {movie.tmdbTitle || movie.title}
+                {movie.tmdbTitle || movie.altTitle || movie.title}
               </h1>
-              {movie.tagline && (
-                <p className="mb-1 text-sm italic" style={{ color: 'rgb(var(--text-soft))' }}>
-                  {movie.tagline}
+              {movie.criticTitle && (
+                <p className="mb-1 text-sm" style={{ color: 'rgb(var(--text-soft))' }}>
+                  {movie.criticTitle}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
@@ -45,7 +82,6 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
                   tmdbVotes={movie.voteCount}
                   allRatings={movie.allRatings ?? null}
                 />
-                {movie.ageRating && <span>{movie.ageRating}</span>}
                 {movie.originalLanguage && <span>{movie.originalLanguage.toUpperCase()}</span>}
                 {movie.country && <span>{movie.country}</span>}
               </div>
@@ -92,47 +128,82 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
               )}
             </div>
           </div>
-          {/* Full-width metadata */}
-          <div className="space-y-2">
+          {/* Director + cast: mobile only (moved to right column on desktop) */}
+          {(movie.director || (movie.cast && movie.cast.length > 0) || plot) && (
+            <div className="lg:hidden">
+              <button
+                onClick={() => setPlotOpen(o => !o)}
+                className="inline-flex items-center gap-1 text-sm font-medium transition-colors"
+                style={{ color: 'rgb(var(--text-soft))' }}
+              >
+                <ChevronDown
+                  className="h-4 w-4 transition-transform duration-200"
+                  style={{ transform: plotOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                />
+                {plotOpen ? 'Hide details' : 'Show details'}
+              </button>
+              {plotOpen && (
+                <div className="mt-2 space-y-2">
+
+                  {plot && <PlotSection plot={plot} />}
+                  {movie.allRatings && movie.allRatings.length > 0 && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                      {movie.allRatings.map(r => (
+                        <span key={r.source}>
+                          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>{r.source}</span>{' '}
+                          <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{r.value}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {movie.director && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Director</span>
+                      <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.director}</span>
+                    </div>
+                  )}
+                  {movie.cast && movie.cast.length > 0 && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Cast</span>
+                      <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.cast.join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right: director, cast, plot — desktop only */}
+        {(movie.director || (movie.cast && movie.cast.length > 0) || plot) && (
+          <div
+            className="hidden lg:flex lg:w-1/2 lg:shrink-0 lg:flex-col lg:gap-2 lg:border-l lg:pl-6 xl:w-[55%]"
+            style={{ borderColor: 'rgb(var(--border))' }}
+          >
+
+            {plot && <PlotSection plot={plot} />}
+            {movie.allRatings && movie.allRatings.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                {movie.allRatings.map(r => (
+                  <span key={r.source}>
+                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>{r.source}</span>{' '}
+                    <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{r.value}</span>
+                  </span>
+                ))}
+              </div>
+            )}
             {movie.director && (
-              <div className="body-muted">
-                <span className="font-medium" style={{ color: 'rgb(var(--text))' }}>Director:</span> {movie.director}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Director</span>
+                <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.director}</span>
               </div>
             )}
             {movie.cast && movie.cast.length > 0 && (
-              <div className="body-muted">
-                <span className="font-medium" style={{ color: 'rgb(var(--text))' }}>Cast:</span> {movie.cast.join(', ')}
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Cast</span>
+                <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.cast.join(', ')}</span>
               </div>
             )}
-
-            {plot && (
-              <div className="md:hidden">
-                <button
-                  onClick={() => setPlotOpen(o => !o)}
-                  className="inline-flex items-center gap-1 text-sm font-medium transition-colors"
-                  style={{ color: 'rgb(var(--text-soft))' }}
-                >
-                  <ChevronDown
-                    className="h-4 w-4 transition-transform duration-200"
-                    style={{ transform: plotOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                  />
-                  {plotOpen ? 'Hide plot' : 'Show plot'}
-                </button>
-                {plotOpen && (
-                  <p className="body-muted mt-2 text-sm leading-relaxed">{plot}</p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: plot column — desktop only, starts at top */}
-        {plot && (
-          <div
-            className="hidden md:block md:w-72 md:shrink-0 md:border-l md:pl-6 lg:w-80"
-            style={{ borderColor: 'rgb(var(--border))' }}
-          >
-            <p className="body-muted text-sm leading-relaxed">{plot}</p>
           </div>
         )}
       </div>

@@ -17,7 +17,7 @@ const moviesData = JSON.parse(fs.readFileSync(path.join(distDir, 'movies.json'),
 
 let count = 0;
 for (const movie of moviesData.movies) {
-  const slug = toSlug(movie.title);
+  const slug: string = movie.slug || toSlug(movie.title);
   const displayTitle: string = movie.tmdbTitle || movie.title;
   const title = `${displayTitle} — OV Berlin`;
   const parts = [
@@ -28,7 +28,7 @@ for (const movie of moviesData.movies) {
     movie.variants?.length && (movie.variants as string[]).join(', '),
   ].filter(Boolean);
   const description = parts.join(' · ');
-  const url = `${BASE_URL}/movie/${slug}`;
+  const url = `${BASE_URL}/${slug}`;
   const image: string | null = movie.backdropUrl || movie.posterUrl || null;
   const imageWidth = movie.backdropUrl ? '1280' : '500';
   const imageHeight = movie.backdropUrl ? '720' : '750';
@@ -61,7 +61,7 @@ for (const movie of moviesData.movies) {
     ogBlock
   );
 
-  const outDir = path.join(distDir, 'movie', slug);
+  const outDir = path.join(distDir, slug);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
   count++;

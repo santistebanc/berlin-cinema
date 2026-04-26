@@ -1,6 +1,8 @@
 export interface Movie {
   title: string;
+  slug: string;
   criticTitle: string | null;
+  altTitle: string | null;
   director: string | null;
   cast: string[] | null;
   country: string | null;
