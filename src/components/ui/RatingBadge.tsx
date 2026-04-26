@@ -54,7 +54,9 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
     <span ref={ref} className={`relative inline-flex items-center gap-1 ${className}`}>
       <button
         type="button"
-        onClick={() => hasExtra && setOpen(v => !v)}
+        onClick={e => { if (!hasExtra) return; e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
+        onMouseEnter={() => hasExtra && setOpen(true)}
+        onMouseLeave={() => hasExtra && setOpen(false)}
         className={`inline-flex items-center gap-1 ${hasExtra ? 'cursor-pointer' : 'cursor-default'}`}
         aria-expanded={hasExtra ? open : undefined}
         aria-haspopup={hasExtra ? 'true' : undefined}
