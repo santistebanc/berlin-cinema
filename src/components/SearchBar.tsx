@@ -125,6 +125,12 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies, onSearch }) => {
     navigate('/', { replace: true });
   };
 
+  useEffect(() => {
+    if (selectedIndex < 0) return;
+    const el = document.getElementById(`search-option-${selectedIndex}`);
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [selectedIndex]);
+
   const listboxId = 'search-suggestions';
 
   return (
