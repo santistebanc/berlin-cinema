@@ -16,6 +16,7 @@ export function createMovieFuse(movies: Movie[]) {
       { name: 'genres', weight: 2.5 },
       { name: 'variants', weight: 2 },
       { name: 'keywords', weight: 1.5 },
+      { name: 'plot', weight: 1 },
       { name: 'country', weight: 1 },
       { name: 'originalLanguage', weight: 1 },
     ],
