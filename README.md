@@ -1,6 +1,6 @@
-# Berlin OV Cinema
+# OV Berlin
 
-Browse original version (OV) movies playing in Berlin cinemas, with showtimes by date and cinema.
+Browse original version (OV) movies playing in Berlin cinemas, with showtimes, ratings, and cinema info.
 
 Live at **[ovberlin.site](https://ovberlin.site)**
 
@@ -14,69 +14,115 @@ Live at **[ovberlin.site](https://ovberlin.site)**
 |---|---|
 | ![Stacked view](docs/screenshot2.png) | ![Grid view](docs/screenshot3.png) |
 
+## Features
+
+- **Fuzzy search** across title, director, cast, genres, plot, and keywords (Fuse.js)
+- **Rich movie details** — poster, backdrop, plot, runtime, age rating, trailer link
+- **Ratings** — IMDb rating (via OMDb) with Rotten Tomatoes and Metacritic on hover/tap; falls back to TMDb rating
+- **Showtimes** in two layouts: stacked (by date) and grid (by cinema), with filters by cinema, date, and variant (OV/OmU/etc.)
+- **Cinema popup** — Google Maps embed (dark mode aware) + website link from OpenStreetMap
+- **Share button** — Web Share API on mobile, clipboard fallback on desktop; each movie has a unique URL with baked-in OG tags for rich link previews on WhatsApp/social
+- **Dark / light theme** toggle
+- **PWA** — installable, works offline after first load
+
 ## How it works
 
 The app is fully static — no server, no API at runtime.
 
-A GitHub Actions workflow runs every 6 hours. It scrapes [critic.de](https://www.critic.de/ov-movies-berlin/) using Cheerio, writes the result to `public/movies.json`, builds the React app, and deploys to GitHub Pages. The frontend fetches that JSON file directly.
+A GitHub Actions workflow runs every 6 hours:
 
-Each deploy bakes a unique build ID into the JS bundle, which is used as a cache-busting query param (`/movies.json?v=<id>`), so users always get fresh data after a redeploy.
+1. **Scrape** — fetches current OV listings from [critic.de](https://www.critic.de/ov-movies-berlin/) via Cheerio
+2. **Enrich** — looks up each movie on TMDb (posters, plot, cast, trailer, genres, IMDb ID); cached per title via `tmdbFetched` flag
+3. **Ratings** — fetches fresh IMDb/RT/Metacritic scores from OMDb for every movie with an IMDb ID (no cache — ratings change)
+4. **Cinema data** — fetches website URLs from OpenStreetMap Overpass API; geocodes addresses via Nominatim for map embeds; both cached per cinema name
+5. **Build** — Vite bundles the React app; a post-build script generates per-movie `index.html` files with OG meta tags baked in for social crawlers
+6. **Deploy** — uploads `dist/` to GitHub Pages
+
+The frontend fetches `movies.json` directly (cache-busted by build ID).
+
 ## Stack
 
 - **React 19** + **TypeScript** + **Vite**
 - **Tailwind CSS** + **Lucide React**
-- **Cheerio** for scraping (runs at build time only)
-- **GitHub Actions** for cron scheduling and deployment
-- **GitHub Pages** for hosting
+- **Cheerio** — HTML scraping at build time
+- **Fuse.js** — client-side fuzzy search
+- **Playwright** — automated README screenshots
+- **TMDb API** — movie metadata, posters, trailers
+- **OMDb API** — IMDb / Rotten Tomatoes / Metacritic ratings
+- **OpenStreetMap** — cinema website URLs (Overpass) and geocoding (Nominatim)
+- **GitHub Actions** — cron scheduling and deployment
+- **GitHub Pages** — hosting
 
 ## Local development
 
 ```bash
 npm install
-npm run dev      # scrapes live data, writes public/movies.json, starts Vite at localhost:3000
+npm run dev      # scrape → write public/movies.json → start Vite at localhost:5173
 ```
 
-If you want to refresh the local dataset without starting the app, run:
+To refresh data without starting the app:
 
 ```bash
 npm run scrape
+npm run scrape:force   # re-fetches TMDb data even if already cached
 ```
 
-### TMDb enrichment (optional)
+### API keys (optional)
 
-To fetch movie posters and details from TMDb during local scraping, copy `.env.example` to `.env` and add your free TMDb API key:
+Without keys the scraper still works — it just skips enrichment and ratings. Copy `.env.example` to `.env` and fill in your keys:
 
 ```bash
 cp .env.example .env
-# Edit .env and replace the placeholder with your key from https://www.themoviedb.org/settings/api
 ```
 
-Without a key, the scraper skips enrichment and falls back to the basic data from critic.de.
+| Key | Where to get it | What it unlocks |
+|---|---|---|
+| `TMDB_API_KEY` | [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api) | Posters, plot, cast, genres, trailer, IMDb ID |
+| `OMDB_API_KEY` | [omdbapi.com/apikey.aspx](https://www.omdbapi.com/apikey.aspx) | IMDb / RT / Metacritic ratings |
 
-To preview the production build locally:
+Both keys also need to be added as GitHub Actions secrets (`TMDB_API_KEY`, `OMDB_API_KEY`) for the CI deploy to enrich movies.
+
+### Preview production build
 
 ```bash
-npm run preview  # scrape + build + vite preview
+npm run preview   # build + vite preview at localhost:4173
+```
+
+### Update screenshots
+
+```bash
+npm run screenshots          # captures from ovberlin.site (after deploy)
+npm run screenshots:local    # captures from localhost:4173 (run preview first)
 ```
 
 ## Project structure
 
 ```
-api/                      # Scraper modules (Node/TypeScript, build-time only)
-  berlin-cinema-scraper.ts
-  http-client.ts
-  movie-parser.ts
-  movie-merger.ts
-  form-data-builder.ts
+api/
+  berlin-cinema-scraper.ts   # Scrapes critic.de for OV listings
+  tmdb-client.ts             # TMDb API — metadata, posters, trailers
+  omdb-client.ts             # OMDb API — IMDb / RT / Metacritic ratings
+  osm-client.ts              # OpenStreetMap — cinema websites + geocoding
 scripts/
-  scrape.ts               # Entry point: runs scraper, writes public/movies.json
+  scrape.ts                  # Entry point: scrape → enrich → write public/movies.json
+  generate-og-pages.ts       # Post-build: bake OG tags into per-movie index.html
+  screenshot.ts              # Playwright: capture docs/ screenshots
 src/
   pages/
-    HomePage.tsx          # Movie listing with search and filters
-    MovieDetailPage.tsx   # Showtimes table (grid + stacked view, PNG export)
-    CinemaPage.tsx        # Movies filtered by cinema
-  services/api.ts         # Fetches /movies.json
-  types/index.ts
+    HomePage.tsx             # Movie grid with fuzzy search
+    MovieDetailPage.tsx      # Showtimes table (stacked + grid), filters, share
+  components/
+    CinemaPopup.tsx          # Map embed + website link popup
+    MovieHeader.tsx          # Poster, metadata, ratings, trailer
+    ShowtimesTable.tsx       # Toolbar + stacked/grid layout switcher
+    FiltersPanel.tsx         # Cinema / date / variant filters
+    SearchBar.tsx            # Fuzzy search with autocomplete
+    ui/RatingBadge.tsx       # IMDb rating with RT/Metacritic tooltip
+  contexts/
+    MovieContext.tsx          # Fetches and caches movies.json
+    ThemeContext.tsx          # Dark / light theme
+  utils/
+    movieSearch.ts           # Fuse.js index configuration
 .github/workflows/
-  deploy.yml              # Cron (4am UTC), push, and manual trigger
+  deploy.yml                 # Cron (every 6h), push trigger, manual dispatch
 ```
