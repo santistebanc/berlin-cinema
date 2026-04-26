@@ -170,18 +170,9 @@ async function main() {
 
   // Fetch all ratings via OMDb for movies that have an imdbId but no cached data
   if (OMDB_API_KEY) {
-    let omdbHits = 0;
     let omdbFetched = 0;
     for (const movie of data.movies) {
       if (!movie.imdbId) continue;
-      const oldMovie = existingMovies.get(movie.title.toLowerCase());
-      if (oldMovie?.imdbRating != null || oldMovie?.allRatings != null) {
-        movie.imdbRating = oldMovie.imdbRating;
-        movie.imdbVotes = oldMovie.imdbVotes ?? null;
-        movie.allRatings = oldMovie.allRatings ?? null;
-        omdbHits++;
-        continue;
-      }
       const omdb = await fetchOmdbData(movie.imdbId, OMDB_API_KEY);
       if (omdb) {
         movie.imdbRating = omdb.imdbRating;
@@ -190,7 +181,7 @@ async function main() {
         omdbFetched++;
       }
     }
-    console.log(`OMDb — cache hits: ${omdbHits} | fetched: ${omdbFetched}`);
+    console.log(`OMDb — fetched: ${omdbFetched}`);
   } else {
     console.log('No OMDB_API_KEY found — skipping IMDb ratings');
   }
