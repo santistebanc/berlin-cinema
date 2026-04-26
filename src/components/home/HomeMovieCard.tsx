@@ -29,11 +29,29 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
 
         <article className='flex flex-1 flex-col p-2 sm:p-4'>
           <h3
-            className='mb-2 line-clamp-2 flex-1 text-base font-semibold leading-snug tracking-[-0.01em]'
+            className='mb-1 line-clamp-2 text-base font-semibold leading-snug tracking-[-0.01em]'
             style={{ color: 'rgb(var(--text))' }}
           >
             {movie.tmdbTitle || movie.title}
           </h3>
+
+          {movie.director && (
+            <p className="mb-2 truncate text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+              {movie.director}
+            </p>
+          )}
+
+          {(movie.rating != null || movie.year || movie.runtime) && (
+            <div className="mb-2 flex items-center gap-1.5 text-xs tabular" style={{ color: 'rgb(var(--text-soft))' }}>
+              {movie.rating != null && (
+                <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>★ {movie.rating.toFixed(1)}</span>
+              )}
+              {movie.rating != null && (movie.year || movie.runtime) && <span>·</span>}
+              {movie.year && <span>{movie.year}</span>}
+              {movie.year && movie.runtime && <span>·</span>}
+              {movie.runtime && <span>{movie.runtime} min</span>}
+            </div>
+          )}
 
           {movie.variants.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-1">
@@ -45,8 +63,8 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
             </div>
           )}
 
-          <footer className="mt-auto pt-2">
-            <span className="text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+          <footer className="mt-auto pt-1">
+            <span className="text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
               {showtimeCount} showtime{showtimeCount !== 1 ? 's' : ''}
             </span>
           </footer>
