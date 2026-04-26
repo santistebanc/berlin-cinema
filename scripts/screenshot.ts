@@ -4,7 +4,7 @@ import path from 'path';
 const BASE_URL = process.argv[2] || 'https://ovberlin.site';
 const OUT_DIR = path.join(__dirname, '../docs');
 const DESKTOP = { width: 1280, height: 800 };
-const MOBILE = { width: 390, height: 844 };
+const MOBILE = { width: 390, height: 600 };
 
 async function wait(ms: number) {
   return new Promise(r => setTimeout(r, ms));
