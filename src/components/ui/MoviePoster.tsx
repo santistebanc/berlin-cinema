@@ -24,12 +24,22 @@ const MoviePoster: React.FC<MoviePosterProps> = ({ alt, title, className, loadin
     return (
       <div
         className={cn('flex items-center justify-center overflow-hidden', className)}
-        style={{ background: titleToGradient(label) }}
+        style={{ background: titleToGradient(label), containerType: 'inline-size' }}
         aria-label={label}
       >
         <span
-          className="px-3 text-center text-sm font-semibold leading-snug tracking-wide"
-          style={{ color: 'rgba(255,255,255,0.75)', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}
+          lang="de"
+          className="px-[8cqi] text-center font-semibold leading-snug tracking-wide"
+          style={{
+            fontSize: 'clamp(0.75rem, 18cqi, 2rem)',
+            color: 'rgba(255,255,255,0.8)',
+            textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+            display: '-webkit-box',
+            WebkitLineClamp: 5,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            hyphens: 'auto',
+          }}
         >
           {label}
         </span>
