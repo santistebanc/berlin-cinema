@@ -23,7 +23,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
           onClick={onToggleFilters}
           size="icon"
           variant={showFilters ? 'primary' : 'outline'}
-          className="h-10 w-10 rounded-md"
+          className="h-10 w-10"
           aria-label={showFilters ? 'Hide filters' : 'Show filters'}
           title={showFilters ? 'Hide filters' : 'Show filters'}
         >
@@ -33,7 +33,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
         <div
           role="group"
           aria-label="View mode"
-          className="inline-flex overflow-hidden rounded-md border"
+          className="inline-flex overflow-hidden border"
           style={{ borderColor: 'rgb(var(--border-strong))' }}
         >
           <button
