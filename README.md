@@ -31,7 +31,7 @@ A GitHub Actions workflow runs every 6 hours:
 1. **Scrape** — fetches current OV listings from [critic.de](https://www.critic.de/ov-movies-berlin/) via Cheerio
 2. **Enrich** — looks up each movie on TMDb (posters, plot, cast, trailer, genres, IMDb ID); cached per title via `tmdbFetched` flag
 3. **Ratings** — fetches fresh IMDb/RT/Metacritic scores from OMDb for every movie with an IMDb ID (no cache — ratings change)
-4. **Cinema data** — fetches website URLs from OpenStreetMap Overpass API; geocodes addresses via Nominatim for map embeds; both cached per cinema name
+4. **Cinema data** — fetches website URLs from OpenStreetMap Overpass API; cached per cinema name. Map embeds use the cinema name directly via Google Maps
 5. **Build** — Vite bundles the React app; a post-build script generates per-movie `index.html` files with OG meta tags baked in for social crawlers
 6. **Deploy** — uploads `dist/` to GitHub Pages
 
