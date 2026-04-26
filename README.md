@@ -6,13 +6,10 @@ Live at **[ovberlin.site](https://ovberlin.site)**
 
 ## Screenshots
 
-| Movie listing | Search results |
+| | |
 |---|---|
-| ![Movie listing](docs/screenshot1.png) | ![Search results](docs/screenshot4.png) |
-
-| Movie detail — stacked view | Movie detail — grid view |
-|---|---|
-| ![Stacked view](docs/screenshot2.png) | ![Grid view](docs/screenshot3.png) |
+| ![](docs/screenshot1.png) | ![](docs/screenshot4.png) |
+| ![](docs/screenshot2.png) | ![](docs/screenshot3.png) |
 
 ## Features
 
