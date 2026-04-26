@@ -84,7 +84,7 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
           title={`Map of ${cinema.name}`}
           src={cinema.lat != null && cinema.lon != null
             ? `https://maps.google.com/maps?q=${cinema.lat},${cinema.lon}&z=16&output=embed`
-            : `https://maps.google.com/maps?q=${encodeURIComponent(`${cinema.address}, ${cinema.postalCode} Berlin`)}&z=15&output=embed&iwloc=`
+            : `https://maps.google.com/maps?q=${encodeURIComponent(`${cinema.name}, ${cinema.address}, Berlin`)}&z=15&output=embed`
           }
           className="w-full shrink-0 border-0 h-[40dvh] sm:h-[52dvh] lg:h-[62dvh]"
           style={theme === 'dark' ? { filter: 'invert(1) hue-rotate(180deg)' } : undefined}
