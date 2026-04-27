@@ -103,48 +103,34 @@ class BerlinDeScraper {
     const firstResponse = await axios.get(LISTING_URL, { headers: HEADERS });
     const firstHtml = firstResponse.data as string;
 
-    // Parse pagination links to find subsequent pages
-    const pageUrls = this.parsePaginationUrls(firstHtml);
-    console.log(`[berlin.de] Found ${pageUrls.length + 1} page(s)`);
+    // Collect all pagination URLs from the first page, then iteratively collect
+    // any new URLs discovered on subsequent pages (handles pagination navs that
+    // only show a window of pages rather than the full list).
+    const visited = new Set<string>([LISTING_URL]);
+    const queue = this.parsePaginationUrls(firstHtml).filter(u => !visited.has(u));
+    queue.forEach(u => visited.add(u));
+
+    console.log(`[berlin.de] Found ${queue.length + 1} page(s)`);
 
     const movieMap = new Map<string, BerlinDeRawMovie>();
-    const cinemaKinoids = new Map<string, string>(); // cinemaName → kinoid
+    this.mergePageIntoMap(firstHtml, movieMap);
 
-    this.mergePageIntoMap(firstHtml, movieMap, cinemaKinoids);
-
-    for (let i = 0; i < pageUrls.length; i++) {
+    for (let i = 0; i < queue.length; i++) {
       console.log(`[berlin.de] Fetching listing page ${i + 2}...`);
-      const res = await axios.get(pageUrls[i], { headers: HEADERS });
-      this.mergePageIntoMap(res.data as string, movieMap, cinemaKinoids);
-    }
+      const res = await axios.get(queue[i], { headers: HEADERS });
+      this.mergePageIntoMap(res.data as string, movieMap);
 
-    // Second pass: fetch each cinema's own listing for the full date range.
-    // The main ovomu=on listing truncates each cinema's schedule to a few days;
-    // the per-cinema trefferliste shows the complete schedule.
-    const knownTitles = new Set(movieMap.keys());
-    console.log(`[berlin.de] Fetching full schedules for ${cinemaKinoids.size} cinema(s)...`);
-    let cinemaIdx = 0;
-    for (const [cinemaName, kinoid] of cinemaKinoids) {
-      cinemaIdx++;
-      const cinemaUrl = `${BASE}/kino/_bin/trefferliste.php?kinoid=${kinoid}`;
-      try {
-        const firstCinemaRes = await axios.get(cinemaUrl, { headers: HEADERS, timeout: 15000 });
-        const cinemaPageUrls = this.parsePaginationUrls(firstCinemaRes.data as string);
-        this.mergePageIntoMap(firstCinemaRes.data as string, movieMap, new Map(), knownTitles);
-        for (const pageUrl of cinemaPageUrls) {
-          const pageRes = await axios.get(pageUrl, { headers: HEADERS, timeout: 15000 });
-          this.mergePageIntoMap(pageRes.data as string, movieMap, new Map(), knownTitles);
+      // Discover any additional pagination links from this page
+      for (const u of this.parsePaginationUrls(res.data as string)) {
+        if (!visited.has(u)) {
+          visited.add(u);
+          queue.push(u);
         }
-      } catch (e) {
-        console.warn(`[berlin.de] Failed cinema page for "${cinemaName}": ${(e as Error).message}`);
-      }
-      if (cinemaIdx % 10 === 0) {
-        console.log(`[berlin.de] Cinema pages: ${cinemaIdx}/${cinemaKinoids.size}`);
       }
     }
 
     const movies = Array.from(movieMap.values()).filter(m => m.showings.length > 0);
-    console.log(`[berlin.de] Done — ${movies.length} movies`);
+    console.log(`[berlin.de] Done — ${movies.length} movies from ${visited.size} page(s)`);
     return movies;
   }
 
@@ -160,12 +146,7 @@ class BerlinDeScraper {
     return urls;
   }
 
-  private mergePageIntoMap(
-    html: string,
-    movieMap: Map<string, BerlinDeRawMovie>,
-    cinemaKinoids: Map<string, string> = new Map(),
-    allowedTitles?: Set<string>,
-  ): void {
+  private mergePageIntoMap(html: string, movieMap: Map<string, BerlinDeRawMovie>): void {
     const $ = cheerio.load(html);
 
     // Each li in the movie list is one (movie, cinema) pair.
@@ -190,10 +171,6 @@ class BerlinDeScraper {
 
       if (!baseTitle) return;
 
-      // When scraping cinema pages, only process movies we already know about from
-      // the main OV/OmU listing — avoids adding non-OV movies from cinema pages.
-      if (allowedTitles && !allowedTitles.has(baseTitle.toLowerCase())) return;
-
       const panel = $(li).find('.js-accordion__panel').first();
 
       // Extract cinema name from the paragraph text: "… läuft im "Cinema Name" …"
@@ -206,14 +183,6 @@ class BerlinDeScraper {
       const cinemaUrl = cinemaHref
         ? (cinemaHref.startsWith('http') ? cinemaHref : `${BASE}${cinemaHref}`)
         : undefined;
-
-      // Collect kinoid for the second-pass cinema page fetch
-      if (cinemaHref && cinemaKinoids) {
-        const kinoidMatch = cinemaHref.match(/[?&]kinoid=([^&]+)/);
-        if (kinoidMatch && !cinemaKinoids.has(cinemaName)) {
-          cinemaKinoids.set(cinemaName, kinoidMatch[1]);
-        }
-      }
 
       const filmHref = panel.find('a[href*="filmdetail.php"]').first().attr('href');
       const filmUrl = filmHref
