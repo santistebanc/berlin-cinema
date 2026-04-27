@@ -1,8 +1,21 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'child_process'
+
+const gitHash = (() => {
+  try { return execSync('git rev-parse --short HEAD').toString().trim(); }
+  catch { return 'unknown'; }
+})();
+const buildTime = new Date().toLocaleString('en-GB', {
+  day: 'numeric', month: 'short', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin', timeZoneName: 'short',
+});
 
 export default defineConfig({
+  define: {
+    __BUILD_VERSION__: JSON.stringify(`${gitHash} · ${buildTime}`),
+  },
   plugins: [
     react(),
     VitePWA({

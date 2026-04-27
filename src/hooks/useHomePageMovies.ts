@@ -45,7 +45,10 @@ export const useHomePageMovies = (movies: Movie[]) => {
     return fuse.search(searchQuery).map(r => r.item);
   }, [fuse, movies, searchQuery]);
 
-  const sortedMovies = useMemo(() => sortMoviesByShowtimes(filteredMovies), [filteredMovies]);
+  const sortedMovies = useMemo(
+    () => searchQuery.trim() ? filteredMovies : sortMoviesByShowtimes(filteredMovies),
+    [filteredMovies, searchQuery]
+  );
 
   const clearSearch = () => {
     setSearchQuery('');
