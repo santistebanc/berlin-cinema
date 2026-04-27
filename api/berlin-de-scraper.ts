@@ -39,13 +39,11 @@ function germanDayToEn(day: string): string {
   return map[day] ?? day;
 }
 
-// Map berlin.de variant codes to app variant codes
 function normalizeVariant(v: string): string | null {
   const vl = v.toLowerCase().replace(/\s/g, '');
   if (vl === 'ov') return 'OV';
   if (vl === 'omu' || vl === 'omü') return 'OmU';
   if (vl.startsWith('omenglu') || vl.startsWith('omüenglu')) return 'OmU';
-  // Return as-is for other codes (DFmEnglU, etc.)
   return v;
 }
 
@@ -99,88 +97,119 @@ export interface BerlinDeRawMovie {
   isSpecial: boolean;
 }
 
-interface ListingEntry {
-  title: string;
-  detailUrl: string;
-}
-
 class BerlinDeScraper {
-  private delay(ms: number) {
-    return new Promise<void>(resolve => setTimeout(resolve, ms));
-  }
-
   async scrapeRawMovies(): Promise<BerlinDeRawMovie[]> {
-    console.log('[berlin.de] Fetching listing page...');
-    const listing = await axios.get(LISTING_URL, { headers: HEADERS });
-    const entries = this.parseListing(listing.data as string);
-    console.log(`[berlin.de] Found ${entries.length} movies on listing page`);
+    console.log('[berlin.de] Fetching listing page 1...');
+    const firstResponse = await axios.get(LISTING_URL, { headers: HEADERS });
+    const firstHtml = firstResponse.data as string;
 
-    const rawMovies: BerlinDeRawMovie[] = [];
+    // Parse pagination links to find subsequent pages
+    const pageUrls = this.parsePaginationUrls(firstHtml);
+    console.log(`[berlin.de] Found ${pageUrls.length + 1} page(s)`);
 
-    for (let i = 0; i < entries.length; i++) {
-      const { title, detailUrl } = entries[i];
-      try {
-        await this.delay(300);
-        const detail = await axios.get(detailUrl, { headers: HEADERS });
-        const movie = this.parseDetailPage(title, detailUrl, detail.data as string);
-        if (movie) rawMovies.push(movie);
-        if ((i + 1) % 10 === 0) {
-          console.log(`[berlin.de] Fetched ${i + 1}/${entries.length}`);
-        }
-      } catch (err) {
-        console.warn(`[berlin.de] Failed to fetch ${detailUrl}: ${(err as Error).message}`);
-      }
+    const movieMap = new Map<string, BerlinDeRawMovie>();
+    this.mergePageIntoMap(firstHtml, movieMap);
+
+    for (let i = 0; i < pageUrls.length; i++) {
+      console.log(`[berlin.de] Fetching listing page ${i + 2}...`);
+      const res = await axios.get(pageUrls[i], { headers: HEADERS });
+      this.mergePageIntoMap(res.data as string, movieMap);
     }
 
-    console.log(`[berlin.de] Done — ${rawMovies.length} movies with showings`);
-    return rawMovies;
+    const movies = Array.from(movieMap.values()).filter(m => m.showings.length > 0);
+    console.log(`[berlin.de] Done — ${movies.length} movies from ${pageUrls.length + 1} page(s)`);
+    return movies;
   }
 
-  private parseListing(html: string): ListingEntry[] {
+  private parsePaginationUrls(html: string): string[] {
     const $ = cheerio.load(html);
-    const entries: ListingEntry[] = [];
-    const seen = new Set<string>();
-
-    $('span.js-accordion__trigger').each((_, el) => {
-      const rawText = decode($(el).text().trim());
-      if (!rawText || rawText === 'Zurücksetzen') return;
-
-      // Strip variant suffix to get base title
-      const title = rawText.replace(/\s*\((OV|OmU|OmU\+OV|OV\+OmU|OmenglU)\)\s*$/i, '').trim();
-      if (!title || seen.has(title)) return;
-
-      const panel = $(el).closest('strong').next('.js-accordion__panel');
-      const href = panel.find('a[href*="filmdetail.php"]').first().attr('href');
+    const urls: string[] = [];
+    $('nav.pagination a[href*="startat="]').each((_, el) => {
+      const href = $(el).attr('href');
       if (!href) return;
-
-      const detailUrl = href.startsWith('http') ? href : `${BASE}${href}`;
-      seen.add(title);
-      entries.push({ title, detailUrl });
+      const url = href.startsWith('http') ? href : `${BASE}${href}`;
+      if (!urls.includes(url)) urls.push(url);
     });
-
-    return entries;
+    return urls;
   }
 
-  private parseDetailPage(title: string, detailUrl: string, html: string): BerlinDeRawMovie | null {
+  private mergePageIntoMap(html: string, movieMap: Map<string, BerlinDeRawMovie>): void {
     const $ = cheerio.load(html);
 
-    const cinemas: RawCinema[] = [];
-    const showings: RawShowing[] = [];
-    const variantSet = new Set<string>();
+    // Each li in the movie list is one (movie, cinema) pair.
+    // The movie title is in span.info inside the trigger.
+    // The cinema name is in the panel paragraph: '… läuft im "Cinema Name" …'
 
-    $('ul.js-accordion > li').each((_, liEl) => {
-      const trigger = $(liEl).find('span.js-accordion__trigger').first();
-      const infoText = trigger.find('.info').text().trim();
-      const fullText = decode(trigger.text().trim());
-      const cinemaName = fullText.replace(infoText, '').trim();
+    $('ul.js-accordion > li').each((_, li) => {
+      const trigger = $(li).find('span.js-accordion__trigger').first();
+      // Title is either in span.info or directly in the trigger text
+      const infoSpan = trigger.find('span.info').first();
+      const rawTitle = decode(
+        infoSpan.length ? infoSpan.text().trim() : trigger.text().trim()
+      );
+      if (!rawTitle || rawTitle === 'Zurücksetzen') return;
+
+      // Strip variant suffix → base title
+      const variantSuffixMatch = rawTitle.match(/\s*\(([^)]+)\)\s*$/);
+      const variantSuffix = variantSuffixMatch ? variantSuffixMatch[1] : null;
+      const baseTitle = variantSuffixMatch
+        ? rawTitle.slice(0, rawTitle.lastIndexOf('(')).trim()
+        : rawTitle;
+
+      if (!baseTitle) return;
+
+      const panel = $(li).find('.js-accordion__panel').first();
+
+      // Extract cinema name from the paragraph text: "… läuft im "Cinema Name" …"
+      const paraText = decode(panel.find('p').first().text());
+      const cinemaMatch = paraText.match(/läuft im\s+"([^"]+)"/);
+      const cinemaName = cinemaMatch ? cinemaMatch[1].trim() : null;
       if (!cinemaName) return;
 
-      const panel = $(liEl).find('.js-accordion__panel').first();
       const cinemaHref = panel.find('a[href*="kinodetail.php"]').first().attr('href');
       const cinemaUrl = cinemaHref
         ? (cinemaHref.startsWith('http') ? cinemaHref : `${BASE}${cinemaHref}`)
         : undefined;
 
+      const filmHref = panel.find('a[href*="filmdetail.php"]').first().attr('href');
+      const filmUrl = filmHref
+        ? (filmHref.startsWith('http') ? filmHref : `${BASE}${filmHref}`)
+        : null;
+
+      // Get or create movie entry
+      const key = baseTitle.toLowerCase();
+      if (!movieMap.has(key)) {
+        movieMap.set(key, {
+          title: baseTitle,
+          criticTitle: null,
+          altTitle: null,
+          director: null,
+          cast: null,
+          country: null,
+          year: null,
+          posterUrl: null,
+          url: filmUrl,
+          variants: [],
+          cinemas: [],
+          showings: [],
+          isSpecial: false,
+        });
+      }
+
+      const movie = movieMap.get(key)!;
+
+      // Track variant at movie level
+      if (variantSuffix) {
+        const v = normalizeVariant(variantSuffix);
+        if (v && !movie.variants.includes(v)) movie.variants.push(v);
+      }
+
+      // Track cinema
+      if (!movie.cinemas.some(c => c.name === cinemaName)) {
+        movie.cinemas.push({ name: cinemaName, address: '' });
+      }
+
+      // Parse showings from the schedule table
       panel.find('table tbody tr').each((_, row) => {
         const cells = $(row).find('td');
         const dateCell = decode(cells.eq(0).text().trim());
@@ -194,8 +223,8 @@ class BerlinDeScraper {
         const dayOfWeek = dayMatch ? germanDayToEn(dayMatch[1]) : '';
 
         for (const { time, variant } of parseTimeCell(timeCell)) {
-          if (variant) variantSet.add(variant);
-          showings.push({
+          if (variant && !movie.variants.includes(variant)) movie.variants.push(variant);
+          movie.showings.push({
             date: dateStr,
             originalDate: dateCell,
             time,
@@ -209,34 +238,8 @@ class BerlinDeScraper {
           });
         }
       });
-
-      if (!cinemas.some(c => c.name === cinemaName)) {
-        cinemas.push({ name: cinemaName, address: '' });
-      }
     });
 
-    if (showings.length === 0) return null;
-
-    const filmId = detailUrl.match(/filmdetail\.php\/(\d+)/)?.[1] ?? '';
-    const posterUrl = filmId
-      ? `${BASE}/kino/_img/filmbilder/p_${filmId}_Print2.jpg`
-      : null;
-
-    return {
-      title,
-      criticTitle: null,
-      altTitle: null,
-      director: null,
-      cast: null,
-      country: null,
-      year: null,
-      posterUrl,
-      url: detailUrl,
-      variants: Array.from(variantSet),
-      cinemas,
-      showings,
-      isSpecial: false,
-    };
   }
 }
 
