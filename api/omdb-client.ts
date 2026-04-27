@@ -47,7 +47,6 @@ export async function fetchOmdbData(imdbId: string, apiKey: string): Promise<Omd
 
     return { imdbRating, imdbVotes, ratings };
   } catch (err: any) {
-    console.warn(`OMDb error for ${imdbId}: ${err?.message ?? err}`);
     return null;
   }
 }
