@@ -52,7 +52,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
   const variantOptions = availableVariants.map(v => ({ value: v, label: v }));
 
   return (
-    <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:px-5">
+    <div className="flex flex-wrap items-center gap-2 p-2 sm:p-3">
       <div
         role="group"
         aria-label="View mode"
@@ -64,22 +64,21 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
           onClick={() => setTableMode('stacked')}
           aria-pressed={tableMode === 'stacked'}
           className={cn(
-            'inline-flex h-9 items-center gap-1 px-3 text-xs font-medium transition-colors',
+            'inline-flex h-9 w-9 items-center justify-center transition-colors',
             tableMode === 'stacked'
               ? 'bg-[rgb(var(--accent-strong))] text-white'
               : 'bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
           )}
           title="Stacked view"
         >
-          <Columns className="h-3.5 w-3.5 shrink-0" />
-          Stacked
+          <Columns className="h-3.5 w-3.5" />
         </button>
         <button
           type="button"
           onClick={() => setTableMode('grid')}
           aria-pressed={tableMode === 'grid'}
           className={cn(
-            'inline-flex h-9 items-center gap-1 border-l px-3 text-xs font-medium transition-colors',
+            'inline-flex h-9 w-9 items-center justify-center border-l transition-colors',
             'border-[rgb(var(--border-strong))]',
             tableMode === 'grid'
               ? 'bg-[rgb(var(--accent-strong))] text-white'
@@ -87,8 +86,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
           )}
           title="Grid view"
         >
-          <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
-          Grid
+          <LayoutGrid className="h-3.5 w-3.5" />
         </button>
       </div>
 
