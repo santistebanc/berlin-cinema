@@ -137,7 +137,9 @@ async function main() {
     for (const movie of data.movies) {
       initTmdbFields(movie);
 
-      if ((movie as any).isSpecial) {
+      const isSpecial = !movie.url?.includes('/movie/')
+        || /sneak|kurzfilm|festival|sonderprogramm|filmreihe|sondervorstellung/i.test(movie.title);
+      if (isSpecial) {
         movie.tmdbFetched = true;
         continue;
       }
@@ -192,7 +194,9 @@ async function main() {
     let omdbFetched = 0;
     let omdbCached = 0;
     for (const movie of data.movies) {
-      if (!movie.imdbId || (movie as any).isSpecial) continue;
+      const isMovieSpecial = !movie.url?.includes('/movie/')
+        || /sneak|kurzfilm|festival|sonderprogramm|filmreihe|sondervorstellung/i.test(movie.title);
+      if (!movie.imdbId || isMovieSpecial) continue;
       const cached = existingMovies.get(movie.title.toLowerCase());
       const age = cached?.omdbFetchedAt ? Date.now() - new Date(cached.omdbFetchedAt).getTime() : Infinity;
       if (!forceEnrich && cached?.imdbRating != null && age < ONE_DAY_MS) {
