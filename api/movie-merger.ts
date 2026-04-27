@@ -188,7 +188,7 @@ class MovieMerger {
   static determineVariant(movieVariants: string[]): string | null {
     if (movieVariants && movieVariants.length > 0) {
       if (movieVariants.includes('OV')) return 'OV';
-      if (movieVariants.includes('sub')) return 'sub';
+      if (movieVariants.includes('OmU')) return 'OmU';
       if (movieVariants.includes('Imax')) return 'Imax';
       if (movieVariants.includes('EXPN')) return 'EXPN';
       return movieVariants[0];
