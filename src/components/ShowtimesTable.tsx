@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Movie } from '../types';
 import ShowtimesGrid from './ShowtimesGrid';
 import ShowtimesStacked from './ShowtimesStacked';
@@ -45,20 +45,6 @@ const ShowtimesTable: React.FC<Props> = ({
   cinemaColors,
   onCinemaClick,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const toolbar = toolbarRef.current;
-    const container = containerRef.current;
-    if (!toolbar || !container) return;
-    const observer = new ResizeObserver(([entry]) => {
-      container.style.setProperty('--toolbar-h', `${entry.contentRect.height}px`);
-    });
-    observer.observe(toolbar);
-    return () => observer.disconnect();
-  }, []);
-
   const hasShowings = movie.showings && Object.keys(movie.showings).length > 0;
 
   if (!hasShowings) {
@@ -70,12 +56,8 @@ const ShowtimesTable: React.FC<Props> = ({
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      <div
-        ref={toolbarRef}
-        className="sticky top-0 z-30"
-        style={{ backgroundColor: 'rgb(var(--surface))' }}
-      >
+    <div className="relative">
+      <div>
         <ShowtimesToolbar
           tableMode={tableMode}
           setTableMode={setTableMode}

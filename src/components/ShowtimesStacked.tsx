@@ -42,7 +42,7 @@ const ShowtimesStacked: React.FC<Props> = ({
             <div
               className="sticky z-10 border-b px-3 py-2 text-xs"
               style={{
-                top: 'var(--toolbar-h, 0px)',
+                top: 0,
                 backgroundColor: 'rgb(var(--surface-muted))',
                 borderColor: 'rgb(var(--border))',
               }}
