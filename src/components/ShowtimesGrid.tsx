@@ -46,7 +46,7 @@ const ShowtimesGrid: React.FC<Props> = ({
         <thead>
           <tr className="border-b" style={{ backgroundColor: 'rgb(var(--surface-muted))', borderColor: 'rgb(var(--border) / 0.4)' }}>
             <th
-              className="sticky left-0 z-10 w-px whitespace-nowrap px-2 py-2 text-left text-xs font-semibold shadow-sm"
+              className="sticky left-0 z-10 w-14 whitespace-nowrap px-2 py-2 text-left text-xs font-semibold shadow-sm"
               style={{ backgroundColor: 'rgb(var(--surface-muted))', color: 'rgb(var(--text))' }}
             >
               Time
@@ -75,7 +75,7 @@ const ShowtimesGrid: React.FC<Props> = ({
               style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
             >
               <td
-                className="tabular sticky left-0 z-10 w-px whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm shadow-sm"
+                className="tabular sticky left-0 z-10 w-14 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm shadow-sm"
                 style={{ color: 'rgb(var(--text-muted))' }}
               >
                 {time}
