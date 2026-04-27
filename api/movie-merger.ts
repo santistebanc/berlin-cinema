@@ -153,9 +153,29 @@ class MovieMerger {
       .trim();
   }
 
+  static jaccardTokens(a: string, b: string): number {
+    const ta = new Set(a.split(' ').filter(Boolean));
+    const tb = new Set(b.split(' ').filter(Boolean));
+    let intersection = 0;
+    for (const t of ta) if (tb.has(t)) intersection++;
+    const union = ta.size + tb.size - intersection;
+    return union === 0 ? 0 : intersection / union;
+  }
+
   static findCanonicalCinema(index: Map<string, string>, name: string): string | null {
     const norm = this.normalizeCinemaName(name);
     if (index.has(norm)) return index.get(norm)!;
+    // Fuzzy match for multi-token names (≥3 tokens) to catch source naming differences
+    // e.g. "Kino in der KulturBrauerei Berlin" ↔ "Cinestar Kino in der Kulturbrauerei"
+    const tokens = norm.split(' ').filter(Boolean);
+    if (tokens.length >= 3) {
+      for (const [existingNorm, canonical] of index) {
+        if (existingNorm.split(' ').filter(Boolean).length >= 3 && this.jaccardTokens(norm, existingNorm) >= 0.65) {
+          index.set(norm, canonical);
+          return canonical;
+        }
+      }
+    }
     return null;
   }
 
