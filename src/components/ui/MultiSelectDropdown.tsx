@@ -22,7 +22,7 @@ const Checkbox: React.FC<{ checked: boolean }> = ({ checked }) => (
     className={cn(
       'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border',
       checked
-        ? 'border-[rgb(var(--accent))] bg-[rgb(var(--accent))]'
+        ? 'border-[rgb(var(--accent-strong))] bg-[rgb(var(--accent-strong))]'
         : 'border-[rgb(var(--border-strong))]'
     )}
   >

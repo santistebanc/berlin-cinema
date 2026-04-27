@@ -14,16 +14,19 @@ const CINEMA_BADGE_COUNT = 16;
 const cinemaColorClass = (index: number) =>
   `cinema-badge cinema-badge-${index % CINEMA_BADGE_COUNT}`;
 
-const ABBR_THRESHOLD = 20;
+const SKIP_WORDS = new Set(['am', 'an', 'in', 'im', 'der', 'die', 'das', 'de', 'la', 'le', 'bei', 'beim', 'zum', 'zur', 'und', 'the', 'a', 'kino', 'berlin', 'kinowelt']);
+
+function significantWords(name: string): string[] {
+  return name.split(/[\s\|\-–/]+/).filter(w => w.length > 0 && !SKIP_WORDS.has(w.toLowerCase()));
+}
 
 export function getCinemaAbbr(name: string): string {
-  if (name.length <= ABBR_THRESHOLD) return name;
-  const skip = new Set(['am', 'an', 'in', 'im', 'der', 'die', 'das', 'de', 'la', 'le', 'bei', 'beim', 'zum', 'zur', 'und', 'the', 'a', 'kino', 'berlin', 'kinowelt']);
-  const words = name.split(/[\s\|\-–/]+/).filter(w => w.length > 0);
-  const significant = words.filter(w => !skip.has(w.toLowerCase()));
-  const parts = significant.slice(0, 3).map(w => w.length > 10 ? w.slice(0, 9) + '.' : w);
-  return parts.join(' ') || name.slice(0, 15);
+  const sig = significantWords(name);
+  if (!sig.length) return name.slice(0, 15);
+  const parts = sig.slice(0, 3).map(w => w.length > 10 ? w.slice(0, 9) + '.' : w);
+  return parts.join(' ');
 }
+
 
 export function buildCinemaColors(movie: Movie): Record<string, string> {
   const cinemaColors: Record<string, string> = {};
