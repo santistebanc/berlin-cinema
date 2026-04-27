@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 
+
 @layer utilities {
   .line-clamp-1 {
     overflow: hidden;
@@ -21,6 +22,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     --bg: 248 250 252;
     --surface: 255 255 255;
     --surface-muted: 241 245 249;
@@ -46,6 +48,7 @@
   }
 
   .dark {
+    color-scheme: dark;
     --bg: 3 7 18;
     --surface: 17 24 39;
     --surface-muted: 31 41 55;

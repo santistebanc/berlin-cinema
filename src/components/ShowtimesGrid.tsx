@@ -1,6 +1,6 @@
 import React from 'react';
 import { Movie } from '../types';
-import { matchesFilters, getCinemaAbbr } from '../utils/cinemaUtils';
+import { matchesFilters } from '../utils/cinemaUtils';
 import ShowingEntry from './ShowingEntry';
 
 interface Props {
@@ -46,7 +46,7 @@ const ShowtimesGrid: React.FC<Props> = ({
         <thead>
           <tr className="border-b" style={{ backgroundColor: 'rgb(var(--surface-muted))', borderColor: 'rgb(var(--border) / 0.4)' }}>
             <th
-              className="sticky left-0 z-10 w-[56px] whitespace-nowrap px-2 py-2 text-left text-xs font-semibold shadow-sm"
+              className="sticky left-0 z-10 w-px whitespace-nowrap px-2 py-2 text-left text-xs font-semibold shadow-sm"
               style={{ backgroundColor: 'rgb(var(--surface-muted))', color: 'rgb(var(--text))' }}
             >
               Time
@@ -54,7 +54,7 @@ const ShowtimesGrid: React.FC<Props> = ({
             {datesWithShowings.map(date => (
               <th
                 key={date}
-                className="min-w-[72px] max-w-[200px] w-[200px] px-2 py-2 text-left text-xs font-semibold"
+                className="min-w-[72px] max-w-[200px] w-[200px] px-1 py-2 text-left text-xs font-semibold"
                 style={{ color: 'rgb(var(--text))' }}
               >
                 <div className="whitespace-nowrap">
@@ -75,7 +75,7 @@ const ShowtimesGrid: React.FC<Props> = ({
               style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
             >
               <td
-                className="tabular sticky left-0 z-10 w-[56px] whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 py-1.5 font-mono text-sm shadow-sm"
+                className="tabular sticky left-0 z-10 w-px whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm shadow-sm"
                 style={{ color: 'rgb(var(--text-muted))' }}
               >
                 {time}
@@ -85,22 +85,22 @@ const ShowtimesGrid: React.FC<Props> = ({
                   matchesFilters(s, selectedCinemas, selectedVariants)
                 );
                 return (
-                  <td key={date} className="max-w-[200px] px-2 py-1.5 text-left">
+                  <td key={date} className="max-w-[120px] p-0 text-left">
                     {filtered.length > 0 ? (
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1 px-1">
                         {filtered.map((showing, idx) => (
                           <ShowingEntry
                             key={idx}
                             cinema={showing.cinema}
                             variant={showing.variant}
                             colorClass={cinemaColors[showing.cinema] ?? ''}
-                            label={getCinemaAbbr(showing.cinema)}
+                            label={showing.cinema}
                             onCinemaClick={onCinemaClick}
                           />
                         ))}
                       </div>
                     ) : (
-                      <div className="text-xs" style={{ color: 'rgb(var(--text-soft))' }}>—</div>
+                      <div className="flex min-h-9 items-center px-2 text-xs" style={{ color: 'rgb(var(--text-soft))' }}>—</div>
                     )}
                   </td>
                 );
