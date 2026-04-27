@@ -1,16 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-
-interface Rating {
-  source: string;
-  value: string;
-}
+import React from 'react';
 
 interface RatingBadgeProps {
   imdbRating: number | null;
   tmdbRating: number | null;
   imdbVotes: number | null;
   tmdbVotes: number | null;
-  allRatings: Rating[] | null;
+  allRatings: unknown;
   className?: string;
 }
 
@@ -21,26 +16,10 @@ const StarIcon = () => (
 );
 
 const RatingBadge: React.FC<RatingBadgeProps> = ({
-  imdbRating, tmdbRating, imdbVotes, tmdbVotes, allRatings, className = '',
+  imdbRating, tmdbRating, imdbVotes, tmdbVotes, className = '',
 }) => {
   const displayRating = imdbRating ?? tmdbRating;
   const displayVotes = imdbVotes ?? tmdbVotes;
-  const hasExtra = allRatings && allRatings.length > 1;
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent | TouchEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
-    };
-  }, [open]);
 
   if (displayRating == null) return null;
 
@@ -51,50 +30,11 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
     : null;
 
   return (
-    <span ref={ref} className={`relative inline-flex items-center gap-1 ${className}`}>
-      {hasExtra ? (
-        <button
-          type="button"
-          onClick={e => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v); }}
-          onPointerEnter={e => { if (e.pointerType === 'mouse') setOpen(true); }}
-          onPointerLeave={e => { if (e.pointerType === 'mouse') setOpen(false); }}
-          className="inline-flex cursor-pointer items-center gap-1"
-          aria-expanded={open}
-          aria-haspopup="true"
-        >
-          <StarIcon />
-          <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{displayRating.toFixed(1)}</span>
-          {votesLabel && <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>}
-          {imdbRating != null && <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>}
-        </button>
-      ) : (
-        <span className="inline-flex items-center gap-1">
-          <StarIcon />
-          <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{displayRating.toFixed(1)}</span>
-          {votesLabel && <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>}
-          {imdbRating != null && <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>}
-        </span>
-      )}
-
-      {hasExtra && open && (
-        <span
-          className="absolute bottom-full left-0 z-50 mb-2 w-44"
-          style={{
-            backgroundColor: 'rgb(var(--surface))',
-            border: '1px solid rgb(var(--border))',
-            boxShadow: 'var(--shadow-lg)',
-          }}
-        >
-          <ul className="divide-y" style={{ borderColor: 'rgb(var(--border))' }}>
-            {allRatings.map(r => (
-              <li key={r.source} className="flex items-center justify-between px-3 py-1.5 text-xs">
-                <span style={{ color: 'rgb(var(--text-muted))' }}>{r.source}</span>
-                <span className="font-medium tabular" style={{ color: 'rgb(var(--text))' }}>{r.value}</span>
-              </li>
-            ))}
-          </ul>
-        </span>
-      )}
+    <span className={`inline-flex items-center gap-1 ${className}`}>
+      <StarIcon />
+      <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{displayRating.toFixed(1)}</span>
+      {votesLabel && <span style={{ color: 'rgb(var(--text-soft))' }}>({votesLabel})</span>}
+      {imdbRating != null && <span className="text-[10px] font-semibold" style={{ color: 'rgb(var(--text-soft))' }}>IMDb</span>}
     </span>
   );
 };
