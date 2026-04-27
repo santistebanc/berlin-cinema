@@ -99,51 +99,27 @@ export interface BerlinDeRawMovie {
 
 class BerlinDeScraper {
   async scrapeRawMovies(): Promise<BerlinDeRawMovie[]> {
-    console.log('[berlin.de] Fetching listing page 1...');
-    const firstResponse = await axios.get(LISTING_URL, { headers: HEADERS });
-    const firstHtml = firstResponse.data as string;
-
-    // Collect all pagination URLs from the first page, then iteratively collect
-    // any new URLs discovered on subsequent pages (handles pagination navs that
-    // only show a window of pages rather than the full list).
-    const visited = new Set<string>([LISTING_URL]);
-    const queue = this.parsePaginationUrls(firstHtml).filter(u => !visited.has(u));
-    queue.forEach(u => visited.add(u));
-
-    console.log(`[berlin.de] Found ${queue.length + 1} page(s)`);
-
     const movieMap = new Map<string, BerlinDeRawMovie>();
-    this.mergePageIntoMap(firstHtml, movieMap);
+    const PAGE_SIZE = 300;
+    let page = 0;
 
-    for (let i = 0; i < queue.length; i++) {
-      console.log(`[berlin.de] Fetching listing page ${i + 2}...`);
-      const res = await axios.get(queue[i], { headers: HEADERS });
+    while (true) {
+      const url = page === 0 ? LISTING_URL : `${LISTING_URL}&startat=${page * PAGE_SIZE}`;
+      console.log(`[berlin.de] Fetching listing page ${page + 1}...`);
+      const res = await axios.get(url, { headers: HEADERS });
+      const countBefore = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
       this.mergePageIntoMap(res.data as string, movieMap);
+      const countAfter = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
 
-      // Discover any additional pagination links from this page
-      for (const u of this.parsePaginationUrls(res.data as string)) {
-        if (!visited.has(u)) {
-          visited.add(u);
-          queue.push(u);
-        }
-      }
+      // Stop when a page adds nothing new (empty or duplicate-only)
+      const items = (res.data as string).match(/js-accordion__trigger/g)?.length ?? 0;
+      if (items === 0) break;
+      page++;
     }
 
     const movies = Array.from(movieMap.values()).filter(m => m.showings.length > 0);
-    console.log(`[berlin.de] Done — ${movies.length} movies from ${visited.size} page(s)`);
+    console.log(`[berlin.de] Done — ${movies.length} movies from ${page} page(s)`);
     return movies;
-  }
-
-  private parsePaginationUrls(html: string): string[] {
-    const $ = cheerio.load(html);
-    const urls: string[] = [];
-    $('a[href*="startat="]').each((_, el) => {
-      const href = $(el).attr('href');
-      if (!href) return;
-      const url = href.startsWith('http') ? href : `${BASE}${href}`;
-      if (!urls.includes(url)) urls.push(url);
-    });
-    return urls;
   }
 
   private mergePageIntoMap(html: string, movieMap: Map<string, BerlinDeRawMovie>): void {
