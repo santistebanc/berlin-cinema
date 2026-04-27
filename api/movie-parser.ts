@@ -94,7 +94,7 @@ class MovieParser {
     const variants: string[] = [];
     if (title.includes('(Imax)')) variants.push('Imax');
     else if (title.includes('(EXPN)')) variants.push('EXPN');
-    else if (title.includes('(OV w/ sub)')) variants.push('sub');
+    else if (title.includes('(OV w/ sub)')) variants.push('OmU');
     else if (title.includes('(OV)')) variants.push('OV');
     return variants;
   }
