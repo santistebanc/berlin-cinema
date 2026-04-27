@@ -8,11 +8,15 @@ interface Showing {
   city: string;
   postalCode: string;
   url: string | undefined;
+  variant?: string | null; // per-showing variant (berlin.de), overrides movieVariants
 }
 
 interface Cinema {
   name: string;
   address: string;
+  city?: string;
+  postalCode?: string;
+  url?: string;
 }
 
 interface RawMovie {
@@ -46,8 +50,9 @@ interface MergedMovieInternal {
   posterUrl: string | null;
   url: string | null;
   variants: Set<string>;
-  cinemas: Set<string>;
+  cinemas: Map<string, Cinema>;
   showings: Record<string, Record<string, ShowingInfo[]>>;
+  sourceTitles: Set<string>;
 }
 
 class MovieMerger {
@@ -69,12 +74,28 @@ class MovieMerger {
           posterUrl: movie.posterUrl,
           url: movie.url,
           variants: new Set(),
-          cinemas: new Set(),
-          showings: {}
+          cinemas: new Map(),
+          showings: {},
+          sourceTitles: new Set(),
         });
       }
 
       const mergedMovie = movieMap.get(baseTitle)!;
+      mergedMovie.sourceTitles.add(movie.title);
+
+      // Prefer critic.de metadata (non-null url containing /movie/ signals critic.de)
+      if (movie.url?.includes('/movie/')) {
+        if (!mergedMovie.url?.includes('/movie/')) {
+          mergedMovie.url = movie.url;
+          if (movie.criticTitle) mergedMovie.criticTitle = movie.criticTitle;
+          if (movie.altTitle) mergedMovie.altTitle = movie.altTitle;
+          if (movie.director) mergedMovie.director = movie.director;
+          if (movie.cast) mergedMovie.cast = movie.cast;
+          if (movie.country) mergedMovie.country = movie.country;
+          if (movie.year) mergedMovie.year = parseInt(movie.year);
+          if (movie.posterUrl) mergedMovie.posterUrl = movie.posterUrl;
+        }
+      }
 
       if (movie.variants) {
         movie.variants.forEach(v => mergedMovie.variants.add(v));
@@ -82,7 +103,11 @@ class MovieMerger {
 
       if (movie.cinemas) {
         movie.cinemas.forEach(cinema => {
-          mergedMovie.cinemas.add(JSON.stringify(cinema));
+          const existing = mergedMovie.cinemas.get(cinema.name);
+          // Prefer entry with more data (non-empty address)
+          if (!existing || (!existing.address && cinema.address)) {
+            mergedMovie.cinemas.set(cinema.name, cinema);
+          }
         });
       }
 
@@ -96,8 +121,9 @@ class MovieMerger {
     return Array.from(movieMap.values()).map(movie => ({
       ...movie,
       variants: Array.from(movie.variants),
-      cinemas: Array.from(movie.cinemas).map(s => JSON.parse(s) as Cinema),
+      cinemas: Array.from(movie.cinemas.values()),
       showings: this.sortShowings(movie.showings),
+      sourceTitles: Array.from(movie.sourceTitles),
       criticTitle: movie.criticTitle,
       altTitle: movie.altTitle,
       plot: null,
@@ -116,7 +142,7 @@ class MovieMerger {
   static mergeShowing(mergedMovie: MergedMovieInternal, showing: Showing, movieVariants: string[]): void {
     const formattedDate = this.formatDate(showing);
     const formattedTime = showing.time;
-    const variant = this.determineVariant(movieVariants);
+    const variant = showing.variant !== undefined ? showing.variant : this.determineVariant(movieVariants);
 
     if (!mergedMovie.showings[formattedDate]) {
       mergedMovie.showings[formattedDate] = {};

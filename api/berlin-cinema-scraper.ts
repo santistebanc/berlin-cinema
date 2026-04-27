@@ -13,12 +13,16 @@ class BerlinCinemaScraper {
     this.movieParser = new MovieParser(this.httpClient);
   }
 
+  async scrapeRawMovies(): Promise<any[]> {
+    const formData = FormDataBuilder.buildSearchForm();
+    const response = await this.httpClient.post(this.baseUrl, formData);
+    return this.movieParser.parseMovies(response.data);
+  }
+
   async scrapeMovies() {
     try {
-      const formData = FormDataBuilder.buildSearchForm();
-      const response = await this.httpClient.post(this.baseUrl, formData);
-      const movies = this.movieParser.parseMovies(response.data);
-      const mergedMovies = MovieMerger.mergeMovies(movies as any);
+      const rawMovies = await this.scrapeRawMovies();
+      const mergedMovies = MovieMerger.mergeMovies(rawMovies as any);
 
       return {
         movies: mergedMovies,
