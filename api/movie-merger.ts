@@ -51,6 +51,7 @@ interface MergedMovieInternal {
   url: string | null;
   variants: Set<string>;
   cinemas: Map<string, Cinema>;
+  cinemaNameIndex: Map<string, string>; // normalizedName → canonical map key
   showings: Record<string, Record<string, ShowingInfo[]>>;
   sourceTitles: Set<string>;
 }
@@ -75,6 +76,7 @@ class MovieMerger {
           url: movie.url,
           variants: new Set(),
           cinemas: new Map(),
+          cinemaNameIndex: new Map(),
           showings: {},
           sourceTitles: new Set(),
         });
@@ -103,22 +105,30 @@ class MovieMerger {
 
       if (movie.cinemas) {
         movie.cinemas.forEach(cinema => {
-          const existing = mergedMovie.cinemas.get(cinema.name);
-          // Prefer entry with more data (non-empty address)
-          if (!existing || (!existing.address && cinema.address)) {
+          const canonicalKey = this.findCanonicalCinema(mergedMovie.cinemaNameIndex, cinema.name);
+          if (canonicalKey) {
+            const existing = mergedMovie.cinemas.get(canonicalKey)!;
+            if (!existing.address && cinema.address) {
+              mergedMovie.cinemas.set(canonicalKey, { ...cinema, name: existing.name });
+            }
+          } else {
             mergedMovie.cinemas.set(cinema.name, cinema);
+            mergedMovie.cinemaNameIndex.set(this.normalizeCinemaName(cinema.name), cinema.name);
           }
         });
       }
 
       if (movie.showings && Array.isArray(movie.showings)) {
         movie.showings.forEach(showing => {
-          this.mergeShowing(mergedMovie, showing, movie.variants);
+          // Resolve showing.cinema to canonical name if deduplicated
+          const canonical = this.findCanonicalCinema(mergedMovie.cinemaNameIndex, showing.cinema);
+          const resolvedShowing = canonical ? { ...showing, cinema: mergedMovie.cinemas.get(canonical)!.name } : showing;
+          this.mergeShowing(mergedMovie, resolvedShowing, movie.variants);
         });
       }
     });
 
-    return Array.from(movieMap.values()).map(movie => ({
+    return Array.from(movieMap.values()).map(({ cinemaNameIndex: _idx, ...movie }) => ({
       ...movie,
       variants: Array.from(movie.variants),
       cinemas: Array.from(movie.cinemas.values()),
@@ -133,6 +143,20 @@ class MovieMerger {
       originalLanguage: null,
       tmdbFetched: false,
     }));
+  }
+
+  static normalizeCinemaName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[!.\-–]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  static findCanonicalCinema(index: Map<string, string>, name: string): string | null {
+    const norm = this.normalizeCinemaName(name);
+    if (index.has(norm)) return index.get(norm)!;
+    return null;
   }
 
   static getBaseTitle(title: string): string {
