@@ -63,7 +63,7 @@ const ShowtimesStacked: React.FC<Props> = ({
                       style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
                     >
                       <td
-                        className="tabular w-px whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm"
+                        className="tabular w-14 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm"
                         style={{ color: 'rgb(var(--text-muted))' }}
                       >
                         {time}
