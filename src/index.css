@@ -321,19 +321,19 @@
 .cinema-badge-14 { background-color: oklch(0.94 0.04 315);   color: oklch(0.36 0.13 315);   border-color: oklch(0.82 0.08 315); }
 .cinema-badge-15 { background-color: oklch(0.94 0.04 337.5); color: oklch(0.36 0.13 337.5); border-color: oklch(0.82 0.08 337.5); }
 
-.dark .cinema-badge-0  { background-color: oklch(0.22 0.04 0     / 0.6); color: oklch(0.70 0.07 0    ); border-color: oklch(0.38 0.06 0     / 0.7); }
-.dark .cinema-badge-1  { background-color: oklch(0.22 0.04 22.5  / 0.6); color: oklch(0.70 0.07 22.5 ); border-color: oklch(0.38 0.06 22.5  / 0.7); }
-.dark .cinema-badge-2  { background-color: oklch(0.22 0.04 45    / 0.6); color: oklch(0.70 0.07 45   ); border-color: oklch(0.38 0.06 45    / 0.7); }
-.dark .cinema-badge-3  { background-color: oklch(0.22 0.04 67.5  / 0.6); color: oklch(0.72 0.07 67.5 ); border-color: oklch(0.38 0.06 67.5  / 0.7); }
-.dark .cinema-badge-4  { background-color: oklch(0.22 0.04 90    / 0.6); color: oklch(0.74 0.07 90   ); border-color: oklch(0.38 0.06 90    / 0.7); }
-.dark .cinema-badge-5  { background-color: oklch(0.22 0.04 112.5 / 0.6); color: oklch(0.72 0.07 112.5); border-color: oklch(0.38 0.06 112.5 / 0.7); }
-.dark .cinema-badge-6  { background-color: oklch(0.22 0.04 135   / 0.6); color: oklch(0.70 0.07 135  ); border-color: oklch(0.38 0.06 135   / 0.7); }
-.dark .cinema-badge-7  { background-color: oklch(0.22 0.04 157.5 / 0.6); color: oklch(0.70 0.07 157.5); border-color: oklch(0.38 0.06 157.5 / 0.7); }
-.dark .cinema-badge-8  { background-color: oklch(0.22 0.04 180   / 0.6); color: oklch(0.70 0.07 180  ); border-color: oklch(0.38 0.06 180   / 0.7); }
-.dark .cinema-badge-9  { background-color: oklch(0.22 0.04 202.5 / 0.6); color: oklch(0.70 0.07 202.5); border-color: oklch(0.38 0.06 202.5 / 0.7); }
-.dark .cinema-badge-10 { background-color: oklch(0.22 0.04 225   / 0.6); color: oklch(0.70 0.07 225  ); border-color: oklch(0.38 0.06 225   / 0.7); }
-.dark .cinema-badge-11 { background-color: oklch(0.22 0.04 247.5 / 0.6); color: oklch(0.70 0.07 247.5); border-color: oklch(0.38 0.06 247.5 / 0.7); }
-.dark .cinema-badge-12 { background-color: oklch(0.22 0.04 270   / 0.6); color: oklch(0.70 0.07 270  ); border-color: oklch(0.38 0.06 270   / 0.7); }
-.dark .cinema-badge-13 { background-color: oklch(0.22 0.04 292.5 / 0.6); color: oklch(0.70 0.07 292.5); border-color: oklch(0.38 0.06 292.5 / 0.7); }
-.dark .cinema-badge-14 { background-color: oklch(0.22 0.04 315   / 0.6); color: oklch(0.70 0.07 315  ); border-color: oklch(0.38 0.06 315   / 0.7); }
-.dark .cinema-badge-15 { background-color: oklch(0.22 0.04 337.5 / 0.6); color: oklch(0.70 0.07 337.5); border-color: oklch(0.38 0.06 337.5 / 0.7); }
+.dark .cinema-badge-0  { background-color: oklch(0.30 0.06 0     / 0.8); color: oklch(0.82 0.09 0    ); border-color: oklch(0.48 0.08 0     / 0.8); }
+.dark .cinema-badge-1  { background-color: oklch(0.30 0.06 22.5  / 0.8); color: oklch(0.82 0.09 22.5 ); border-color: oklch(0.48 0.08 22.5  / 0.8); }
+.dark .cinema-badge-2  { background-color: oklch(0.30 0.06 45    / 0.8); color: oklch(0.82 0.09 45   ); border-color: oklch(0.48 0.08 45    / 0.8); }
+.dark .cinema-badge-3  { background-color: oklch(0.30 0.06 67.5  / 0.8); color: oklch(0.84 0.09 67.5 ); border-color: oklch(0.48 0.08 67.5  / 0.8); }
+.dark .cinema-badge-4  { background-color: oklch(0.30 0.06 90    / 0.8); color: oklch(0.86 0.09 90   ); border-color: oklch(0.48 0.08 90    / 0.8); }
+.dark .cinema-badge-5  { background-color: oklch(0.30 0.06 112.5 / 0.8); color: oklch(0.84 0.09 112.5); border-color: oklch(0.48 0.08 112.5 / 0.8); }
+.dark .cinema-badge-6  { background-color: oklch(0.30 0.06 135   / 0.8); color: oklch(0.82 0.09 135  ); border-color: oklch(0.48 0.08 135   / 0.8); }
+.dark .cinema-badge-7  { background-color: oklch(0.30 0.06 157.5 / 0.8); color: oklch(0.82 0.09 157.5); border-color: oklch(0.48 0.08 157.5 / 0.8); }
+.dark .cinema-badge-8  { background-color: oklch(0.30 0.06 180   / 0.8); color: oklch(0.82 0.09 180  ); border-color: oklch(0.48 0.08 180   / 0.8); }
+.dark .cinema-badge-9  { background-color: oklch(0.30 0.06 202.5 / 0.8); color: oklch(0.82 0.09 202.5); border-color: oklch(0.48 0.08 202.5 / 0.8); }
+.dark .cinema-badge-10 { background-color: oklch(0.30 0.06 225   / 0.8); color: oklch(0.82 0.09 225  ); border-color: oklch(0.48 0.08 225   / 0.8); }
+.dark .cinema-badge-11 { background-color: oklch(0.30 0.06 247.5 / 0.8); color: oklch(0.82 0.09 247.5); border-color: oklch(0.48 0.08 247.5 / 0.8); }
+.dark .cinema-badge-12 { background-color: oklch(0.30 0.06 270   / 0.8); color: oklch(0.82 0.09 270  ); border-color: oklch(0.48 0.08 270   / 0.8); }
+.dark .cinema-badge-13 { background-color: oklch(0.30 0.06 292.5 / 0.8); color: oklch(0.82 0.09 292.5); border-color: oklch(0.48 0.08 292.5 / 0.8); }
+.dark .cinema-badge-14 { background-color: oklch(0.30 0.06 315   / 0.8); color: oklch(0.82 0.09 315  ); border-color: oklch(0.48 0.08 315   / 0.8); }
+.dark .cinema-badge-15 { background-color: oklch(0.30 0.06 337.5 / 0.8); color: oklch(0.82 0.09 337.5); border-color: oklch(0.48 0.08 337.5 / 0.8); }
