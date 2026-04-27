@@ -66,7 +66,7 @@ const ShowtimesGrid: React.FC<Props> = ({
       <div
         ref={headerRef}
         className="sticky z-20 overflow-hidden"
-        style={{ top: 'var(--toolbar-h, 0px)', borderBottom: '1px solid rgb(var(--border) / 0.4)' }}
+        style={{ top: 0, borderBottom: '1px solid rgb(var(--border) / 0.4)' }}
       >
         <table
           className="w-full table-fixed"
