@@ -3,7 +3,7 @@ import BerlinCinemaScraper from '../api/berlin-cinema-scraper';
 import BerlinDeScraper from '../api/berlin-de-scraper';
 import MovieMerger from '../api/movie-merger';
 import TmdbClient from '../api/tmdb-client';
-import { fetchBerlinCinemaWebsites, matchCinemaWebsite } from '../api/osm-client';
+import { fetchBerlinCinemaWebsites, matchCinemaWebsite, resolveNewCinemasViaOsm } from '../api/osm-client';
 import { fetchOmdbData } from '../api/omdb-client';
 import { Movie } from '../src/types';
 import fs from 'fs';
@@ -136,8 +136,17 @@ async function main() {
       : new BerlinDeScraper().scrapeRawMovies(),
   ]);
 
-  const mergedMovies = MovieMerger.mergeMovies([...criticRaw, ...berlinDeRaw] as any[]);
+  const { movies: mergedMovies, newCinemas } = MovieMerger.mergeMovies([...criticRaw, ...berlinDeRaw] as any[]);
   console.log(`Merged: ${mergedMovies.length} unique movies`);
+
+  // Attempt to auto-resolve new cinemas via OSM address matching (updates entities.json for next run)
+  if (newCinemas.length > 0) {
+    console.log(`[entities] ${newCinemas.length} new cinema(s) not in entities.json: ${newCinemas.join(', ')}`);
+    const entitiesPath = path.join(__dirname, '../api/entities.json');
+    const entities = JSON.parse(fs.readFileSync(entitiesPath, 'utf-8'));
+    const canonicalNames: string[] = entities.cinemas.map((e: any) => e.canonical);
+    await resolveNewCinemasViaOsm(newCinemas, canonicalNames, entitiesPath);
+  }
 
   const data = { movies: mergedMovies, total: mergedMovies.length, scrapedAt: new Date().toISOString() };
 
@@ -196,6 +205,49 @@ async function main() {
       }
     }
     console.log(`Cache hits: ${cacheHits} | Newly enriched: ${enrichedCount} | No match: ${skippedCount}`);
+
+    // Post-TMDb dedup: merge movies sharing the same imdbId
+    const imdbGroups = new Map<string, any[]>();
+    for (const movie of data.movies) {
+      if (movie.imdbId) {
+        const group = imdbGroups.get(movie.imdbId) ?? [];
+        group.push(movie);
+        imdbGroups.set(movie.imdbId, group);
+      }
+    }
+    const toRemove = new Set<any>();
+    for (const [imdbId, group] of imdbGroups) {
+      if (group.length < 2) continue;
+      // Primary = movie with most showing dates
+      group.sort((a, b) => Object.keys(b.showings).length - Object.keys(a.showings).length);
+      const primary = group[0];
+      for (let i = 1; i < group.length; i++) {
+        const dup = group[i];
+        for (const [date, times] of Object.entries(dup.showings as Record<string, Record<string, any[]>>)) {
+          if (!primary.showings[date]) primary.showings[date] = {};
+          for (const [time, entries] of Object.entries(times)) {
+            if (!primary.showings[date][time]) primary.showings[date][time] = [];
+            for (const entry of entries as any[]) {
+              const exists = (primary.showings[date][time] as any[]).some((s: any) => s.cinema === entry.cinema && s.variant === entry.variant);
+              if (!exists) primary.showings[date][time].push(entry);
+            }
+          }
+        }
+        const existingCinemaNames = new Set((primary.cinemas as any[]).map((c: any) => c.name));
+        for (const cinema of dup.cinemas as any[]) {
+          if (!existingCinemaNames.has(cinema.name)) primary.cinemas.push(cinema);
+        }
+        primary.variants = Array.from(new Set([...primary.variants, ...dup.variants]));
+        primary.sourceTitles = Array.from(new Set([...primary.sourceTitles, ...dup.sourceTitles]));
+        toRemove.add(dup);
+        console.log(`[tmdb-dedup] Merged "${dup.title}" → "${primary.title}" (${imdbId})`);
+      }
+    }
+    if (toRemove.size > 0) {
+      data.movies = data.movies.filter((m: any) => !toRemove.has(m));
+      data.total = data.movies.length;
+      console.log(`[tmdb-dedup] Removed ${toRemove.size} duplicate(s), ${data.movies.length} remain`);
+    }
   } else {
     console.log('No TMDB_API_KEY found — skipping enrichment');
     for (const movie of data.movies) {
