@@ -17,9 +17,10 @@ function normalizeCinemaName(name: string): string {
     .trim();
 }
 
-// normalizedAlias → canonicalName
+// normalizedAlias → canonicalName (canonical names map to themselves)
 const CINEMA_ALIAS_MAP = new Map<string, string>();
 for (const entry of entities.cinemas) {
+  CINEMA_ALIAS_MAP.set(normalizeCinemaName(entry.canonical), entry.canonical);
   for (const alias of entry.aliases) {
     CINEMA_ALIAS_MAP.set(normalizeCinemaName(alias), entry.canonical);
   }
