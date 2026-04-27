@@ -1,43 +1,312 @@
 {
   "cinemas": [
     {
-      "canonical": "Cinestar Kino in der Kulturbrauerei",
-      "aliases": [
-        "Kino in der KulturBrauerei Berlin",
-        "Kino in der Kulturbrauerei Berlin"
-      ]
-    },
-    {
-      "canonical": "CineStar - CUBIX am Alexanderplatz",
-      "aliases": [
-        "CineStar Cubix am Alexanderplatz"
-      ]
-    },
-    {
-      "canonical": "CineStar Hellersdorf",
-      "aliases": [
-        "CineStar - Der Filmpalast Berlin-Hellersdorf"
-      ]
-    },
-    {
-      "canonical": "CinemaxX",
-      "aliases": [
-        "CinemaxX Berlin",
-        "CinemaxX"
-      ]
-    },
-    {
       "canonical": "Alhambra",
-      "aliases": [
-        "Cineplex Alhambra",
-        "Alhambra"
-      ]
+      "aliases": ["Cineplex Alhambra"]
+    },
+    {
+      "canonical": "Astor Film Lounge",
+      "aliases": []
+    },
+    {
+      "canonical": "Astra-Filmpalast",
+      "aliases": []
+    },
+    {
+      "canonical": "Acud Kino",
+      "aliases": []
     },
     {
       "canonical": "B-Ware Ladenkino",
-      "aliases": [
-        "B-ware! Ladenkino"
-      ]
+      "aliases": ["B-ware! Ladenkino"]
+    },
+    {
+      "canonical": "Babylon",
+      "aliases": []
+    },
+    {
+      "canonical": "Babylon Kreuzberg",
+      "aliases": []
+    },
+    {
+      "canonical": "Babylon Mitte",
+      "aliases": []
+    },
+    {
+      "canonical": "Bali-Kino",
+      "aliases": []
+    },
+    {
+      "canonical": "BrotfabrikKINO",
+      "aliases": []
+    },
+    {
+      "canonical": "Bundesplatz-Kino",
+      "aliases": []
+    },
+    {
+      "canonical": "Casablanca",
+      "aliases": []
+    },
+    {
+      "canonical": "Central-Kino",
+      "aliases": ["Central"]
+    },
+    {
+      "canonical": "CineMotion Berlin Hohenschönhausen",
+      "aliases": []
+    },
+    {
+      "canonical": "Cinema Paris",
+      "aliases": []
+    },
+    {
+      "canonical": "CinemaxX",
+      "aliases": ["CinemaxX Berlin"]
+    },
+    {
+      "canonical": "Cineplex Neukölln Arcaden",
+      "aliases": []
+    },
+    {
+      "canonical": "Cineplex Spandau",
+      "aliases": []
+    },
+    {
+      "canonical": "Cineplex Titania",
+      "aliases": []
+    },
+    {
+      "canonical": "CineStar - CUBIX am Alexanderplatz",
+      "aliases": ["CineStar Cubix am Alexanderplatz"]
+    },
+    {
+      "canonical": "CineStar Berlin Tegel",
+      "aliases": ["CineStar Tegel"]
+    },
+    {
+      "canonical": "CineStar Hellersdorf",
+      "aliases": ["CineStar - Der Filmpalast Berlin-Hellersdorf"]
+    },
+    {
+      "canonical": "Cinestar",
+      "aliases": []
+    },
+    {
+      "canonical": "Cinestar Kino in der Kulturbrauerei",
+      "aliases": ["Kino in der KulturBrauerei Berlin", "Kino in der Kulturbrauerei Berlin"]
+    },
+    {
+      "canonical": "City Kino Wedding",
+      "aliases": []
+    },
+    {
+      "canonical": "Colosseum Filmtheater",
+      "aliases": []
+    },
+    {
+      "canonical": "Cosima-Filmtheater",
+      "aliases": ["Cosima"]
+    },
+    {
+      "canonical": "Delphi Filmpalast am Zoo",
+      "aliases": ["Delphi Filmpalast"]
+    },
+    {
+      "canonical": "Delphi LUX",
+      "aliases": []
+    },
+    {
+      "canonical": "Eva-Lichtspiele",
+      "aliases": []
+    },
+    {
+      "canonical": "Filmkunst 66",
+      "aliases": []
+    },
+    {
+      "canonical": "Filmmuseum Potsdam",
+      "aliases": []
+    },
+    {
+      "canonical": "Filmpalast Bernau",
+      "aliases": []
+    },
+    {
+      "canonical": "Filmrauschpalast im Kulturfabrik Moabit",
+      "aliases": ["Filmrauschpalast"]
+    },
+    {
+      "canonical": "Filmtheater am Friedrichshain",
+      "aliases": []
+    },
+    {
+      "canonical": "Freiluftkino Neue Zukunft",
+      "aliases": []
+    },
+    {
+      "canonical": "Hackesche Höfe Kino",
+      "aliases": []
+    },
+    {
+      "canonical": "IL KINO",
+      "aliases": ["Il Kino"]
+    },
+    {
+      "canonical": "International",
+      "aliases": []
+    },
+    {
+      "canonical": "Kant Kino",
+      "aliases": ["Kant"]
+    },
+    {
+      "canonical": "Kino Intimes",
+      "aliases": []
+    },
+    {
+      "canonical": "Kino Krokodil",
+      "aliases": ["Krokodil"]
+    },
+    {
+      "canonical": "Kino Zukunft",
+      "aliases": []
+    },
+    {
+      "canonical": "Kino im Hof",
+      "aliases": []
+    },
+    {
+      "canonical": "Kino im Kulturhaus Spandau",
+      "aliases": []
+    },
+    {
+      "canonical": "KLICK Kino",
+      "aliases": ["Klick Kino"]
+    },
+    {
+      "canonical": "Lichtblick-Kino",
+      "aliases": ["Lichtblick"]
+    },
+    {
+      "canonical": "Movie Magic",
+      "aliases": []
+    },
+    {
+      "canonical": "Moviemento",
+      "aliases": []
+    },
+    {
+      "canonical": "Movietown Wust",
+      "aliases": []
+    },
+    {
+      "canonical": "Neues Off",
+      "aliases": []
+    },
+    {
+      "canonical": "OBENKINO im Glad-House",
+      "aliases": []
+    },
+    {
+      "canonical": "Odeon",
+      "aliases": []
+    },
+    {
+      "canonical": "Passage Kinos",
+      "aliases": ["Passage"]
+    },
+    {
+      "canonical": "Rollberg Kino",
+      "aliases": ["Rollberg Kinos"]
+    },
+    {
+      "canonical": "Sinema Transtopia",
+      "aliases": ["Sinema Transtopia Berlin"]
+    },
+    {
+      "canonical": "Sputnik Südstern",
+      "aliases": []
+    },
+    {
+      "canonical": "Thalia",
+      "aliases": []
+    },
+    {
+      "canonical": "Thalia - Movie Magic",
+      "aliases": []
+    },
+    {
+      "canonical": "Tilsiter-Lichtspiele",
+      "aliases": []
+    },
+    {
+      "canonical": "Toni und Tonino",
+      "aliases": ["Toni & Tonino"]
+    },
+    {
+      "canonical": "UCI Kinowelt Am Lausitzpark",
+      "aliases": []
+    },
+    {
+      "canonical": "UCI Kinowelt Potsdam",
+      "aliases": []
+    },
+    {
+      "canonical": "CineStar - Der Filmpalast Wildau",
+      "aliases": []
+    },
+    {
+      "canonical": "UCI KINOWELT Am Eastgate",
+      "aliases": ["UCI Kinowelt am Eastgate"]
+    },
+    {
+      "canonical": "UCI KINOWELT Berlin - East Side Gallery | Luxe",
+      "aliases": ["UCI Luxe Mercedes Platz"]
+    },
+    {
+      "canonical": "UCI KINOWELT Gropius Passagen",
+      "aliases": ["UCI Kinowelt Gropius Passagen"]
+    },
+    {
+      "canonical": "Union Filmtheater Friedrichshagen",
+      "aliases": ["Union Friedrichshagen", "Union Filmtheater"]
+    },
+    {
+      "canonical": "Urania",
+      "aliases": []
+    },
+    {
+      "canonical": "Wolf Kino Berlin",
+      "aliases": ["Wolf Kino"]
+    },
+    {
+      "canonical": "Xenon",
+      "aliases": []
+    },
+    {
+      "canonical": "Yorck Kinos",
+      "aliases": ["Yorck/New Yorck"]
+    },
+    {
+      "canonical": "Z-inema",
+      "aliases": []
+    },
+    {
+      "canonical": "Zeiss-Großplanetarium",
+      "aliases": []
+    },
+    {
+      "canonical": "Zeughauskino",
+      "aliases": []
+    },
+    {
+      "canonical": "Zoo-Palast",
+      "aliases": []
+    },
+    {
+      "canonical": "fsk am Oranienplatz",
+      "aliases": ["fsk"]
     }
   ]
 }
