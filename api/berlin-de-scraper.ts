@@ -108,11 +108,11 @@ class BerlinDeScraper {
       console.log(`[berlin.de] Fetching listing page ${page + 1}...`);
 
       const html = await this.fetchWithRetry(url);
-      const showingsBefore = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
-      this.mergePageIntoMap(html, movieMap);
-      const showingsAfter = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
+      const $ = cheerio.load(html);
+      const itemCount = $('ul.js-accordion > li').length;
+      if (itemCount === 0) break;
 
-      if (showingsAfter === showingsBefore) break;
+      this.mergePageIntoMap(html, movieMap);
     }
 
     const movies = Array.from(movieMap.values()).filter(m => m.showings.length > 0);
