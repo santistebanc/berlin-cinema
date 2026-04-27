@@ -22,7 +22,7 @@ class BerlinCinemaScraper {
   async scrapeMovies() {
     try {
       const rawMovies = await this.scrapeRawMovies();
-      const mergedMovies = MovieMerger.mergeMovies(rawMovies as any);
+      const { movies: mergedMovies } = MovieMerger.mergeMovies(rawMovies as any);
 
       return {
         movies: mergedMovies,
