@@ -98,17 +98,22 @@ const MovieDetailPage: React.FC = () => {
   const ogImageHeight = movie.backdropUrl ? '720' : '750';
 
   const handleShare = async () => {
-    try {
-      if (navigator.share) {
+    if (navigator.share) {
+      try {
         await navigator.share({ url: shareUrl });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+        console.error('[share] navigator.share failed:', err);
+        // fall through to clipboard
       }
-    } catch {
-      // user cancelled or clipboard unavailable — fall back to selection
-      await navigator.clipboard.writeText(shareUrl).catch(() => {});
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('[share] clipboard failed:', err);
     }
   };
 
