@@ -6,7 +6,6 @@ import { useMovies } from '../contexts/MovieContext';
 import { buildCinemaColors } from '../utils/cinemaUtils';
 import { useShowtimeFilters } from '../hooks/useShowtimeFilters';
 import MovieHeader from '../components/MovieHeader';
-import FiltersPanel from '../components/FiltersPanel';
 import ShowtimesTable from '../components/ShowtimesTable';
 import CinemaPopup, { CinemaPopupInfo } from '../components/CinemaPopup';
 import DetailPageState from '../components/detail/DetailPageState';
@@ -149,28 +148,20 @@ const MovieDetailPage: React.FC = () => {
         </div>
 
          <Card className="overflow-hidden">
-          <FiltersPanel
-            visible={filters.showFilters}
+          <ShowtimesTable
+            movie={movie}
+            tableMode={filters.tableMode}
+            setTableMode={filters.setTableMode}
             availableCinemas={filters.availableCinemas}
             availableDates={filters.availableDates}
             availableVariants={filters.availableVariants}
-            selectedCinemas={filters.selectedCinemas}
             selectedDates={filters.selectedDates}
+            selectedCinemas={filters.selectedCinemas}
             selectedVariants={filters.selectedVariants}
-            cinemaColors={cinemaColors}
             toggleCinema={filters.toggleCinema}
             toggleDate={filters.toggleDate}
             toggleVariant={filters.toggleVariant}
             resetFilters={filters.resetFilters}
-          />
-
-          <ShowtimesTable
-            movie={movie}
-            selectedDates={filters.selectedDates}
-            selectedCinemas={filters.selectedCinemas}
-            selectedVariants={filters.selectedVariants}
-            showFilters={filters.showFilters}
-            setShowFilters={filters.setShowFilters}
             cinemaColors={cinemaColors}
             onCinemaClick={handleCinemaClick}
           />

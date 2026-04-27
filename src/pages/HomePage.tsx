@@ -3,7 +3,6 @@ import { Movie } from '../types';
 import HomeMovieGrid from '../components/home/HomeMovieGrid';
 import HomePageEmptyState from '../components/home/HomePageEmptyState';
 import HomePageLoadingState from '../components/home/HomePageLoadingState';
-import SearchResultsSummary from '../components/home/SearchResultsSummary';
 import Card from '../components/ui/Card';
 import { useHomePageMovies } from '../hooks/useHomePageMovies';
 
@@ -15,7 +14,6 @@ interface HomePageProps {
 
 const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }) => {
   const { clearSearch, searchQuery, sortedMovies } = useHomePageMovies(movies);
-  const resultsLabel = `${sortedMovies.length} film${sortedMovies.length !== 1 ? 's' : ''}`;
 
   if (loading && movies.length === 0) {
     return <HomePageLoadingState fullPage />;
@@ -30,11 +28,13 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
         </Card>
       )}
 
-      <SearchResultsSummary
-        count={sortedMovies.length}
-        onClearSearch={clearSearch}
-        searchQuery={searchQuery}
-      />
+      {!loading && sortedMovies.length > 0 && (
+        <p className="text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
+          {searchQuery.trim()
+            ? `${sortedMovies.length} of ${movies.length} films matching "${searchQuery}"`
+            : `${sortedMovies.length} film${sortedMovies.length !== 1 ? 's' : ''}`}
+        </p>
+      )}
 
       {loading ? (
         <HomePageLoadingState />

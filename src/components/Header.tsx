@@ -25,6 +25,7 @@ const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
           <Link
             to="/"
             aria-label="OV Berlin — home"
+            title={`Build: ${__BUILD_VERSION__}`}
             className="flex items-center gap-3 transition-colors"
             style={{ color: 'rgb(var(--accent))' }}
           >
