@@ -166,7 +166,7 @@ class MovieMerger {
   static mergeShowing(mergedMovie: MergedMovieInternal, showing: Showing, movieVariants: string[]): void {
     const formattedDate = this.formatDate(showing);
     const formattedTime = showing.time;
-    const variant = showing.variant !== undefined ? showing.variant : this.determineVariant(movieVariants);
+    const variant = (showing.variant != null) ? showing.variant : this.determineVariant(movieVariants);
 
     if (!mergedMovie.showings[formattedDate]) {
       mergedMovie.showings[formattedDate] = {};
