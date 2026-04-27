@@ -1,0 +1,41 @@
+{
+  "cinemas": [
+    {
+      "canonical": "Cinestar Kino in der Kulturbrauerei",
+      "aliases": [
+        "Kino in der KulturBrauerei Berlin",
+        "Kino in der Kulturbrauerei Berlin"
+      ]
+    },
+    {
+      "canonical": "CineStar - CUBIX am Alexanderplatz",
+      "aliases": [
+        "CineStar Cubix am Alexanderplatz"
+      ]
+    },
+    {
+      "canonical": "CineStar Hellersdorf",
+      "aliases": [
+        "CineStar - Der Filmpalast Berlin-Hellersdorf"
+      ]
+    },
+    {
+      "canonical": "CinemaxX",
+      "aliases": [
+        "CinemaxX Berlin"
+      ]
+    },
+    {
+      "canonical": "Alhambra",
+      "aliases": [
+        "Cineplex Alhambra"
+      ]
+    },
+    {
+      "canonical": "B-Ware Ladenkino",
+      "aliases": [
+        "B-ware! Ladenkino"
+      ]
+    }
+  ]
+}

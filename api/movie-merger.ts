@@ -1,3 +1,38 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
+// ---------------------------------------------------------------------------
+// Entity alias map — loaded from entities.json at module init
+// ---------------------------------------------------------------------------
+
+const ENTITIES_PATH = path.join(__dirname, 'entities.json');
+const entities: { cinemas: { canonical: string; aliases: string[] }[] } =
+  JSON.parse(fs.readFileSync(ENTITIES_PATH, 'utf-8'));
+
+function normalizeCinemaName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[!.\-–]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// normalizedAlias → canonicalName
+const CINEMA_ALIAS_MAP = new Map<string, string>();
+for (const entry of entities.cinemas) {
+  for (const alias of entry.aliases) {
+    CINEMA_ALIAS_MAP.set(normalizeCinemaName(alias), entry.canonical);
+  }
+}
+
+function resolveAlias(name: string): string {
+  return CINEMA_ALIAS_MAP.get(normalizeCinemaName(name)) ?? name;
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
 interface Showing {
   date: string;
   originalDate: string;
@@ -51,14 +86,21 @@ interface MergedMovieInternal {
   url: string | null;
   variants: Set<string>;
   cinemas: Map<string, Cinema>;
-  cinemaNameIndex: Map<string, string>; // normalizedName → canonical map key
+  // normalizedName → canonical cinema map key
+  cinemaNameIndex: Map<string, string>;
   showings: Record<string, Record<string, ShowingInfo[]>>;
   sourceTitles: Set<string>;
 }
 
+// ---------------------------------------------------------------------------
+// MovieMerger
+// ---------------------------------------------------------------------------
+
 class MovieMerger {
-  static mergeMovies(movies: RawMovie[]): any[] {
+  static mergeMovies(movies: RawMovie[]): { movies: any[]; newCinemas: string[] } {
     const movieMap = new Map<string, MergedMovieInternal>();
+    // Cinemas that were not resolved via the entity alias map — potential new entities
+    const newCinemas = new Set<string>();
 
     movies.forEach(movie => {
       const baseTitle = this.getBaseTitle(movie.title);
@@ -105,30 +147,24 @@ class MovieMerger {
 
       if (movie.cinemas) {
         movie.cinemas.forEach(cinema => {
-          const canonicalKey = this.findCanonicalCinema(mergedMovie.cinemaNameIndex, cinema.name);
-          if (canonicalKey) {
-            const existing = mergedMovie.cinemas.get(canonicalKey)!;
-            if (!existing.address && cinema.address) {
-              mergedMovie.cinemas.set(canonicalKey, { ...cinema, name: existing.name });
-            }
-          } else {
-            mergedMovie.cinemas.set(cinema.name, cinema);
-            mergedMovie.cinemaNameIndex.set(this.normalizeCinemaName(cinema.name), cinema.name);
+          const wasNew = this.mergeCinema(mergedMovie, cinema);
+          if (wasNew && !CINEMA_ALIAS_MAP.has(normalizeCinemaName(cinema.name))) {
+            newCinemas.add(cinema.name);
           }
         });
       }
 
       if (movie.showings && Array.isArray(movie.showings)) {
         movie.showings.forEach(showing => {
-          // Resolve showing.cinema to canonical name if deduplicated
-          const canonical = this.findCanonicalCinema(mergedMovie.cinemaNameIndex, showing.cinema);
-          const resolvedShowing = canonical ? { ...showing, cinema: mergedMovie.cinemas.get(canonical)!.name } : showing;
+          // Resolve showing cinema via index (which has both original and canonical norms)
+          const resolvedName = this.resolveCinemaFromIndex(mergedMovie.cinemaNameIndex, showing.cinema);
+          const resolvedShowing = resolvedName !== showing.cinema ? { ...showing, cinema: resolvedName } : showing;
           this.mergeShowing(mergedMovie, resolvedShowing, movie.variants);
         });
       }
     });
 
-    return Array.from(movieMap.values()).map(({ cinemaNameIndex: _idx, ...movie }) => ({
+    const mergedMovies = Array.from(movieMap.values()).map(({ cinemaNameIndex: _idx, ...movie }) => ({
       ...movie,
       variants: Array.from(movie.variants),
       cinemas: Array.from(movie.cinemas.values()),
@@ -143,40 +179,52 @@ class MovieMerger {
       originalLanguage: null,
       tmdbFetched: false,
     }));
+
+    return { movies: mergedMovies, newCinemas: Array.from(newCinemas) };
   }
 
-  static normalizeCinemaName(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/[!.\-–]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
+  /**
+   * Merge a cinema into the movie, resolving via entity alias map then normalization.
+   * Returns true if this is a brand-new cinema entry (not seen before for this movie).
+   */
+  static mergeCinema(mergedMovie: MergedMovieInternal, cinema: Cinema): boolean {
+    // Resolve via entity alias → get canonical name (or original if no alias)
+    const resolvedName = resolveAlias(cinema.name);
+    const resolvedNorm = normalizeCinemaName(resolvedName);
 
-  static jaccardTokens(a: string, b: string): number {
-    const ta = new Set(a.split(' ').filter(Boolean));
-    const tb = new Set(b.split(' ').filter(Boolean));
-    let intersection = 0;
-    for (const t of ta) if (tb.has(t)) intersection++;
-    const union = ta.size + tb.size - intersection;
-    return union === 0 ? 0 : intersection / union;
-  }
-
-  static findCanonicalCinema(index: Map<string, string>, name: string): string | null {
-    const norm = this.normalizeCinemaName(name);
-    if (index.has(norm)) return index.get(norm)!;
-    // Fuzzy match for multi-token names (≥3 tokens) to catch source naming differences
-    // e.g. "Kino in der KulturBrauerei Berlin" ↔ "Cinestar Kino in der Kulturbrauerei"
-    const tokens = norm.split(' ').filter(Boolean);
-    if (tokens.length >= 3) {
-      for (const [existingNorm, canonical] of index) {
-        if (existingNorm.split(' ').filter(Boolean).length >= 3 && this.jaccardTokens(norm, existingNorm) >= 0.65) {
-          index.set(norm, canonical);
-          return canonical;
-        }
+    // Check if canonical already exists in the index
+    const existingKey = mergedMovie.cinemaNameIndex.get(resolvedNorm);
+    if (existingKey) {
+      // Cinema already present — update address if we now have one
+      const existing = mergedMovie.cinemas.get(existingKey)!;
+      if (!existing.address && cinema.address) {
+        mergedMovie.cinemas.set(existingKey, { ...cinema, name: existing.name });
       }
+      // Register original norm → same canonical so showing lookups work
+      const origNorm = normalizeCinemaName(cinema.name);
+      if (!mergedMovie.cinemaNameIndex.has(origNorm)) {
+        mergedMovie.cinemaNameIndex.set(origNorm, existingKey);
+      }
+      return false;
     }
-    return null;
+
+    // New cinema — add under resolved (canonical) name
+    const canonicalCinema: Cinema = { ...cinema, name: resolvedName };
+    mergedMovie.cinemas.set(resolvedName, canonicalCinema);
+    mergedMovie.cinemaNameIndex.set(resolvedNorm, resolvedName);
+
+    // Also index the original name if it differs, so showings referencing it resolve correctly
+    const origNorm = normalizeCinemaName(cinema.name);
+    if (origNorm !== resolvedNorm) {
+      mergedMovie.cinemaNameIndex.set(origNorm, resolvedName);
+    }
+
+    return true;
+  }
+
+  static resolveCinemaFromIndex(index: Map<string, string>, name: string): string {
+    const norm = normalizeCinemaName(name);
+    return index.get(norm) ?? name;
   }
 
   static getBaseTitle(title: string): string {
@@ -186,6 +234,7 @@ class MovieMerger {
   static mergeShowing(mergedMovie: MergedMovieInternal, showing: Showing, movieVariants: string[]): void {
     const formattedDate = this.formatDate(showing);
     const formattedTime = showing.time;
+    // null variant → inherit from movie's declared variants (e.g. berlin.de unannotated times)
     const variant = (showing.variant != null) ? showing.variant : this.determineVariant(movieVariants);
 
     if (!mergedMovie.showings[formattedDate]) {
