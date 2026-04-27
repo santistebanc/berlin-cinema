@@ -60,7 +60,7 @@ export function matchesFilters(
   selectedCinemas: string[],
   selectedVariants: string[]
 ): boolean {
-  const cinemaOk = selectedCinemas.length === 0 || selectedCinemas.includes(showing.cinema);
+  const cinemaOk = selectedCinemas.includes(showing.cinema);
   const variantOk = selectedVariants.length === 0 || (showing.variant != null && selectedVariants.includes(showing.variant));
   return cinemaOk && variantOk;
 }

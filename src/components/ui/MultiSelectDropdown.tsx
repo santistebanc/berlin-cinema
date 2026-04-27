@@ -13,7 +13,7 @@ interface MultiSelectDropdownProps {
   options: Option[];
   selected: string[];
   onToggle: (value: string) => void;
-  onSelectAll: () => void;
+  onToggleAll: () => void;
   allSelected: boolean;
 }
 
@@ -35,13 +35,13 @@ const OptionList: React.FC<{
   selected: string[];
   allSelected: boolean;
   onToggle: (v: string) => void;
-  onSelectAll: () => void;
+  onToggleAll: () => void;
   mobile?: boolean;
-}> = ({ options, selected, allSelected, onToggle, onSelectAll, mobile }) => (
+}> = ({ options, selected, allSelected, onToggle, onToggleAll, mobile }) => (
   <>
     <button
       type="button"
-      onClick={onSelectAll}
+      onClick={onToggleAll}
       className={cn(
         'flex w-full items-center gap-2.5 border-b text-left font-medium transition-colors hover:bg-[rgb(var(--surface-muted))]',
         mobile ? 'px-5 py-3.5 text-sm' : 'px-3 py-2 text-xs'
@@ -51,7 +51,7 @@ const OptionList: React.FC<{
       <Checkbox checked={allSelected} />
       All
     </button>
-    <div className={cn('overflow-y-auto', mobile ? 'max-h-[60vh]' : 'max-h-56')}>
+    <div className={cn('overflow-y-auto overscroll-contain', mobile ? 'max-h-[60vh]' : 'max-h-56')}>
       {options.map(opt => {
         const checked = selected.includes(opt.value);
         return (
@@ -79,12 +79,14 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   options,
   selected,
   onToggle,
-  onSelectAll,
+  onToggleAll,
   allSelected,
 }) => {
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)');
@@ -96,11 +98,22 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 
   useEffect(() => {
     if (!open || isMobile) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const inTrigger = triggerRef.current?.contains(target);
+      const inPanel = panelRef.current?.contains(target);
+      if (!inTrigger && !inPanel) setOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const onScroll = (e: Event) => {
+      if (panelRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('scroll', onScroll, true);
+    };
   }, [open, isMobile]);
 
   useEffect(() => {
@@ -110,12 +123,21 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     return () => { document.body.style.overflow = prev; };
   }, [open, isMobile]);
 
+  const handleTriggerClick = () => {
+    if (!isMobile && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen(o => !o);
+  };
+
   const activeCount = allSelected ? 0 : selected.length;
 
   const trigger = (
     <button
+      ref={triggerRef}
       type="button"
-      onClick={() => setOpen(o => !o)}
+      onClick={handleTriggerClick}
       className={cn(
         'inline-flex h-9 items-center gap-1.5 rounded border px-3 text-xs font-medium transition-colors',
         !allSelected
@@ -133,10 +155,14 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     </button>
   );
 
-  const dropdown = open && !isMobile && (
+  const dropdown = open && !isMobile && dropdownPos && createPortal(
     <div
-      className="absolute left-0 top-full z-50 mt-1 min-w-44 overflow-hidden rounded border shadow-lg"
+      ref={panelRef}
+      onMouseDown={e => e.stopPropagation()}
+      className="fixed z-[200] min-w-44 overflow-hidden rounded border shadow-lg"
       style={{
+        top: dropdownPos.top,
+        left: dropdownPos.left,
         backgroundColor: 'rgb(var(--surface))',
         borderColor: 'rgb(var(--border-strong))',
       }}
@@ -146,9 +172,10 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         selected={selected}
         allSelected={allSelected}
         onToggle={onToggle}
-        onSelectAll={onSelectAll}
+        onToggleAll={onToggleAll}
       />
-    </div>
+    </div>,
+    document.body
   );
 
   const bottomSheet = open && isMobile && createPortal(
@@ -178,7 +205,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           selected={selected}
           allSelected={allSelected}
           onToggle={onToggle}
-          onSelectAll={onSelectAll}
+          onToggleAll={onToggleAll}
           mobile
         />
         <div className="h-[env(safe-area-inset-bottom,0px)]" />
@@ -188,11 +215,11 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   );
 
   return (
-    <div ref={ref} className="relative">
+    <>
       {trigger}
       {dropdown}
       {bottomSheet}
-    </div>
+    </>
   );
 };
 

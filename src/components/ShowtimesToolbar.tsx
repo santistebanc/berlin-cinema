@@ -15,6 +15,9 @@ interface ShowtimesToolbarProps {
   toggleCinema: (v: string) => void;
   toggleDate: (v: string) => void;
   toggleVariant: (v: string) => void;
+  toggleAllCinemas: () => void;
+  toggleAllDates: () => void;
+  toggleAllVariants: () => void;
   resetFilters: () => void;
 }
 
@@ -30,6 +33,9 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
   toggleCinema,
   toggleDate,
   toggleVariant,
+  toggleAllCinemas,
+  toggleAllDates,
+  toggleAllVariants,
   resetFilters,
 }) => {
   const allCinemasSelected =
@@ -95,7 +101,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
         options={cinemaOptions}
         selected={selectedCinemas}
         onToggle={toggleCinema}
-        onSelectAll={resetFilters}
+        onToggleAll={toggleAllCinemas}
         allSelected={allCinemasSelected}
       />
 
@@ -104,7 +110,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
         options={dateOptions}
         selected={selectedDates}
         onToggle={toggleDate}
-        onSelectAll={resetFilters}
+        onToggleAll={toggleAllDates}
         allSelected={allDatesSelected}
       />
 
@@ -114,7 +120,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
           options={variantOptions}
           selected={selectedVariants}
           onToggle={toggleVariant}
-          onSelectAll={resetFilters}
+          onToggleAll={toggleAllVariants}
           allSelected={allVariantsSelected}
         />
       )}
