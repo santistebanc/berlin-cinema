@@ -139,12 +139,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.site/arco</loc>
-    <lastmod>2026-04-27</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.site/rose</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
@@ -896,6 +890,12 @@
   </url>
   <url>
     <loc>https://ovberlin.site/between-the-temples</loc>
+    <lastmod>2026-04-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.site/arco</loc>
     <lastmod>2026-04-27</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
