@@ -61,6 +61,6 @@ export function matchesFilters(
   selectedVariants: string[]
 ): boolean {
   const cinemaOk = selectedCinemas.includes(showing.cinema);
-  const variantOk = selectedVariants.length === 0 || (showing.variant != null && selectedVariants.includes(showing.variant));
+  const variantOk = selectedVariants.length === 0 || showing.variant == null || selectedVariants.includes(showing.variant);
   return cinemaOk && variantOk;
 }
