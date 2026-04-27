@@ -13,13 +13,13 @@ const ShowingEntry: React.FC<Props> = ({ cinema, variant, colorClass, label, onC
   <button
     onClick={() => onCinemaClick(cinema)}
     className={cn(
-      'flex min-h-9 min-w-0 items-center gap-1 px-1 text-sm font-medium transition-opacity hover:opacity-80',
+      'flex min-w-0 items-center gap-1 px-1 py-1 text-sm leading-4 font-medium transition-opacity hover:opacity-80',
       colorClass
     )}
     title={cinema}
   >
-    <span className="truncate">{label}</span>
-    {variant && <span className="shrink-0 opacity-70">· {variant}</span>}
+    <span className="truncate leading-4">{label}</span>
+    {variant && <span className="shrink-0 opacity-70 leading-4">· {variant}</span>}
   </button>
 );
 
