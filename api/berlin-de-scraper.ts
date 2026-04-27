@@ -109,10 +109,12 @@ class BerlinDeScraper {
 
       const html = await this.fetchWithRetry(url);
       const $ = cheerio.load(html);
-      const itemCount = $('ul.js-accordion > li').length;
-      if (itemCount === 0) break;
+      if ($('ul.js-accordion > li').length === 0) break;
 
+      const showingsBefore = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
       this.mergePageIntoMap(html, movieMap);
+      const showingsAfter = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
+      if (showingsAfter === showingsBefore) break; // server wrapped around to repeated content
     }
 
     const movies = Array.from(movieMap.values()).filter(m => m.showings.length > 0);
