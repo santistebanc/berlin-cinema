@@ -42,11 +42,14 @@ const ShowtimesGrid: React.FC<Props> = ({
 
   return (
     <div className="relative overflow-x-auto" data-showings-scroll>
-      <table className="relative w-full">
+      <table className="relative w-full table-fixed" style={{ minWidth: 56 + datesWithShowings.length * 180 }}>
+        <colgroup>
+          <col style={{ width: 56, minWidth: 56, maxWidth: 56 }} />
+        </colgroup>
         <thead>
           <tr className="border-b" style={{ backgroundColor: 'rgb(var(--surface-muted))', borderColor: 'rgb(var(--border) / 0.4)' }}>
             <th
-              className="sticky left-0 z-10 w-14 whitespace-nowrap px-2 py-2 text-left text-xs font-semibold shadow-sm"
+              className="sticky left-0 z-10 whitespace-nowrap px-2 py-2 text-left text-xs font-semibold shadow-sm"
               style={{ backgroundColor: 'rgb(var(--surface-muted))', color: 'rgb(var(--text))' }}
             >
               Time
@@ -54,7 +57,7 @@ const ShowtimesGrid: React.FC<Props> = ({
             {datesWithShowings.map(date => (
               <th
                 key={date}
-                className="min-w-[72px] max-w-[200px] w-[200px] px-1 py-2 text-left text-xs font-semibold"
+                className="min-w-[100px] px-1 py-2 text-left text-xs font-semibold"
                 style={{ color: 'rgb(var(--text))' }}
               >
                 <div className="whitespace-nowrap">
@@ -75,7 +78,7 @@ const ShowtimesGrid: React.FC<Props> = ({
               style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
             >
               <td
-                className="tabular sticky left-0 z-10 w-14 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm shadow-sm"
+                className="tabular sticky left-0 z-10 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm shadow-sm"
                 style={{ color: 'rgb(var(--text-muted))' }}
               >
                 {time}
