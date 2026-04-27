@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Share2 } from 'lucide-react';
+import { ArrowLeft, Check, Share2 } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
 import { buildCinemaColors } from '../utils/cinemaUtils';
 import { useShowtimeFilters } from '../hooks/useShowtimeFilters';
@@ -17,6 +17,7 @@ const MovieDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { movies, loading, error } = useMovies();
   const [selectedCinemaForPopup, setSelectedCinemaForPopup] = useState<CinemaPopupInfo | null>(null);
+  const [copied, setCopied] = useState(false);
   const movie = useMemo(() => {
     if (!title || movies.length === 0) {
       return null;
@@ -97,10 +98,17 @@ const MovieDetailPage: React.FC = () => {
   const ogImageHeight = movie.backdropUrl ? '720' : '750';
 
   const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({ url: shareUrl });
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // user cancelled or clipboard unavailable — fall back to selection
+      await navigator.clipboard.writeText(shareUrl).catch(() => {});
     }
   };
 
@@ -138,9 +146,9 @@ const MovieDetailPage: React.FC = () => {
               onClick={handleShare}
               variant="ghost"
               size="icon"
-              aria-label="Share this movie"
+              aria-label={copied ? 'Link copied' : 'Share this movie'}
             >
-              <Share2 className="h-4 w-4" />
+              {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
             </Button>
           </div>
 
