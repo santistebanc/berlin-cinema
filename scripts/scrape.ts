@@ -208,6 +208,7 @@ async function main() {
     const ONE_DAY_MS = 24 * 60 * 60 * 1000;
     let omdbFetched = 0;
     let omdbCached = 0;
+    let omdbErrors = 0;
     for (const movie of data.movies) {
       const isMovieSpecial = (movie.url ? !movie.url.includes('/movie/') && !movie.url.includes('filmdetail.php') : false)
         || /sneak|kurzfilm|festival|sonderprogramm|filmreihe|sondervorstellung/i.test(movie.title);
@@ -229,9 +230,12 @@ async function main() {
         movie.allRatings = omdb.ratings.length > 0 ? omdb.ratings : null;
         movie.omdbFetchedAt = new Date().toISOString();
         omdbFetched++;
+      } else {
+        omdbErrors++;
       }
     }
-    console.log(`OMDb — fetched: ${omdbFetched}, cached: ${omdbCached}`);
+    const errSuffix = omdbErrors > 0 ? `, errors: ${omdbErrors}` : '';
+    console.log(`OMDb — fetched: ${omdbFetched}, cached: ${omdbCached}${errSuffix}`);
   } else {
     console.log('No OMDB_API_KEY found — skipping IMDb ratings');
   }
