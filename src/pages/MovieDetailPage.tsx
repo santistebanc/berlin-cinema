@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Share2 } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
 import { buildCinemaColors } from '../utils/cinemaUtils';
@@ -26,6 +26,7 @@ const MovieDetailPage: React.FC = () => {
     return movies.find((candidate) => candidate.slug === decodedTitle) ?? null;
   }, [movies, title]);
 
+  const [searchParams] = useSearchParams();
   const filters = useShowtimeFilters(movie);
   const cinemaColors = useMemo(() => (movie ? buildCinemaColors(movie) : {}), [movie]);
 
@@ -89,7 +90,8 @@ const MovieDetailPage: React.FC = () => {
     movie.variants?.length && movie.variants.join(', '),
   ].filter(Boolean);
   const metaDescription = metaParts.join(' · ');
-  const shareUrl = `https://ovberlin.site/${movie.slug}`;
+  const filterParams = searchParams.toString();
+  const shareUrl = `https://ovberlin.site/${movie.slug}${filterParams ? `?${filterParams}` : ''}`;
   const ogImage = movie.backdropUrl || movie.posterUrl;
   const ogImageWidth = movie.backdropUrl ? '1280' : '500';
   const ogImageHeight = movie.backdropUrl ? '720' : '750';
@@ -147,7 +149,7 @@ const MovieDetailPage: React.FC = () => {
            </Card>
         </div>
 
-         <Card className="overflow-hidden">
+         <Card className="overflow-clip">
           <ShowtimesTable
             movie={movie}
             tableMode={filters.tableMode}
@@ -161,6 +163,9 @@ const MovieDetailPage: React.FC = () => {
             toggleCinema={filters.toggleCinema}
             toggleDate={filters.toggleDate}
             toggleVariant={filters.toggleVariant}
+            toggleAllCinemas={filters.toggleAllCinemas}
+            toggleAllDates={filters.toggleAllDates}
+            toggleAllVariants={filters.toggleAllVariants}
             resetFilters={filters.resetFilters}
             cinemaColors={cinemaColors}
             onCinemaClick={handleCinemaClick}

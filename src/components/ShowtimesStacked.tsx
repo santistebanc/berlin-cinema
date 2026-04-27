@@ -40,8 +40,12 @@ const ShowtimesStacked: React.FC<Props> = ({
         return (
           <div key={date}>
             <div
-              className="border-y px-3 py-2"
-              style={{ backgroundColor: 'rgb(var(--surface-muted))', borderColor: 'rgb(var(--border))' }}
+              className="sticky z-10 border-b px-3 py-2 text-xs"
+              style={{
+                top: 'var(--toolbar-h, 0px)',
+                backgroundColor: 'rgb(var(--surface-muted))',
+                borderColor: 'rgb(var(--border))',
+              }}
             >
               <span className="text-xs font-semibold" style={{ color: 'rgb(var(--text))' }}>
                 {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}
@@ -63,13 +67,13 @@ const ShowtimesStacked: React.FC<Props> = ({
                       style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
                     >
                       <td
-                        className="tabular w-14 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm"
-                        style={{ color: 'rgb(var(--text-muted))' }}
+                        className="tabular w-14 whitespace-nowrap bg-[rgb(var(--surface))] px-2 py-1 font-mono text-sm"
+                        style={{ color: 'rgb(var(--text-soft))' }}
                       >
                         {time}
                       </td>
-                      <td className="w-full px-2">
-                        <div className="flex flex-wrap gap-1.5">
+                      <td className="w-full px-2 py-1">
+                        <div className="flex flex-wrap gap-0.5">
                           {showingsList.map((showing, idx) => (
                             <ShowingEntry
                               key={idx}

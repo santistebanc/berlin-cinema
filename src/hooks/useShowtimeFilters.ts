@@ -11,6 +11,9 @@ export interface ShowtimeFilters {
   toggleCinema: (cinema: string) => void;
   toggleDate: (date: string) => void;
   toggleVariant: (variant: string) => void;
+  toggleAllCinemas: () => void;
+  toggleAllDates: () => void;
+  toggleAllVariants: () => void;
   resetFilters: () => void;
   availableCinemas: string[];
   availableDates: string[];
@@ -86,6 +89,9 @@ export function useShowtimeFilters(movie: Movie | null): ShowtimeFilters {
     toggleCinema: v => toggle('xc', v, excludedCinemas),
     toggleDate: v => toggle('xd', v, excludedDates),
     toggleVariant: v => toggle('xv', v, excludedVariants),
+    toggleAllCinemas: () => setExclusions('xc', excludedCinemas.size === 0 ? new Set(available.cinemas) : new Set()),
+    toggleAllDates: () => setExclusions('xd', excludedDates.size === 0 ? new Set(available.dates) : new Set()),
+    toggleAllVariants: () => setExclusions('xv', excludedVariants.size === 0 ? new Set(available.variants) : new Set()),
     resetFilters: () => {
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
