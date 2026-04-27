@@ -101,25 +101,43 @@ class BerlinDeScraper {
   async scrapeRawMovies(): Promise<BerlinDeRawMovie[]> {
     const movieMap = new Map<string, BerlinDeRawMovie>();
     const PAGE_SIZE = 300;
-    let page = 0;
+    const MAX_PAGES = 20;
 
-    while (true) {
+    for (let page = 0; page < MAX_PAGES; page++) {
       const url = page === 0 ? LISTING_URL : `${LISTING_URL}&startat=${page * PAGE_SIZE}`;
       console.log(`[berlin.de] Fetching listing page ${page + 1}...`);
-      const res = await axios.get(url, { headers: HEADERS });
-      const countBefore = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
-      this.mergePageIntoMap(res.data as string, movieMap);
-      const countAfter = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
 
-      // Stop when a page adds nothing new (empty or duplicate-only)
-      const items = (res.data as string).match(/js-accordion__trigger/g)?.length ?? 0;
-      if (items === 0) break;
-      page++;
+      const html = await this.fetchWithRetry(url);
+      const showingsBefore = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
+      this.mergePageIntoMap(html, movieMap);
+      const showingsAfter = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
+
+      if (showingsAfter === showingsBefore) break;
     }
 
     const movies = Array.from(movieMap.values()).filter(m => m.showings.length > 0);
-    console.log(`[berlin.de] Done — ${movies.length} movies from ${page} page(s)`);
+    console.log(`[berlin.de] Done — ${movies.length} movies`);
     return movies;
+  }
+
+  private async fetchWithRetry(url: string, maxRetries = 3): Promise<string> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await axios.get(url, { headers: HEADERS, timeout: 20000 });
+        return res.data as string;
+      } catch (err: any) {
+        const status = err.response?.status;
+        if (status === 429 && attempt < maxRetries) {
+          const retryAfter = parseInt(err.response?.headers?.['retry-after'] ?? '5', 10);
+          const wait = (retryAfter + 1) * 1000;
+          console.warn(`[berlin.de] 429 on ${url} — waiting ${wait}ms then retrying (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(r => setTimeout(r, wait));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error('unreachable');
   }
 
   private mergePageIntoMap(html: string, movieMap: Map<string, BerlinDeRawMovie>): void {
