@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import BerlinCinemaScraper from '../api/berlin-cinema-scraper';
+import BerlinDeScraper from '../api/berlin-de-scraper';
+import MovieMerger from '../api/movie-merger';
 import TmdbClient from '../api/tmdb-client';
 import { fetchBerlinCinemaWebsites, matchCinemaWebsite } from '../api/osm-client';
 import { fetchOmdbData } from '../api/omdb-client';
@@ -122,9 +124,22 @@ function copyTmdbFields(from: Movie, to: Movie) {
 
 async function main() {
   const forceEnrich = process.argv.includes('--force-enrich');
+  const skipBerlinDe = process.argv.includes('--skip-berlin-de');
+
   console.log('Starting scrape...');
-  const scraper = new BerlinCinemaScraper();
-  const data = await scraper.scrapeMovies();
+
+  const criticScraper = new BerlinCinemaScraper();
+  const [criticRaw, berlinDeRaw] = await Promise.all([
+    criticScraper.scrapeRawMovies().then(r => { console.log(`critic.de: ${r.length} raw entries`); return r; }),
+    skipBerlinDe
+      ? Promise.resolve([]).then(r => { console.log('berlin.de: skipped'); return r as any[]; })
+      : new BerlinDeScraper().scrapeRawMovies(),
+  ]);
+
+  const mergedMovies = MovieMerger.mergeMovies([...criticRaw, ...berlinDeRaw] as any[]);
+  console.log(`Merged: ${mergedMovies.length} unique movies`);
+
+  const data = { movies: mergedMovies, total: mergedMovies.length, scrapedAt: new Date().toISOString() };
 
   const existingMovies = tmdb ? loadExistingMovies() : new Map();
 
@@ -137,7 +152,7 @@ async function main() {
     for (const movie of data.movies) {
       initTmdbFields(movie);
 
-      const isSpecial = !movie.url?.includes('/movie/')
+      const isSpecial = (movie.url ? !movie.url.includes('/movie/') && !movie.url.includes('filmdetail.php') : false)
         || /sneak|kurzfilm|festival|sonderprogramm|filmreihe|sondervorstellung/i.test(movie.title);
       if (isSpecial) {
         movie.tmdbFetched = true;
@@ -194,7 +209,7 @@ async function main() {
     let omdbFetched = 0;
     let omdbCached = 0;
     for (const movie of data.movies) {
-      const isMovieSpecial = !movie.url?.includes('/movie/')
+      const isMovieSpecial = (movie.url ? !movie.url.includes('/movie/') && !movie.url.includes('filmdetail.php') : false)
         || /sneak|kurzfilm|festival|sonderprogramm|filmreihe|sondervorstellung/i.test(movie.title);
       if (!movie.imdbId || isMovieSpecial) continue;
       const cached = existingMovies.get(movie.title.toLowerCase());
