@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Movie } from '../types';
 import ShowtimesGrid from './ShowtimesGrid';
 import ShowtimesStacked from './ShowtimesStacked';
@@ -6,27 +6,39 @@ import ShowtimesToolbar from './ShowtimesToolbar';
 
 interface Props {
   movie: Movie;
+  tableMode: 'grid' | 'stacked';
+  setTableMode: (mode: 'grid' | 'stacked') => void;
+  availableCinemas: string[];
+  availableDates: string[];
+  availableVariants: string[];
   selectedDates: string[];
   selectedCinemas: string[];
   selectedVariants: string[];
-  showFilters: boolean;
-  setShowFilters: (v: boolean) => void;
+  toggleCinema: (v: string) => void;
+  toggleDate: (v: string) => void;
+  toggleVariant: (v: string) => void;
+  resetFilters: () => void;
   cinemaColors: Record<string, string>;
   onCinemaClick: (name: string) => void;
 }
 
 const ShowtimesTable: React.FC<Props> = ({
   movie,
+  tableMode,
+  setTableMode,
+  availableCinemas,
+  availableDates,
+  availableVariants,
   selectedDates,
   selectedCinemas,
   selectedVariants,
-  showFilters,
-  setShowFilters,
+  toggleCinema,
+  toggleDate,
+  toggleVariant,
+  resetFilters,
   cinemaColors,
   onCinemaClick,
 }) => {
-  const [tableMode, setTableMode] = useState<'grid' | 'stacked'>('stacked');
-
   const hasShowings = movie.showings && Object.keys(movie.showings).length > 0;
 
   if (!hasShowings) {
@@ -40,10 +52,18 @@ const ShowtimesTable: React.FC<Props> = ({
   return (
     <div className="overflow-x-auto relative">
       <ShowtimesToolbar
-        onToggleFilters={() => setShowFilters(!showFilters)}
-        setTableMode={setTableMode}
-        showFilters={showFilters}
         tableMode={tableMode}
+        setTableMode={setTableMode}
+        availableCinemas={availableCinemas}
+        availableDates={availableDates}
+        availableVariants={availableVariants}
+        selectedCinemas={selectedCinemas}
+        selectedDates={selectedDates}
+        selectedVariants={selectedVariants}
+        toggleCinema={toggleCinema}
+        toggleDate={toggleDate}
+        toggleVariant={toggleVariant}
+        resetFilters={resetFilters}
       />
 
       <div>

@@ -1,75 +1,138 @@
 import React from 'react';
-import { Columns, Filter, LayoutGrid } from 'lucide-react';
+import { Columns, LayoutGrid, X } from 'lucide-react';
 import { cn } from '../utils/cn';
-import Button from './ui/Button';
+import MultiSelectDropdown from './ui/MultiSelectDropdown';
 
 interface ShowtimesToolbarProps {
-  onToggleFilters: () => void;
-  setTableMode: (mode: 'grid' | 'stacked') => void;
-  showFilters: boolean;
   tableMode: 'grid' | 'stacked';
+  setTableMode: (mode: 'grid' | 'stacked') => void;
+  availableCinemas: string[];
+  availableDates: string[];
+  availableVariants: string[];
+  selectedCinemas: string[];
+  selectedDates: string[];
+  selectedVariants: string[];
+  toggleCinema: (v: string) => void;
+  toggleDate: (v: string) => void;
+  toggleVariant: (v: string) => void;
+  resetFilters: () => void;
 }
 
 const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
-  onToggleFilters,
-  setTableMode,
-  showFilters,
   tableMode,
+  setTableMode,
+  availableCinemas,
+  availableDates,
+  availableVariants,
+  selectedCinemas,
+  selectedDates,
+  selectedVariants,
+  toggleCinema,
+  toggleDate,
+  toggleVariant,
+  resetFilters,
 }) => {
+  const allCinemasSelected =
+    selectedCinemas.length === availableCinemas.length &&
+    availableCinemas.every(c => selectedCinemas.includes(c));
+  const allDatesSelected =
+    selectedDates.length === availableDates.length &&
+    availableDates.every(d => selectedDates.includes(d));
+  const allVariantsSelected =
+    selectedVariants.length === availableVariants.length &&
+    availableVariants.every(v => selectedVariants.includes(v));
+
+  const hasFilters = !allCinemasSelected || !allDatesSelected || !allVariantsSelected;
+
+  const cinemaOptions = availableCinemas.map(c => ({ value: c, label: c }));
+  const dateOptions = availableDates.map(d => ({
+    value: d,
+    label: new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+  }));
+  const variantOptions = availableVariants.map(v => ({ value: v, label: v }));
+
   return (
-    <div className="mb-3 flex items-center px-3 py-2 sm:px-5">
-      <div className="flex items-center gap-2">
-        <Button
-          onClick={onToggleFilters}
-          size="icon"
-          variant={showFilters ? 'primary' : 'outline'}
-          className="h-10 w-10"
-          aria-label={showFilters ? 'Hide filters' : 'Show filters'}
-          title={showFilters ? 'Hide filters' : 'Show filters'}
+    <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:px-5">
+      <div
+        role="group"
+        aria-label="View mode"
+        className="inline-flex shrink-0 overflow-hidden border"
+        style={{ borderColor: 'rgb(var(--border-strong))' }}
+      >
+        <button
+          type="button"
+          onClick={() => setTableMode('stacked')}
+          aria-pressed={tableMode === 'stacked'}
+          className={cn(
+            'inline-flex h-9 items-center gap-1 px-3 text-xs font-medium transition-colors',
+            tableMode === 'stacked'
+              ? 'bg-[rgb(var(--accent-strong))] text-white'
+              : 'bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
+          )}
+          title="Stacked view"
         >
-          <Filter className="h-4 w-4" />
-        </Button>
-
-        <div
-          role="group"
-          aria-label="View mode"
-          className="inline-flex overflow-hidden border"
-          style={{ borderColor: 'rgb(var(--border-strong))' }}
+          <Columns className="h-3.5 w-3.5 shrink-0" />
+          Stacked
+        </button>
+        <button
+          type="button"
+          onClick={() => setTableMode('grid')}
+          aria-pressed={tableMode === 'grid'}
+          className={cn(
+            'inline-flex h-9 items-center gap-1 border-l px-3 text-xs font-medium transition-colors',
+            'border-[rgb(var(--border-strong))]',
+            tableMode === 'grid'
+              ? 'bg-[rgb(var(--accent-strong))] text-white'
+              : 'bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
+          )}
+          title="Grid view"
         >
-          <button
-            type="button"
-            onClick={() => setTableMode('stacked')}
-            aria-pressed={tableMode === 'stacked'}
-            className={cn(
-              'inline-flex h-10 items-center gap-1 px-3 text-xs font-medium transition-colors',
-              tableMode === 'stacked'
-                ? 'bg-[rgb(var(--accent-strong))] text-white'
-                : 'bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
-            )}
-            title="Stacked view"
-          >
-            <Columns className="h-3.5 w-3.5 shrink-0" />
-            Stacked
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTableMode('grid')}
-            aria-pressed={tableMode === 'grid'}
-            className={cn(
-              'inline-flex h-10 items-center gap-1 border-l px-3 text-xs font-medium transition-colors',
-              'border-[rgb(var(--border-strong))]',
-              tableMode === 'grid'
-                ? 'bg-[rgb(var(--accent-strong))] text-white'
-                : 'bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
-            )}
-            title="Grid view"
-          >
-            <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
-            Grid
-          </button>
-        </div>
+          <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+          Grid
+        </button>
       </div>
+
+      <MultiSelectDropdown
+        label="Cinemas"
+        options={cinemaOptions}
+        selected={selectedCinemas}
+        onToggle={toggleCinema}
+        onSelectAll={resetFilters}
+        allSelected={allCinemasSelected}
+      />
+
+      <MultiSelectDropdown
+        label="Dates"
+        options={dateOptions}
+        selected={selectedDates}
+        onToggle={toggleDate}
+        onSelectAll={resetFilters}
+        allSelected={allDatesSelected}
+      />
+
+      {availableVariants.length > 1 && (
+        <MultiSelectDropdown
+          label="Versions"
+          options={variantOptions}
+          selected={selectedVariants}
+          onToggle={toggleVariant}
+          onSelectAll={resetFilters}
+          allSelected={allVariantsSelected}
+        />
+      )}
+
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="inline-flex h-9 items-center gap-1 rounded px-2 text-xs transition-colors hover:bg-[rgb(var(--surface-muted))]"
+          style={{ color: 'rgb(var(--text-muted))' }}
+          title="Reset all filters"
+        >
+          <X className="h-3 w-3" />
+          Reset
+        </button>
+      )}
     </div>
   );
 };
