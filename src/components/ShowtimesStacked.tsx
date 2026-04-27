@@ -63,26 +63,22 @@ const ShowtimesStacked: React.FC<Props> = ({
                       style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
                     >
                       <td
-                        className="tabular w-14 whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 py-1.5 font-mono text-sm"
+                        className="tabular w-px whitespace-nowrap bg-[rgb(var(--surface-muted))] px-2 font-mono text-sm"
                         style={{ color: 'rgb(var(--text-muted))' }}
                       >
                         {time}
                       </td>
-                      <td className="w-full px-2 py-1.5">
-                        <div className="flex flex-wrap gap-x-2 gap-y-1">
+                      <td className="w-full px-2">
+                        <div className="flex flex-wrap gap-1.5">
                           {showingsList.map((showing, idx) => (
-                            <div
+                            <ShowingEntry
                               key={idx}
-                              className="flex min-w-0 items-center"
-                            >
-                              <ShowingEntry
-                                cinema={showing.cinema}
-                                variant={showing.variant}
-                                colorClass={cinemaColors[showing.cinema] ?? ''}
-                                label={showing.cinema}
-                                onCinemaClick={onCinemaClick}
-                              />
-                            </div>
+                              cinema={showing.cinema}
+                              variant={showing.variant}
+                              colorClass={cinemaColors[showing.cinema] ?? ''}
+                              label={showing.cinema}
+                              onCinemaClick={onCinemaClick}
+                            />
                           ))}
                         </div>
                       </td>
