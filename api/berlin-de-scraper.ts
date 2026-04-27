@@ -137,7 +137,7 @@ class BerlinDeScraper {
   private parsePaginationUrls(html: string): string[] {
     const $ = cheerio.load(html);
     const urls: string[] = [];
-    $('nav.pagination a[href*="startat="]').each((_, el) => {
+    $('a[href*="startat="]').each((_, el) => {
       const href = $(el).attr('href');
       if (!href) return;
       const url = href.startsWith('http') ? href : `${BASE}${href}`;
