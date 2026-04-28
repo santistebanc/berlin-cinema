@@ -231,8 +231,11 @@ class BerlinDeScraper {
         const dayMatch = dateCell.match(/^(\w{2}),/);
         const dayOfWeek = dayMatch ? germanDayToEn(dayMatch[1]) : '';
 
+        const titleVariant = variantSuffix ? normalizeVariant(variantSuffix) : null;
         for (const { time, variant } of parseTimeCell(timeCell)) {
-          if (variant && !movie.variants.includes(variant)) movie.variants.push(variant);
+          // Per-showing variant from time cell takes priority; fall back to title suffix variant
+          const resolvedVariant = variant ?? titleVariant;
+          if (resolvedVariant && !movie.variants.includes(resolvedVariant)) movie.variants.push(resolvedVariant);
           movie.showings.push({
             date: dateStr,
             originalDate: dateCell,
@@ -243,7 +246,7 @@ class BerlinDeScraper {
             city: 'Berlin',
             postalCode: '',
             url: cinemaUrl,
-            variant,
+            variant: resolvedVariant,
           });
         }
       });

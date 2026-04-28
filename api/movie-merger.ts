@@ -72,7 +72,7 @@ interface RawMovie {
 
 interface ShowingInfo {
   cinema: string;
-  variant: string | null;
+  variants: string[];
 }
 
 interface MergedMovieInternal {
@@ -235,8 +235,8 @@ class MovieMerger {
   static mergeShowing(mergedMovie: MergedMovieInternal, showing: Showing, movieVariants: string[]): void {
     const formattedDate = this.formatDate(showing);
     const formattedTime = showing.time;
-    // null variant → inherit from movie's declared variants (e.g. berlin.de unannotated times)
-    const variant = (showing.variant != null) ? showing.variant : this.determineVariant(movieVariants);
+    // per-showing variant (berlin.de) overrides movie-level variants; null → use movie variants
+    const variants = (showing.variant != null) ? [showing.variant] : movieVariants;
 
     if (!mergedMovie.showings[formattedDate]) {
       mergedMovie.showings[formattedDate] = {};
@@ -245,9 +245,10 @@ class MovieMerger {
       mergedMovie.showings[formattedDate][formattedTime] = [];
     }
 
-    const showingInfo: ShowingInfo = { cinema: showing.cinema, variant };
+    const variantsKey = variants.slice().sort().join('|');
+    const showingInfo: ShowingInfo = { cinema: showing.cinema, variants };
     const exists = mergedMovie.showings[formattedDate][formattedTime].some(
-      s => s.cinema === showingInfo.cinema && s.variant === showingInfo.variant
+      s => s.cinema === showingInfo.cinema && s.variants.slice().sort().join('|') === variantsKey
     );
 
     if (!exists) {
@@ -278,16 +279,7 @@ class MovieMerger {
     return date.toISOString().split('T')[0];
   }
 
-  static determineVariant(movieVariants: string[]): string | null {
-    if (movieVariants && movieVariants.length > 0) {
-      if (movieVariants.includes('OV')) return 'OV';
-      if (movieVariants.includes('OmU')) return 'OmU';
-      if (movieVariants.includes('Imax')) return 'Imax';
-      if (movieVariants.includes('EXPN')) return 'EXPN';
-      return movieVariants[0];
-    }
-    return null;
-  }
+
 
   static sortShowings(showings: Record<string, Record<string, ShowingInfo[]>>) {
     const sorted: Record<string, Record<string, ShowingInfo[]>> = {};
