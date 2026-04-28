@@ -48,10 +48,10 @@ const ShowtimesStacked: React.FC<Props> = ({
               }}
             >
               <span className="text-xs font-semibold" style={{ color: 'rgb(var(--text))' }}>
-                {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}
+                {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
               </span>
               <span className="ml-1.5 text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
-                {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
               </span>
             </div>
             <table className="w-full table-fixed">

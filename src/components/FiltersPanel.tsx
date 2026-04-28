@@ -60,7 +60,7 @@ const FiltersPanel: React.FC<Props> = ({
             className="border-[rgb(var(--info-border))] bg-[rgb(var(--info-soft))] text-[rgb(var(--info-text))]"
             onClick={() => toggleDate(date)}
           >
-            {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })}
           </SelectableChip>
         ))}
       </FilterSection>

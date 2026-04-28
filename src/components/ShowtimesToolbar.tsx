@@ -53,7 +53,7 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
   const cinemaOptions = availableCinemas.map(c => ({ value: c, label: c }));
   const dateOptions = availableDates.map(d => ({
     value: d,
-    label: new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    label: new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }),
   }));
   const variantOptions = availableVariants.map(v => ({ value: v, label: v }));
 
