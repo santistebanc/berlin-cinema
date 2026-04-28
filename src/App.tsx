@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
@@ -7,28 +7,32 @@ import MovieDetailPage from './pages/MovieDetailPage';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { MovieProvider, useMovies } from './contexts/MovieContext';
 
+// Module-level flag — suppresses save listener during our own scrollTo calls
+let suppressSave = false;
+
 const AppContent: React.FC = () => {
   const { movies, loading, error } = useMovies();
   const location = useLocation();
 
-  // Save scroll position while on a page
+  // Save on scroll events — but not during our own programmatic scrollTo
   useEffect(() => {
-    const handleScroll = () => {
-      sessionStorage.setItem(`scroll:${location.pathname}`, String(window.scrollY));
+    const save = () => {
+      if (!suppressSave) sessionStorage.setItem(`scroll:${location.pathname}`, String(window.scrollY));
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', save, { passive: true });
+    return () => window.removeEventListener('scroll', save);
   }, [location.pathname]);
 
-  // Restore scroll on navigation (defer so page has rendered its content first)
-  useEffect(() => {
+  // Restore before paint; suppress save listener during the programmatic scroll so it
+  // can't overwrite the stored position with 0
+  useLayoutEffect(() => {
+    history.scrollRestoration = 'manual';
+    if (loading) return;
     const saved = sessionStorage.getItem(`scroll:${location.pathname}`);
-    if (saved) {
-      requestAnimationFrame(() => window.scrollTo(0, parseInt(saved)));
-    } else {
-      window.scrollTo(0, 0);
-    }
-  }, [location.pathname]);
+    suppressSave = true;
+    window.scrollTo(0, saved ? parseInt(saved) : 0);
+    requestAnimationFrame(() => { suppressSave = false; });
+  }, [location.pathname, loading]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(var(--bg))' }}>
