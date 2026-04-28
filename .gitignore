@@ -65,6 +65,9 @@ coverage/
 tmp/
 temp/
 
+# Intermediate scraper output
+data/
+
 # Debug files
 debug-*.html
 
