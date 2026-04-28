@@ -191,12 +191,11 @@ class MovieParser {
     if (dateMatch) {
       const day = parseInt(dateMatch[2]);
       const month = parseInt(dateMatch[3]);
-      const currentYear = new Date().getFullYear();
-      const date = new Date(currentYear, month - 1, day);
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      if (date < oneMonthAgo) date.setFullYear(currentYear + 1);
-      return date.toISOString().split('T')[0];
+      const currentYear = new Date().getUTCFullYear();
+      const ts = Date.UTC(currentYear, month - 1, day);
+      const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const finalTs = ts < oneMonthAgo ? Date.UTC(currentYear + 1, month - 1, day) : ts;
+      return new Date(finalTs).toISOString().split('T')[0];
     }
 
     return new Date().toISOString().split('T')[0];
@@ -209,11 +208,11 @@ class MovieParser {
     if (dateMatch) {
       const day = parseInt(dateMatch[2]);
       const month = parseInt(dateMatch[3]);
-      const currentYear = new Date().getFullYear();
-      const date = new Date(currentYear, month - 1, day);
-      if (date < new Date()) date.setFullYear(currentYear + 1);
+      const currentYear = new Date().getUTCFullYear();
+      const ts = Date.UTC(currentYear, month - 1, day);
+      const finalTs = ts < Date.now() ? Date.UTC(currentYear + 1, month - 1, day) : ts;
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return dayNames[date.getDay()];
+      return dayNames[new Date(finalTs).getUTCDay()];
     }
 
     return dateStr;
