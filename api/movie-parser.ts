@@ -210,7 +210,8 @@ class MovieParser {
       const month = parseInt(dateMatch[3]);
       const currentYear = new Date().getUTCFullYear();
       const ts = Date.UTC(currentYear, month - 1, day);
-      const finalTs = ts < Date.now() ? Date.UTC(currentYear + 1, month - 1, day) : ts;
+      const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const finalTs = ts < oneMonthAgo ? Date.UTC(currentYear + 1, month - 1, day) : ts;
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       return dayNames[new Date(finalTs).getUTCDay()];
     }

@@ -88,9 +88,9 @@ const ShowtimesGrid: React.FC<Props> = ({
                   style={{ color: 'rgb(var(--text))' }}
                 >
                   <div className="whitespace-nowrap">
-                    {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}{' '}
+                    {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}{' '}
                     <span className="font-normal" style={{ color: 'rgb(var(--text-muted))' }}>
-                      {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
                     </span>
                   </div>
                 </th>
