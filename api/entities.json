@@ -177,8 +177,8 @@
       "aliases": ["CineStar - Der Filmpalast Berlin-Hellersdorf"]
     },
     {
-      "canonical": "Cinestar",
-      "aliases": []
+      "canonical": "CineStar Frankfurt (Oder)",
+      "aliases": ["Cinestar"]
     },
     {
       "canonical": "Cinestar Kino in der Kulturbrauerei",
@@ -318,11 +318,7 @@
     },
     {
       "canonical": "Thalia",
-      "aliases": []
-    },
-    {
-      "canonical": "Thalia - Movie Magic",
-      "aliases": []
+      "aliases": ["Thalia - Movie Magic"]
     },
     {
       "canonical": "Tilsiter-Lichtspiele",
@@ -390,7 +386,7 @@
     },
     {
       "canonical": "Zoo-Palast",
-      "aliases": []
+      "aliases": ["Zoo Palast"]
     },
     {
       "canonical": "fsk am Oranienplatz",

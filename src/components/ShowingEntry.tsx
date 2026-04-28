@@ -3,13 +3,13 @@ import { cn } from '../utils/cn';
 
 interface Props {
   cinema: string;
-  variant: string | null;
+  variants: string[];
   colorClass: string;
   label: string;
   onCinemaClick: (name: string) => void;
 }
 
-const ShowingEntry: React.FC<Props> = ({ cinema, variant, colorClass, label, onCinemaClick }) => (
+const ShowingEntry: React.FC<Props> = ({ cinema, variants, colorClass, label, onCinemaClick }) => (
   <button
     onClick={() => onCinemaClick(cinema)}
     className={cn(
@@ -19,7 +19,7 @@ const ShowingEntry: React.FC<Props> = ({ cinema, variant, colorClass, label, onC
     title={cinema}
   >
     <span className="truncate leading-4">{label}</span>
-    {variant && <span className="shrink-0 opacity-70 leading-4">· {variant}</span>}
+    {variants.length > 0 && <span className="shrink-0 opacity-70 leading-4">· {variants.join(' ')}</span>}
   </button>
 );
 

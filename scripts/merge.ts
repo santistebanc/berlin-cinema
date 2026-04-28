@@ -213,7 +213,8 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
           for (const [time, entries] of Object.entries(times)) {
             if (!primary.showings[date][time]) primary.showings[date][time] = [];
             for (const entry of entries as any[]) {
-              const exists = (primary.showings[date][time] as any[]).some((s: any) => s.cinema === entry.cinema && s.variant === entry.variant);
+              const entryKey = (entry.variants ?? []).slice().sort().join('|');
+              const exists = (primary.showings[date][time] as any[]).some((s: any) => s.cinema === entry.cinema && (s.variants ?? []).slice().sort().join('|') === entryKey);
               if (!exists) primary.showings[date][time].push(entry);
             }
           }
