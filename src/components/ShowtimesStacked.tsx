@@ -78,7 +78,7 @@ const ShowtimesStacked: React.FC<Props> = ({
                             <ShowingEntry
                               key={idx}
                               cinema={showing.cinema}
-                              variant={showing.variant}
+                              variants={showing.variants}
                               colorClass={cinemaColors[showing.cinema] ?? ''}
                               label={showing.cinema}
                               onCinemaClick={onCinemaClick}

@@ -37,14 +37,14 @@ export interface Movie {
 
 export interface ShowingInfo {
   cinema: string;
-  variant: string | null; // OV, sub, Imax, EXPN, etc.
+  variants: string[]; // e.g. ['MXP 2D', 'OmU'], ['OV'], []
 }
 
 export interface Showing {
   date: string; // Formatted as "Thu, Aug 27"
   time: string; // Formatted as "13:50"
   cinema: string;
-  variant: string | null; // OV, sub, Imax, EXPN, etc.
+  variants: string[]; // e.g. ['MXP 2D', 'OmU'], ['OV'], []
 }
 
 export interface Cinema {
