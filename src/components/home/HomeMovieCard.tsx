@@ -34,7 +34,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
           </h3>
 
           {/* Show scraped source title if different from the displayed original title */}
-          {movie.title && movie.title !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle) && (
+          {movie.title && movie.title.toLowerCase() !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title).toLowerCase() && (
             <p className="mb-1 truncate text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
               {movie.title}
             </p>

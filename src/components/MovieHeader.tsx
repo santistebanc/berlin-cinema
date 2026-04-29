@@ -67,7 +67,7 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
               >
                 {movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title}
               </h1>
-              {movie.title && movie.title !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle) && (
+              {movie.title && movie.title.toLowerCase() !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title).toLowerCase() && (
                 <p className="mb-1 text-sm" style={{ color: 'rgb(var(--text-soft))' }}>
                   {movie.title}
                 </p>
