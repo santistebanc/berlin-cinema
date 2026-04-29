@@ -6,6 +6,32 @@ import Card from '../ui/Card';
 import MoviePoster from '../ui/MoviePoster';
 import RatingBadge from '../ui/RatingBadge';
 
+function formatLanguage(code: string | null): string | null {
+  if (!code) return null;
+  const map: Record<string, string> = {
+    de: 'German',
+    en: 'English',
+    fr: 'French',
+    es: 'Spanish',
+    it: 'Italian',
+    ja: 'Japanese',
+    ko: 'Korean',
+    zh: 'Chinese',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    ar: 'Arabic',
+    hi: 'Hindi',
+    tr: 'Turkish',
+    pl: 'Polish',
+    nl: 'Dutch',
+    sv: 'Swedish',
+    da: 'Danish',
+    no: 'Norwegian',
+    fi: 'Finnish',
+  };
+  return map[code.toLowerCase()] ?? code.toUpperCase();
+}
+
 interface HomeMovieCardProps {
   movie: Movie;
 }
@@ -39,7 +65,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
             </p>
           )}
 
-          {((movie.imdbRating ?? movie.rating) != null || movie.year || movie.runtime) && (
+          {((movie.imdbRating ?? movie.rating) != null || movie.year || movie.runtime || movie.originalLanguage) && (
             <div className="mb-2 flex items-center gap-1.5 text-xs tabular" style={{ color: 'rgb(var(--text-soft))' }}>
               <RatingBadge
                 imdbRating={movie.imdbRating ?? null}
@@ -48,10 +74,12 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
                 tmdbVotes={null}
                 allRatings={null}
               />
-              {(movie.imdbRating ?? movie.rating) != null && (movie.year || movie.runtime) && <span>·</span>}
+              {((movie.imdbRating ?? movie.rating) != null || movie.originalLanguage) && (movie.year || movie.runtime) && <span>·</span>}
               {movie.year && <span>{movie.year}</span>}
               {movie.year && movie.runtime && <span>·</span>}
               {movie.runtime && <span>{movie.runtime} min</span>}
+              {(movie.year || movie.runtime) && movie.originalLanguage && <span>·</span>}
+              {movie.originalLanguage && <span>{formatLanguage(movie.originalLanguage)}</span>}
             </div>
           )}
 
