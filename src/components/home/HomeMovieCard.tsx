@@ -6,32 +6,6 @@ import Card from '../ui/Card';
 import MoviePoster from '../ui/MoviePoster';
 import RatingBadge from '../ui/RatingBadge';
 
-function formatLanguage(code: string | null): string | null {
-  if (!code) return null;
-  const map: Record<string, string> = {
-    de: 'German',
-    en: 'English',
-    fr: 'French',
-    es: 'Spanish',
-    it: 'Italian',
-    ja: 'Japanese',
-    ko: 'Korean',
-    zh: 'Chinese',
-    pt: 'Portuguese',
-    ru: 'Russian',
-    ar: 'Arabic',
-    hi: 'Hindi',
-    tr: 'Turkish',
-    pl: 'Polish',
-    nl: 'Dutch',
-    sv: 'Swedish',
-    da: 'Danish',
-    no: 'Norwegian',
-    fi: 'Finnish',
-  };
-  return map[code.toLowerCase()] ?? code.toUpperCase();
-}
-
 interface HomeMovieCardProps {
   movie: Movie;
 }
@@ -79,7 +53,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
               {movie.year && movie.runtime && <span>·</span>}
               {movie.runtime && <span>{movie.runtime} min</span>}
               {(movie.year || movie.runtime) && movie.originalLanguage && <span>·</span>}
-              {movie.originalLanguage && <span>{formatLanguage(movie.originalLanguage)}</span>}
+              {movie.originalLanguage && <span>{movie.originalLanguage.toUpperCase()}</span>}
             </div>
           )}
 
