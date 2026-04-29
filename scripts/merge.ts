@@ -192,6 +192,26 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
     }
     console.log(`Cache hits: ${cacheHits} | Newly enriched: ${enrichedCount} | No match: ${skippedCount}`);
 
+    // Convert OmU to OmeU for German language movies from critic.de
+    for (const movie of data.movies) {
+      if (movie.originalLanguage !== 'de') continue;
+      if (!movie.url?.includes('/movie/')) continue;
+      
+      // Convert movie-level variants
+      movie.variants = movie.variants.map((v: string) => v === 'OmU' ? 'OmeU' : v);
+      
+      // Convert showing-level variants
+      for (const [date, times] of Object.entries(movie.showings as Record<string, Record<string, any[]>>)) {
+        for (const [time, entries] of Object.entries(times)) {
+          for (const entry of entries) {
+            if (entry.variants) {
+              entry.variants = entry.variants.map((v: string) => v === 'OmU' ? 'OmeU' : v);
+            }
+          }
+        }
+      }
+    }
+
     // Post-TMDb dedup by imdbId
     const imdbGroups = new Map<string, any[]>();
     for (const movie of data.movies) {
