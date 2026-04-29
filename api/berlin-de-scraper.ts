@@ -43,7 +43,7 @@ function normalizeVariant(v: string): string | null {
   const vl = v.toLowerCase().replace(/\s/g, '');
   if (vl === 'ov') return 'OV';
   if (vl === 'omu' || vl === 'omü') return 'OmU';
-  if (vl.startsWith('omenglu') || vl.startsWith('omüenglu')) return 'OmU';
+  if (vl.startsWith('omenglu') || vl.startsWith('omüenglu') || vl.startsWith('dfmengl')) return 'OmeU';
   return v;
 }
 
