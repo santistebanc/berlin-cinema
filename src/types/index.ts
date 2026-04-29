@@ -14,6 +14,7 @@ export interface Movie {
   showings: Record<string, Record<string, ShowingInfo[]>>; // Date -> Time -> Cinema+Variant[]
   // TMDb-enriched fields
   originalTitle: string | null; // Original title in the movie's original language
+  alternativeTitles: string[]; // Titles in other languages for search
   tmdbTitle: string | null;
   tagline: string | null;
   plot: string | null;

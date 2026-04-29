@@ -174,6 +174,7 @@ class MovieMerger {
       criticTitle: movie.criticTitle,
       altTitle: movie.altTitle,
       originalTitle: null,
+      alternativeTitles: [],
       plot: null,
       runtime: null,
       rating: null,

@@ -38,6 +38,7 @@ interface TmdbCredits {
 export interface TmdbMovieData {
   tmdbTitle: string | null;
   originalTitle: string | null; // Original title in the movie's original language
+  alternativeTitles: string[]; // Titles in other languages for search
   tagline: string | null;
   posterUrl: string | null;
   backdropUrl: string | null;
@@ -111,14 +112,14 @@ class TmdbClient {
     }
   }
 
-  async getMovieDetails(movieId: number): Promise<{ details: TmdbMovieDetails; credits: TmdbCredits; videos: { key: string; site: string; type: string }[]; externalIds: Record<string, string>; releaseDates: any[]; keywords: string[] } | null> {
+  async getMovieDetails(movieId: number): Promise<{ details: TmdbMovieDetails; credits: TmdbCredits; videos: { key: string; site: string; type: string }[]; externalIds: Record<string, string>; releaseDates: any[]; keywords: string[]; translations: any } | null> {
     await this.rateLimit();
     try {
       const response = await axios.get(`${TMDB_BASE_URL}/movie/${movieId}`, {
         params: {
           api_key: this.apiKey,
           language: 'en-US',
-          append_to_response: 'credits,videos,external_ids,release_dates,keywords',
+          append_to_response: 'credits,videos,external_ids,release_dates,keywords,translations',
         },
         timeout: 10000,
       });
@@ -147,6 +148,7 @@ class TmdbClient {
         externalIds: data.external_ids || {},
         releaseDates: data.release_dates?.results || [],
         keywords: (data.keywords?.keywords || []).map((k: any) => k.name) as string[],
+        translations: data.translations || null,
       };
     } catch (err) {
       console.error(`  TMDb details failed for movie ${movieId}:`, (err as Error).message);
@@ -204,9 +206,27 @@ class TmdbClient {
 
     console.log(`  ✓ Enriched "${title}" → "${details.title}"`);
 
+    // Extract alternative titles from translations (titles in other languages)
+    const alternativeTitles: string[] = [];
+    if (fullData.translations?.translations) {
+      // Use iso_639_1 for language codes, and 'name' for the title in that language
+      const targetLanguages = ['de', 'fr', 'es', 'it', 'pt', 'ja', 'ko', 'zh', 'ru'];
+      for (const translation of fullData.translations.translations) {
+        const langCode = (translation.iso_639_1 || translation.iso_3166_1 || '').toLowerCase();
+        const localTitle = translation.name;
+        if (targetLanguages.includes(langCode) && localTitle) {
+          // Only add if different from original and English title
+          if (localTitle !== searchResult.original_title && localTitle !== details.title) {
+            alternativeTitles.push(localTitle);
+          }
+        }
+      }
+    }
+
     return {
       tmdbTitle: details.title || null,
       originalTitle: searchResult.original_title || details.title || null,
+      alternativeTitles,
       tagline: details.tagline || null,
       posterUrl: this.buildPosterUrl(details.poster_path, 'w342'),
       backdropUrl: this.buildPosterUrl(details.backdrop_path, 'w780'),
