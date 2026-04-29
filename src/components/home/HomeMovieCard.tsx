@@ -42,6 +42,16 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
 
           {((movie.imdbRating ?? movie.rating) != null || movie.year || movie.runtime || movie.originalLanguage) && (
             <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs tabular" style={{ color: 'rgb(var(--text-soft))' }}>
+              {movie.originalLanguage && (
+                <span className="rounded bg-[rgb(var(--accent)/0.15)] px-1.5 py-0.5 text-xs font-medium uppercase" style={{ color: 'rgb(var(--accent))' }}>
+                  {movie.originalLanguage.toUpperCase()}
+                </span>
+              )}
+              {movie.originalLanguage && (movie.year || movie.runtime || (movie.imdbRating ?? movie.rating) != null) && <span>·</span>}
+              {movie.year && <span>{movie.year}</span>}
+              {movie.year && movie.runtime && <span>·</span>}
+              {movie.runtime && <span>{movie.runtime} min</span>}
+              {(movie.year || movie.runtime) && (movie.imdbRating ?? movie.rating) != null && <span>·</span>}
               <RatingBadge
                 imdbRating={movie.imdbRating ?? null}
                 tmdbRating={movie.rating}
@@ -49,16 +59,6 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
                 tmdbVotes={null}
                 allRatings={null}
               />
-              {((movie.imdbRating ?? movie.rating) != null || movie.originalLanguage) && (movie.year || movie.runtime) && <span>·</span>}
-              {movie.year && <span>{movie.year}</span>}
-              {movie.year && movie.runtime && <span>·</span>}
-              {movie.runtime && <span>{movie.runtime} min</span>}
-              {(movie.year || movie.runtime) && movie.originalLanguage && <span>·</span>}
-              {movie.originalLanguage && (
-                <span className="rounded bg-[rgb(var(--accent)/0.15)] px-1.5 py-0.5 text-xs font-medium uppercase" style={{ color: 'rgb(var(--accent))' }}>
-                  {movie.originalLanguage.toUpperCase()}
-                </span>
-              )}
             </div>
           )}
 
