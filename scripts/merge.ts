@@ -200,14 +200,26 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
       // Convert movie-level variants
       movie.variants = movie.variants.map((v: string) => v === 'OmU' ? 'OmeU' : v);
       
-      // Convert showing-level variants
+      // Convert showing-level variants and deduplicate
       for (const [date, times] of Object.entries(movie.showings as Record<string, Record<string, any[]>>)) {
         for (const [time, entries] of Object.entries(times)) {
+          // First, convert OmU to OmeU in all entries
           for (const entry of entries) {
             if (entry.variants) {
               entry.variants = entry.variants.map((v: string) => v === 'OmU' ? 'OmeU' : v);
             }
           }
+          // Then deduplicate: keep only unique cinema+variants combinations
+          const seen = new Set<string>();
+          const deduped: any[] = [];
+          for (const entry of entries) {
+            const key = entry.cinema + '|' + (entry.variants ?? []).slice().sort().join('|');
+            if (!seen.has(key)) {
+              seen.add(key);
+              deduped.push(entry);
+            }
+          }
+          (movie.showings as any)[date][time] = deduped;
         }
       }
     }
