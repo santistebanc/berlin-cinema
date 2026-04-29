@@ -67,9 +67,9 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
               >
                 {movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title}
               </h1>
-              {(movie.tmdbTitle || movie.criticTitle) && (movie.tmdbTitle || movie.criticTitle) !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title) && (
+              {movie.title && movie.title !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle) && (
                 <p className="mb-1 text-sm" style={{ color: 'rgb(var(--text-soft))' }}>
-                  {movie.tmdbTitle && movie.tmdbTitle !== (movie.originalTitle || movie.title) ? movie.tmdbTitle : movie.criticTitle}
+                  {movie.title}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>

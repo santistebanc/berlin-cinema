@@ -33,15 +33,10 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
             {movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title}
           </h3>
 
-          {/* Show localized title if different from original */}
-          {movie.tmdbTitle && movie.tmdbTitle !== (movie.originalTitle || movie.title) && (
+          {/* Show scraped source title if different from the displayed original title */}
+          {movie.title && movie.title !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle) && (
             <p className="mb-1 truncate text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
-              {movie.tmdbTitle}
-            </p>
-          )}
-          {!movie.tmdbTitle && movie.criticTitle && movie.criticTitle !== (movie.originalTitle || movie.title) && (
-            <p className="mb-1 truncate text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
-              {movie.criticTitle}
+              {movie.title}
             </p>
           )}
 
