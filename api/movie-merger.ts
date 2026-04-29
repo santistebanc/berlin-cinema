@@ -173,6 +173,7 @@ class MovieMerger {
       sourceTitles: Array.from(movie.sourceTitles),
       criticTitle: movie.criticTitle,
       altTitle: movie.altTitle,
+      originalTitle: null,
       plot: null,
       runtime: null,
       rating: null,

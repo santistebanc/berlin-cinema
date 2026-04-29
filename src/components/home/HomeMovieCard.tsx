@@ -30,11 +30,17 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
             className='mb-1 line-clamp-2 text-base font-semibold leading-snug tracking-[-0.01em]'
             style={{ color: 'rgb(var(--text))' }}
           >
-            {movie.tmdbTitle || movie.altTitle || movie.title}
+            {movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title}
           </h3>
 
-          {movie.criticTitle && (
-            <p className="mb-2 truncate text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+          {/* Show localized title if different from original */}
+          {movie.tmdbTitle && movie.tmdbTitle !== (movie.originalTitle || movie.title) && (
+            <p className="mb-1 truncate text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
+              {movie.tmdbTitle}
+            </p>
+          )}
+          {!movie.tmdbTitle && movie.criticTitle && movie.criticTitle !== (movie.originalTitle || movie.title) && (
+            <p className="mb-1 truncate text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
               {movie.criticTitle}
             </p>
           )}

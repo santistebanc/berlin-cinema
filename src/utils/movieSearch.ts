@@ -8,6 +8,7 @@ export function createMovieFuse(movies: Movie[]) {
     minMatchCharLength: 2,
     includeScore: true,
     keys: [
+      { name: 'originalTitle', weight: 12 },
       { name: 'title', weight: 10 },
       { name: 'tmdbTitle', weight: 10 },
       { name: 'altTitle', weight: 8 },

@@ -76,6 +76,7 @@ function loadExistingMovies(): Map<string, Movie> {
 }
 
 function initTmdbFields(movie: Movie) {
+  movie.originalTitle = null;
   movie.tmdbTitle = null;
   movie.tagline = null;
   movie.plot = null;
@@ -96,6 +97,7 @@ function initTmdbFields(movie: Movie) {
 }
 
 function copyTmdbFields(from: Movie, to: Movie) {
+  to.originalTitle = from.originalTitle;
   to.tmdbTitle = from.tmdbTitle;
   to.tagline = from.tagline;
   to.posterUrl = from.posterUrl || to.posterUrl;
@@ -167,6 +169,7 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
       const tmdbData = await tmdb.enrichMovie(movie.title, movie.altTitle);
       if (tmdbData) {
         enrichedCount++;
+        movie.originalTitle = tmdbData.originalTitle;
         movie.tmdbTitle = tmdbData.tmdbTitle;
         movie.tagline = tmdbData.tagline;
         movie.posterUrl = tmdbData.posterUrl || movie.posterUrl;

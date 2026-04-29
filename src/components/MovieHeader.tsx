@@ -65,14 +65,15 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
                 className="mb-1 text-left text-[1.5rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[2.25rem]"
                 style={{ color: 'rgb(var(--text))' }}
               >
-                {movie.tmdbTitle || movie.altTitle || movie.title}
+                {movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title}
               </h1>
-              {movie.criticTitle && (
+              {(movie.tmdbTitle || movie.criticTitle) && (movie.tmdbTitle || movie.criticTitle) !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title) && (
                 <p className="mb-1 text-sm" style={{ color: 'rgb(var(--text-soft))' }}>
-                  {movie.criticTitle}
+                  {movie.tmdbTitle && movie.tmdbTitle !== (movie.originalTitle || movie.title) ? movie.tmdbTitle : movie.criticTitle}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
+                {movie.originalLanguage && <span className="rounded bg-[rgb(var(--accent)/0.15)] px-1.5 py-0.5 text-xs font-medium uppercase" style={{ color: 'rgb(var(--accent))' }}>{movie.originalLanguage.toUpperCase()}</span>}
                 {movie.year && <span>{movie.year}</span>}
                 {movie.runtime && <span>{movie.runtime} min</span>}
                 <RatingBadge
@@ -82,7 +83,6 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
                   tmdbVotes={movie.voteCount}
                   allRatings={movie.allRatings ?? null}
                 />
-                {movie.originalLanguage && <span>{movie.originalLanguage.toUpperCase()}</span>}
                 {movie.country && <span>{movie.country}</span>}
               </div>
 
