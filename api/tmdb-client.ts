@@ -37,6 +37,7 @@ interface TmdbCredits {
 
 export interface TmdbMovieData {
   tmdbTitle: string | null;
+  originalTitle: string | null; // Original title in the movie's original language
   tagline: string | null;
   posterUrl: string | null;
   backdropUrl: string | null;
@@ -205,6 +206,7 @@ class TmdbClient {
 
     return {
       tmdbTitle: details.title || null,
+      originalTitle: searchResult.original_title || details.title || null,
       tagline: details.tagline || null,
       posterUrl: this.buildPosterUrl(details.poster_path, 'w342'),
       backdropUrl: this.buildPosterUrl(details.backdrop_path, 'w780'),
