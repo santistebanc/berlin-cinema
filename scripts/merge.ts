@@ -197,8 +197,8 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
       if (movie.originalLanguage !== 'de') continue;
       if (!movie.url?.includes('/movie/')) continue;
       
-      // Convert movie-level variants
-      movie.variants = movie.variants.map((v: string) => v === 'OmU' ? 'OmeU' : v);
+      // Convert movie-level variants and deduplicate
+      movie.variants = [...new Set(movie.variants.map((v: string) => v === 'OmU' ? 'OmeU' : v))];
       
       // Convert showing-level variants and deduplicate
       for (const [date, times] of Object.entries(movie.showings as Record<string, Record<string, any[]>>)) {
