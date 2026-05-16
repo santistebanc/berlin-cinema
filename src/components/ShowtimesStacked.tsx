@@ -21,8 +21,8 @@ const ShowtimesStacked: React.FC<Props> = ({
   onCinemaClick,
 }) => {
   const filteredDates = Object.keys(showings)
-    .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
     .filter(date =>
+      (selectedDates.length === 0 || selectedDates.includes(date)) &&
       Object.values(showings[date]).some(slots =>
         slots.some(s => matchesFilters(s, selectedCinemas, selectedVariants))
       )

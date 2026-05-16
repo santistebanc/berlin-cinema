@@ -38,15 +38,9 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
   toggleAllVariants,
   resetFilters,
 }) => {
-  const allCinemasSelected =
-    selectedCinemas.length === availableCinemas.length &&
-    availableCinemas.every(c => selectedCinemas.includes(c));
-  const allDatesSelected =
-    selectedDates.length === availableDates.length &&
-    availableDates.every(d => selectedDates.includes(d));
-  const allVariantsSelected =
-    selectedVariants.length === availableVariants.length &&
-    availableVariants.every(v => selectedVariants.includes(v));
+  const allCinemasSelected = selectedCinemas.length === availableCinemas.length;
+  const allDatesSelected = selectedDates.length === availableDates.length;
+  const allVariantsSelected = selectedVariants.length === availableVariants.length;
 
   const hasFilters = !allCinemasSelected || !allDatesSelected || !allVariantsSelected;
 
