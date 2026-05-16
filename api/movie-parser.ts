@@ -185,10 +185,17 @@ class MovieParser {
       if (matches && matches.length > 1) times = matches;
     }
 
-    return times.map(time => {
-      const m = time.match(/(\d{1,2}:\d{2})/);
-      return m ? m[1] : time;
-    }).filter(t => /^\d{1,2}:\d{2}$/.test(t));
+    return times.flatMap(t => {
+      const m = t.match(/(\d{1,2}:\d{2})/);
+      return m ? [m[1]] : [];
+    });
+  }
+
+  private resolveTimestamp(day: number, month: number): number {
+    const currentYear = new Date().getUTCFullYear();
+    const ts = Date.UTC(currentYear, month - 1, day);
+    const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return ts < oneMonthAgo ? Date.UTC(currentYear + 1, month - 1, day) : ts;
   }
 
   parseDate(dateStr: string): string {
@@ -196,13 +203,8 @@ class MovieParser {
 
     const dateMatch = dateStr.match(/(\w{3})\s+(\d{1,2})\/(\d{1,2})/);
     if (dateMatch) {
-      const day = parseInt(dateMatch[2]);
-      const month = parseInt(dateMatch[3]);
-      const currentYear = new Date().getUTCFullYear();
-      const ts = Date.UTC(currentYear, month - 1, day);
-      const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      const finalTs = ts < oneMonthAgo ? Date.UTC(currentYear + 1, month - 1, day) : ts;
-      return new Date(finalTs).toISOString().split('T')[0];
+      const ts = this.resolveTimestamp(parseInt(dateMatch[2]), parseInt(dateMatch[3]));
+      return new Date(ts).toISOString().split('T')[0];
     }
 
     return new Date().toISOString().split('T')[0];
@@ -213,14 +215,9 @@ class MovieParser {
 
     const dateMatch = dateStr.match(/(\w{3})\s+(\d{1,2})\/(\d{1,2})/);
     if (dateMatch) {
-      const day = parseInt(dateMatch[2]);
-      const month = parseInt(dateMatch[3]);
-      const currentYear = new Date().getUTCFullYear();
-      const ts = Date.UTC(currentYear, month - 1, day);
-      const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      const finalTs = ts < oneMonthAgo ? Date.UTC(currentYear + 1, month - 1, day) : ts;
+      const ts = this.resolveTimestamp(parseInt(dateMatch[2]), parseInt(dateMatch[3]));
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return dayNames[new Date(finalTs).getUTCDay()];
+      return dayNames[new Date(ts).getUTCDay()];
     }
 
     return dateStr;

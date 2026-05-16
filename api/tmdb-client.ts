@@ -104,8 +104,7 @@ class TmdbClient {
       if (exactMatch) return exactMatch;
 
       // Prefer results with posters and recent releases
-      const withPoster = results.filter(r => r.poster_path);
-      return withPoster.length > 0 ? withPoster[0] : results[0];
+      return results.find(r => r.poster_path) ?? results[0];
     } catch (err) {
       console.error(`  TMDb search failed for "${title}":`, (err as Error).message);
       return null;
@@ -214,11 +213,9 @@ class TmdbClient {
       for (const translation of fullData.translations.translations) {
         const langCode = (translation.iso_639_1 || translation.iso_3166_1 || '').toLowerCase();
         const localTitle = translation.name;
-        if (targetLanguages.includes(langCode) && localTitle) {
-          // Only add if different from original and English title
-          if (localTitle !== searchResult.original_title && localTitle !== details.title) {
-            alternativeTitles.push(localTitle);
-          }
+        if (targetLanguages.includes(langCode) && localTitle &&
+            localTitle !== searchResult.original_title && localTitle !== details.title) {
+          alternativeTitles.push(localTitle);
         }
       }
     }

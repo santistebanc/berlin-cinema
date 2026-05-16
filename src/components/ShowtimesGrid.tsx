@@ -33,8 +33,8 @@ const ShowtimesGrid: React.FC<Props> = ({
   }, []);
 
   const datesWithShowings = Object.keys(showings)
-    .filter(date => selectedDates.length === 0 || selectedDates.includes(date))
     .filter(date =>
+      (selectedDates.length === 0 || selectedDates.includes(date)) &&
       Object.values(showings[date]).some(timeShowings =>
         timeShowings.some(s => matchesFilters(s, selectedCinemas, selectedVariants))
       )
