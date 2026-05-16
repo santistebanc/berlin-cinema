@@ -36,21 +36,7 @@ export function buildCinemaColors(movie: Movie): Record<string, string> {
     if (!cinemaColors[name]) cinemaColors[name] = cinemaColorClass(colorIndex++);
   };
 
-  if (movie.cinemas && movie.cinemas.length > 0 && (movie.cinemas[0] as any).timeInfo) {
-    const allNames = new Set<string>();
-    movie.cinemas.forEach(cinema =>
-      cinema.showtimes.forEach(showtime => {
-        if ((showtime as any).timeInfo) {
-          Object.values((showtime as any).timeInfo).forEach((slots: any) =>
-            slots.forEach((s: any) => allNames.add(s.cinema))
-          );
-        }
-      })
-    );
-    Array.from(allNames).sort().forEach(assign);
-  } else if (movie.cinemas) {
-    movie.cinemas.forEach(cinema => assign(cinema.name));
-  }
+  movie.cinemas.forEach(cinema => assign(cinema.name));
 
   return cinemaColors;
 }

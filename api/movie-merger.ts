@@ -248,13 +248,12 @@ class MovieMerger {
     }
 
     const variantsKey = variants.slice().sort().join('|');
-    const showingInfo: ShowingInfo = { cinema: showing.cinema, variants };
     const exists = mergedMovie.showings[formattedDate][formattedTime].some(
-      s => s.cinema === showingInfo.cinema && s.variants.slice().sort().join('|') === variantsKey
+      s => s.cinema === showing.cinema && s.variants.slice().sort().join('|') === variantsKey
     );
 
     if (!exists) {
-      mergedMovie.showings[formattedDate][formattedTime].push(showingInfo);
+      mergedMovie.showings[formattedDate][formattedTime].push({ cinema: showing.cinema, variants });
     }
   }
 
