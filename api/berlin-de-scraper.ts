@@ -1,7 +1,10 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import * as https from 'https';
 
 const BASE = 'https://www.berlin.de';
+
+const httpsAgent = new https.Agent({ keepAlive: false });
 const LISTING_URL = `${BASE}/kino/_bin/trefferliste.php?ovomu=on&suche=1`;
 
 const HEADERS = {
@@ -125,14 +128,14 @@ class BerlinDeScraper {
   private async fetchWithRetry(url: string, maxRetries = 3): Promise<string> {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        const res = await axios.get(url, { headers: HEADERS, timeout: 20000 });
+        const res = await axios.get(url, { headers: HEADERS, timeout: 20000, httpsAgent });
         return res.data as string;
       } catch (err: any) {
         const status = err.response?.status;
-        if (status === 429 && attempt < maxRetries) {
+        if ((status === 429 || status === 425) && attempt < maxRetries) {
           const retryAfter = parseInt(err.response?.headers?.['retry-after'] ?? '5', 10);
           const wait = (retryAfter + 1) * 1000;
-          console.warn(`[berlin.de] 429 on ${url} — waiting ${wait}ms then retrying (attempt ${attempt + 1}/${maxRetries})`);
+          console.warn(`[berlin.de] ${status} on ${url} — waiting ${wait}ms then retrying (attempt ${attempt + 1}/${maxRetries})`);
           await new Promise(r => setTimeout(r, wait));
           continue;
         }
