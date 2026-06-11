@@ -25,6 +25,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.site/scary-movie</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.site/the-drama</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>daily</changefreq>
@@ -44,6 +50,12 @@
   </url>
   <url>
     <loc>https://ovberlin.site/the-devil-wears-prada-2</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.site/the-mandalorian-and-grogu</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -769,6 +781,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.site/die-my-love</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.site/eagles-of-the-republic</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>daily</changefreq>
@@ -1171,19 +1189,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.site/scary-movie</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.site/sneak-preview-ab-18</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.site/the-mandalorian-and-grogu</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -1256,12 +1262,6 @@
   </url>
   <url>
     <loc>https://ovberlin.site/sentimental-value</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.site/die-my-love</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
