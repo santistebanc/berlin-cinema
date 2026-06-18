@@ -961,6 +961,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.site/ballad-of-a-soldier</loc>
+    <lastmod>2026-06-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.site/the-murderers-are-among-us</loc>
     <lastmod>2026-06-18</lastmod>
     <changefreq>daily</changefreq>
@@ -973,6 +979,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.site/come-and-see</loc>
+    <lastmod>2026-06-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.site/i-was-nineteen</loc>
     <lastmod>2026-06-18</lastmod>
     <changefreq>daily</changefreq>
@@ -980,12 +992,6 @@
   </url>
   <url>
     <loc>https://ovberlin.site/its-always-the-end-of-the-world</loc>
-    <lastmod>2026-06-18</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.site/lachtauben-weinen-nicht</loc>
     <lastmod>2026-06-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
