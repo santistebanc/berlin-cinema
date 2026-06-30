@@ -205,6 +205,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.site/amores-perros</loc>
+    <lastmod>2026-06-30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.site/ein-sommer-in-paris</loc>
     <lastmod>2026-06-30</lastmod>
     <changefreq>daily</changefreq>
@@ -890,12 +896,6 @@
   </url>
   <url>
     <loc>https://ovberlin.site/the-river</loc>
-    <lastmod>2026-06-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.site/amores-perros</loc>
     <lastmod>2026-06-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
