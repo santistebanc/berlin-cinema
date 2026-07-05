@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { parseTitle } from './title-utils';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
@@ -161,17 +162,19 @@ class TmdbClient {
   }
 
   async enrichMovie(title: string, altTitle?: string | null): Promise<TmdbMovieData | null> {
-    let searchResult = await this.searchMovie(title);
+    const searchTitle = parseTitle(title).baseTitle;
+    let searchResult = await this.searchMovie(searchTitle);
 
     if (!searchResult && title.includes(' - ')) {
-      const baseTitle = title.split(' - ')[0].trim();
+      const baseTitle = parseTitle(title.split(' - ')[0].trim()).baseTitle;
       console.log(`  Retrying TMDb search with base title: "${baseTitle}"`);
       searchResult = await this.searchMovie(baseTitle);
     }
 
     if (!searchResult && altTitle) {
-      console.log(`  Retrying TMDb search with altTitle: "${altTitle}"`);
-      searchResult = await this.searchMovie(altTitle);
+      const altSearch = parseTitle(altTitle).baseTitle;
+      console.log(`  Retrying TMDb search with altTitle: "${altSearch}"`);
+      searchResult = await this.searchMovie(altSearch);
     }
 
     if (!searchResult) {
