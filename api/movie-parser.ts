@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import HttpClient from './http-client';
+import { parseTitle } from './title-utils';
 
 class MovieParser {
   private httpClient: HttpClient;
@@ -24,13 +25,12 @@ class MovieParser {
     const titleElement = $item.find('h2 a, h1 a').first();
     const titleAttr = titleElement.attr('title');
     const displayTitle = titleElement.text().trim();
-    // Title attribute format: "Original Title (OmU) - Kinoprogramm"
-    // Strip the suffix and the trailing variant in parens to get the clean title
     const rawTitle = titleAttr
-      ? titleAttr.replace(/\s+-\s+Kinoprogramm$/, '').replace(/\s*\([^)]*\)\s*$/, '')
-      : displayTitle.replace(/\s*\([^)]*\)\s*$/, '');
-    const title = rawTitle.trim();
-    const altTitle = displayTitle.replace(/\s*\([^)]*\)\s*$/, '').trim();
+      ? titleAttr.replace(/\s+-\s+Kinoprogramm$/, '')
+      : displayTitle;
+    const { baseTitle: title, titleVariants } = parseTitle(rawTitle);
+    const { baseTitle: altTitleParsed } = parseTitle(displayTitle);
+    const altTitle = altTitleParsed.trim();
     const movieUrl = titleElement.attr('href');
 
     if (!title || !movieUrl) return null;
@@ -38,7 +38,8 @@ class MovieParser {
     const movieDetails = this.extractMovieDetails($item, $);
     const isSpecial = this.detectSpecial(title, movieUrl);
     // Extract variants from the display text — it uses English codes like "(OV w/ sub)"
-    const variants = this.extractVariants(displayTitle);
+    const displayVariants = this.extractVariants(displayTitle);
+    const variants = [...new Set([...titleVariants, ...displayVariants])];
     const posterUrl = this.extractPosterUrl($item);
     const { cinemas, showings } = this.extractCinemaData($item, $);
 
@@ -93,6 +94,10 @@ class MovieParser {
   extractVariants(title: string): string[] {
     const KNOWN: Record<string, string> = {
       'imax': 'Imax',
+      'imax 3d': 'Imax 3D',
+      '3d': '3D',
+      '2d': '2D',
+      'mxp 2d': 'MXP 2D',
       'expn': 'EXPN',
       'ov w/ sub': 'OmU',
       'ov': 'OV',

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as https from 'https';
+import { parseTitle } from './title-utils';
 
 const BASE = 'https://www.berlin.de';
 
@@ -161,12 +162,8 @@ class BerlinDeScraper {
       );
       if (!rawTitle || rawTitle === 'Zurücksetzen') return;
 
-      // Strip variant suffix → base title
-      const variantSuffixMatch = rawTitle.match(/\s*\(([^)]+)\)\s*$/);
-      const variantSuffix = variantSuffixMatch ? variantSuffixMatch[1] : null;
-      const baseTitle = variantSuffixMatch
-        ? rawTitle.slice(0, rawTitle.lastIndexOf('(')).trim()
-        : rawTitle;
+      // Strip format/language suffixes → base title; keep extracted variants
+      const { baseTitle, titleVariants } = parseTitle(rawTitle);
 
       if (!baseTitle) return;
 
@@ -210,10 +207,9 @@ class BerlinDeScraper {
 
       const movie = movieMap.get(key)!;
 
-      // Track variant at movie level
-      if (variantSuffix) {
-        const v = normalizeVariant(variantSuffix);
-        if (v && !movie.variants.includes(v)) movie.variants.push(v);
+      // Track variants extracted from title
+      for (const v of titleVariants) {
+        if (!movie.variants.includes(v)) movie.variants.push(v);
       }
 
       // Track cinema
@@ -234,10 +230,8 @@ class BerlinDeScraper {
         const dayMatch = dateCell.match(/^(\w{2}),/);
         const dayOfWeek = dayMatch ? germanDayToEn(dayMatch[1]) : '';
 
-        const titleVariant = variantSuffix ? normalizeVariant(variantSuffix) : null;
         for (const { time, variant } of parseTimeCell(timeCell)) {
-          // Per-showing variant from time cell takes priority; fall back to title suffix variant
-          const resolvedVariant = variant ?? titleVariant;
+          const resolvedVariant = variant ?? (titleVariants.length === 1 ? titleVariants[0] : null);
           if (resolvedVariant && !movie.variants.includes(resolvedVariant)) movie.variants.push(resolvedVariant);
           movie.showings.push({
             date: dateStr,

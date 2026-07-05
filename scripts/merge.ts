@@ -1,8 +1,14 @@
 import 'dotenv/config';
-import MovieMerger from '../api/movie-merger';
+import MovieMerger, { setExtraCinemaAliases } from '../api/movie-merger';
 import TmdbClient from '../api/tmdb-client';
 import { fetchBerlinCinemaWebsites, matchCinemaWebsite, resolveNewCinemasViaOsm } from '../api/osm-client';
 import { fetchOmdbData } from '../api/omdb-client';
+import {
+  collectCinemaCandidates,
+  EntityResolver,
+  logResolverStatus,
+  mergeMovieRecords,
+} from '../api/entity-resolver';
 import { Movie } from '../src/types';
 import fs from 'fs';
 import path from 'path';
@@ -137,15 +143,37 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
     : JSON.parse(fs.readFileSync(BERLIN_RAW, 'utf-8'));
 
   const allRaw = [...criticData.movies, ...berlinData.movies];
+
+  const entitiesPath = path.join(__dirname, '../api/entities.json');
+  const resolver = new EntityResolver({ entitiesPath });
+  await logResolverStatus();
+
+  const cinemaCandidates = collectCinemaCandidates(allRaw);
+  await resolver.resolveCinemas(cinemaCandidates);
+
+  const stillUnknown = cinemaCandidates
+    .filter(c => resolver.resolveCinemaSync(c.name) === c.name)
+    .map(c => c.name);
+  if (stillUnknown.length > 0) {
+    console.log(`[resolver] ${stillUnknown.length} cinema(s) still unknown — trying OSM address match`);
+    const osmDiscovered = await resolveNewCinemasViaOsm(
+      stillUnknown,
+      resolver.getKnownCanonicals(),
+      entitiesPath,
+      false,
+    );
+    for (const { alias, canonical } of osmDiscovered) {
+      resolver.registerOsmAlias(alias, canonical);
+    }
+  }
+
+  setExtraCinemaAliases(resolver.getDiscoveredAliases());
+
   const { movies: mergedMovies, newCinemas } = MovieMerger.mergeMovies(allRaw);
   console.log(`Merged: ${mergedMovies.length} unique movies`);
 
   if (newCinemas.length > 0) {
-    console.log(`[entities] ${newCinemas.length} new cinema(s) not in entities.json: ${newCinemas.join(', ')}`);
-    const entitiesPath = path.join(__dirname, '../api/entities.json');
-    const entities = JSON.parse(fs.readFileSync(entitiesPath, 'utf-8'));
-    const canonicalNames: string[] = entities.cinemas.map((e: any) => e.canonical);
-    await resolveNewCinemasViaOsm(newCinemas, canonicalNames, entitiesPath);
+    console.log(`[entities] ${newCinemas.length} unresolved cinema(s): ${newCinemas.join(', ')}`);
   }
 
   const data = { movies: mergedMovies, total: mergedMovies.length, scrapedAt: new Date().toISOString() };
@@ -246,23 +274,7 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
       const primary = group[0];
       for (let i = 1; i < group.length; i++) {
         const dup = group[i];
-        for (const [date, times] of Object.entries(dup.showings as Record<string, Record<string, any[]>>)) {
-          if (!primary.showings[date]) primary.showings[date] = {};
-          for (const [time, entries] of Object.entries(times)) {
-            if (!primary.showings[date][time]) primary.showings[date][time] = [];
-            for (const entry of entries as any[]) {
-              const entryKey = (entry.variants ?? []).slice().sort().join('|');
-              const exists = (primary.showings[date][time] as any[]).some((s: any) => s.cinema === entry.cinema && (s.variants ?? []).slice().sort().join('|') === entryKey);
-              if (!exists) primary.showings[date][time].push(entry);
-            }
-          }
-        }
-        const existingCinemaNames = new Set((primary.cinemas as any[]).map((c: any) => c.name));
-        for (const cinema of dup.cinemas as any[]) {
-          if (!existingCinemaNames.has(cinema.name)) primary.cinemas.push(cinema);
-        }
-        primary.variants = Array.from(new Set([...primary.variants, ...dup.variants]));
-        primary.sourceTitles = Array.from(new Set([...primary.sourceTitles, ...dup.sourceTitles]));
+        mergeMovieRecords(primary, dup);
         toRemove.add(dup);
         console.log(`[tmdb-dedup] Merged "${dup.title}" → "${primary.title}" (${dup.imdbId})`);
       }
@@ -276,6 +288,12 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
     console.log('No TMDB_API_KEY — skipping enrichment');
     for (const movie of data.movies) initTmdbFields(movie);
   }
+
+  const fuzzyMerged = await resolver.deduplicateMovies(data.movies);
+    if (fuzzyMerged > 0) {
+      data.total = data.movies.length;
+      console.log(`[resolver] Embedding/fuzzy merged ${fuzzyMerged} movie pair(s), ${data.movies.length} remain`);
+    }
 
   if (OMDB_API_KEY) {
     const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -363,6 +381,8 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
   }
 
   assignSlugs(data.movies);
+
+  resolver.persist();
 
   fs.writeFileSync(MOVIES_JSON, JSON.stringify(data));
   console.log(`Written ${MOVIES_JSON} — ${data.total} movies`);
