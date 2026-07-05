@@ -109,6 +109,7 @@ export async function resolveNewCinemasViaOsm(
   newCinemaNames: string[],
   knownCanonicalNames: string[],
   entitiesPath: string,
+  autoUpdate = true,
 ): Promise<{ alias: string; canonical: string }[]> {
   if (newCinemaNames.length === 0) return [];
 
@@ -150,7 +151,7 @@ export async function resolveNewCinemasViaOsm(
     console.log(`[entities] ${unresolved.length} unresolved new cinema(s): ${unresolved.join(', ')}`);
   }
 
-  if (discovered.length > 0) {
+  if (discovered.length > 0 && autoUpdate) {
     // Auto-update entities.json
     const entities = JSON.parse(fs.readFileSync(entitiesPath, 'utf-8'));
     for (const { alias, canonical } of discovered) {

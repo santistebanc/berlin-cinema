@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { getBaseTitle, getTitleFormatVariants, parseTitle } from './title-utils';
 
 // ---------------------------------------------------------------------------
 // Entity alias map — loaded from entities.json at module init
@@ -23,6 +24,13 @@ for (const entry of entities.cinemas) {
   CINEMA_ALIAS_MAP.set(normalizeCinemaName(entry.canonical), entry.canonical);
   for (const alias of entry.aliases) {
     CINEMA_ALIAS_MAP.set(normalizeCinemaName(alias), entry.canonical);
+  }
+}
+
+/** Register aliases discovered at runtime (fuzzy / LLM / OSM resolution). */
+export function setExtraCinemaAliases(aliases: Record<string, string>): void {
+  for (const [alias, canonical] of Object.entries(aliases)) {
+    CINEMA_ALIAS_MAP.set(normalizeCinemaName(alias), canonical);
   }
 }
 
@@ -104,7 +112,8 @@ class MovieMerger {
     const newCinemas = new Set<string>();
 
     movies.forEach(movie => {
-      const baseTitle = this.getBaseTitle(movie.title);
+      const { baseTitle, titleVariants } = parseTitle(movie.title);
+      const titleFormatVariants = getTitleFormatVariants(movie.title);
 
       if (!movieMap.has(baseTitle)) {
         movieMap.set(baseTitle, {
@@ -142,6 +151,7 @@ class MovieMerger {
         }
       }
 
+      titleVariants.forEach(v => mergedMovie.variants.add(v));
       if (movie.variants) {
         movie.variants.forEach(v => mergedMovie.variants.add(v));
       }
@@ -160,7 +170,7 @@ class MovieMerger {
           // Resolve showing cinema via index (which has both original and canonical norms)
           const resolvedName = this.resolveCinemaFromIndex(mergedMovie.cinemaNameIndex, showing.cinema);
           const resolvedShowing = resolvedName !== showing.cinema ? { ...showing, cinema: resolvedName } : showing;
-          this.mergeShowing(mergedMovie, resolvedShowing, movie.variants);
+          this.mergeShowing(mergedMovie, resolvedShowing, movie.variants, titleFormatVariants);
         });
       }
     });
@@ -231,14 +241,22 @@ class MovieMerger {
   }
 
   static getBaseTitle(title: string): string {
-    return title.replace(/\s*\([^)]*\)/g, '').trim();
+    return getBaseTitle(title);
   }
 
-  static mergeShowing(mergedMovie: MergedMovieInternal, showing: Showing, movieVariants: string[]): void {
+  static mergeShowing(
+    mergedMovie: MergedMovieInternal,
+    showing: Showing,
+    movieVariants: string[],
+    titleFormatVariants: string[] = [],
+  ): void {
     const formattedDate = this.formatDate(showing);
     const formattedTime = showing.time;
-    // per-showing variant (berlin.de) overrides movie-level variants; null → use movie variants
-    const variants = (showing.variant != null) ? [showing.variant] : movieVariants;
+    // per-showing variant (berlin.de) overrides movie-level variants; null → use movie + title formats
+    const variants = (showing.variant != null)
+      ? [showing.variant, ...titleFormatVariants]
+      : [...movieVariants, ...titleFormatVariants];
+    const uniqueVariants = [...new Set(variants)];
 
     if (!mergedMovie.showings[formattedDate]) {
       mergedMovie.showings[formattedDate] = {};
@@ -247,13 +265,13 @@ class MovieMerger {
       mergedMovie.showings[formattedDate][formattedTime] = [];
     }
 
-    const variantsKey = variants.slice().sort().join('|');
+    const variantsKey = uniqueVariants.slice().sort().join('|');
     const exists = mergedMovie.showings[formattedDate][formattedTime].some(
       s => s.cinema === showing.cinema && s.variants.slice().sort().join('|') === variantsKey
     );
 
     if (!exists) {
-      mergedMovie.showings[formattedDate][formattedTime].push({ cinema: showing.cinema, variants });
+      mergedMovie.showings[formattedDate][formattedTime].push({ cinema: showing.cinema, variants: uniqueVariants });
     }
   }
 
