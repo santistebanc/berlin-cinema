@@ -2,7 +2,9 @@
   "cinemas": [
     {
       "canonical": "Alhambra",
-      "aliases": ["Cineplex Alhambra"]
+      "aliases": [
+        "Cineplex Alhambra"
+      ]
     },
     {
       "canonical": "Astor Film Lounge",
@@ -110,15 +112,21 @@
     },
     {
       "canonical": "B-Ware Ladenkino",
-      "aliases": ["B-ware! Ladenkino"]
+      "aliases": [
+        "B-ware! Ladenkino"
+      ]
     },
     {
       "canonical": "Babylon Mitte",
-      "aliases": ["Babylon"]
+      "aliases": [
+        "Babylon"
+      ]
     },
     {
       "canonical": "Babylon Kreuzberg",
-      "aliases": []
+      "aliases": [
+        "Freiluftkino Kreuzberg"
+      ]
     },
     {
       "canonical": "Bali-Kino",
@@ -138,7 +146,9 @@
     },
     {
       "canonical": "Central-Kino",
-      "aliases": ["Central"]
+      "aliases": [
+        "Central"
+      ]
     },
     {
       "canonical": "CineMotion Berlin Hohenschönhausen",
@@ -150,7 +160,9 @@
     },
     {
       "canonical": "CinemaxX",
-      "aliases": ["CinemaxX Berlin"]
+      "aliases": [
+        "CinemaxX Berlin"
+      ]
     },
     {
       "canonical": "Cineplex Neukölln Arcaden",
@@ -166,23 +178,34 @@
     },
     {
       "canonical": "CineStar - CUBIX am Alexanderplatz",
-      "aliases": ["CineStar Cubix am Alexanderplatz"]
+      "aliases": [
+        "CineStar Cubix am Alexanderplatz"
+      ]
     },
     {
       "canonical": "CineStar Berlin Tegel",
-      "aliases": ["CineStar Tegel"]
+      "aliases": [
+        "CineStar Tegel"
+      ]
     },
     {
       "canonical": "CineStar Hellersdorf",
-      "aliases": ["CineStar - Der Filmpalast Berlin-Hellersdorf"]
+      "aliases": [
+        "CineStar - Der Filmpalast Berlin-Hellersdorf"
+      ]
     },
     {
       "canonical": "CineStar Frankfurt (Oder)",
-      "aliases": ["Cinestar"]
+      "aliases": [
+        "Cinestar"
+      ]
     },
     {
       "canonical": "Cinestar Kino in der Kulturbrauerei",
-      "aliases": ["Kino in der KulturBrauerei Berlin", "Kino in der Kulturbrauerei Berlin"]
+      "aliases": [
+        "Kino in der KulturBrauerei Berlin",
+        "Kino in der Kulturbrauerei Berlin"
+      ]
     },
     {
       "canonical": "City Kino Wedding",
@@ -194,11 +217,15 @@
     },
     {
       "canonical": "Cosima-Filmtheater",
-      "aliases": ["Cosima"]
+      "aliases": [
+        "Cosima"
+      ]
     },
     {
       "canonical": "Delphi Filmpalast am Zoo",
-      "aliases": ["Delphi Filmpalast"]
+      "aliases": [
+        "Delphi Filmpalast"
+      ]
     },
     {
       "canonical": "Delphi LUX",
@@ -222,7 +249,9 @@
     },
     {
       "canonical": "Filmrauschpalast im Kulturfabrik Moabit",
-      "aliases": ["Filmrauschpalast"]
+      "aliases": [
+        "Filmrauschpalast"
+      ]
     },
     {
       "canonical": "Filmtheater am Friedrichshain",
@@ -230,7 +259,9 @@
     },
     {
       "canonical": "Freiluftkino Neue Zukunft",
-      "aliases": []
+      "aliases": [
+        "Freilichtbühne Weißensee"
+      ]
     },
     {
       "canonical": "Hackesche Höfe Kino",
@@ -238,7 +269,9 @@
     },
     {
       "canonical": "IL KINO",
-      "aliases": ["Il Kino"]
+      "aliases": [
+        "Il Kino"
+      ]
     },
     {
       "canonical": "International",
@@ -246,7 +279,9 @@
     },
     {
       "canonical": "Kant Kino",
-      "aliases": ["Kant"]
+      "aliases": [
+        "Kant"
+      ]
     },
     {
       "canonical": "Kino Intimes",
@@ -254,7 +289,9 @@
     },
     {
       "canonical": "Kino Krokodil",
-      "aliases": ["Krokodil"]
+      "aliases": [
+        "Krokodil"
+      ]
     },
     {
       "canonical": "Kino Zukunft",
@@ -270,11 +307,15 @@
     },
     {
       "canonical": "KLICK Kino",
-      "aliases": ["Klick Kino"]
+      "aliases": [
+        "Klick Kino"
+      ]
     },
     {
       "canonical": "Lichtblick-Kino",
-      "aliases": ["Lichtblick"]
+      "aliases": [
+        "Lichtblick"
+      ]
     },
     {
       "canonical": "Movie Magic",
@@ -302,15 +343,21 @@
     },
     {
       "canonical": "Passage Kinos",
-      "aliases": ["Passage"]
+      "aliases": [
+        "Passage"
+      ]
     },
     {
       "canonical": "Rollberg Kino",
-      "aliases": ["Rollberg Kinos"]
+      "aliases": [
+        "Rollberg Kinos"
+      ]
     },
     {
       "canonical": "Sinema Transtopia",
-      "aliases": ["Sinema Transtopia Berlin"]
+      "aliases": [
+        "Sinema Transtopia Berlin"
+      ]
     },
     {
       "canonical": "Sputnik Südstern",
@@ -318,7 +365,9 @@
     },
     {
       "canonical": "Thalia",
-      "aliases": ["Thalia - Movie Magic"]
+      "aliases": [
+        "Thalia - Movie Magic"
+      ]
     },
     {
       "canonical": "Tilsiter-Lichtspiele",
@@ -326,7 +375,9 @@
     },
     {
       "canonical": "Toni und Tonino",
-      "aliases": ["Toni & Tonino"]
+      "aliases": [
+        "Toni & Tonino"
+      ]
     },
     {
       "canonical": "UCI Kinowelt Am Lausitzpark",
@@ -342,19 +393,28 @@
     },
     {
       "canonical": "UCI KINOWELT Am Eastgate",
-      "aliases": ["UCI Kinowelt am Eastgate"]
+      "aliases": [
+        "UCI Kinowelt am Eastgate"
+      ]
     },
     {
       "canonical": "UCI KINOWELT Berlin - East Side Gallery | Luxe",
-      "aliases": ["UCI Luxe Mercedes Platz"]
+      "aliases": [
+        "UCI Luxe Mercedes Platz"
+      ]
     },
     {
       "canonical": "UCI KINOWELT Gropius Passagen",
-      "aliases": ["UCI Kinowelt Gropius Passagen"]
+      "aliases": [
+        "UCI Kinowelt Gropius Passagen"
+      ]
     },
     {
       "canonical": "Union Filmtheater Friedrichshagen",
-      "aliases": ["Union Friedrichshagen", "Union Filmtheater"]
+      "aliases": [
+        "Union Friedrichshagen",
+        "Union Filmtheater"
+      ]
     },
     {
       "canonical": "Urania",
@@ -362,7 +422,9 @@
     },
     {
       "canonical": "Wolf Kino Berlin",
-      "aliases": ["Wolf Kino"]
+      "aliases": [
+        "Wolf Kino"
+      ]
     },
     {
       "canonical": "Xenon",
@@ -370,7 +432,9 @@
     },
     {
       "canonical": "Yorck Kinos",
-      "aliases": ["Yorck/New Yorck"]
+      "aliases": [
+        "Yorck/New Yorck"
+      ]
     },
     {
       "canonical": "Z-inema",
@@ -382,15 +446,21 @@
     },
     {
       "canonical": "Zeughauskino",
-      "aliases": []
+      "aliases": [
+        "Zeughauskino - Deutsches Historisches Museum"
+      ]
     },
     {
       "canonical": "Zoo-Palast",
-      "aliases": ["Zoo Palast"]
+      "aliases": [
+        "Zoo Palast"
+      ]
     },
     {
       "canonical": "fsk am Oranienplatz",
-      "aliases": ["fsk"]
+      "aliases": [
+        "fsk"
+      ]
     }
   ]
 }
