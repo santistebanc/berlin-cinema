@@ -27,11 +27,20 @@ async function getExtractor(): Promise<FeaturePipeline> {
   return loadPromise;
 }
 
-function toVector(output: { data: Float32Array | number[]; dims?: number[] }, row = 0): number[] {
+type EmbeddingOutput = {
+  data: { readonly length: number; [index: number]: number | bigint };
+  dims?: number[];
+};
+
+function toVector(output: EmbeddingOutput, row = 0): number[] {
   const dims = output.dims ?? [output.data.length];
   const cols = dims.length === 2 ? dims[1] : output.data.length;
   const start = row * cols;
-  return Array.from(output.data.slice(start, start + cols));
+  const result: number[] = [];
+  for (let i = start; i < start + cols; i++) {
+    result.push(Number(output.data[i]));
+  }
+  return result;
 }
 
 /** Cosine similarity — vectors from this model are L2-normalized. */
