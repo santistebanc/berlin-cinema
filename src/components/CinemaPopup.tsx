@@ -1,8 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ExternalLink, X } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import Button from './ui/Button';
-import Card from './ui/Card';
+import { ExternalLink, MapPin, Navigation, X } from 'lucide-react';
 
 export interface CinemaPopupInfo {
   name: string;
@@ -19,7 +16,6 @@ interface Props {
 }
 
 const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
-  const { theme } = useTheme();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = 'cinema-popup-title';
@@ -65,55 +61,64 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgb(var(--overlay) / 0.5)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(3,6,14,.62)' }}
       onClick={handleBackdropClick}
       aria-hidden="false"
     >
-      <Card
+      <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="mx-2 flex w-full max-w-xl flex-col overflow-hidden shadow-xl sm:mx-4"
-        style={{ maxHeight: '90dvh', boxShadow: 'var(--shadow-lg)' }}
+        className="flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border"
+        style={{
+          maxHeight: '90dvh',
+          backgroundColor: 'rgb(var(--surface))',
+          borderColor: 'rgb(var(--border-strong))',
+          boxShadow: '0 30px 70px -20px rgba(0,0,0,.85)',
+        }}
       >
-        <iframe
-          title={`Map of ${cinema.name}`}
-          src={`https://maps.google.com/maps?q=${encodeURIComponent(`${cinema.name} Berlin`)}&z=15&output=embed`}
-          className="w-full shrink-0 border-0 h-[40dvh] sm:h-[52dvh] lg:h-[62dvh]"
-          style={theme === 'dark' ? { filter: 'invert(1) hue-rotate(180deg)' } : undefined}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-
-        <div className="p-3 sm:p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 id={titleId} className="text-lg font-semibold" style={{ color: 'rgb(var(--text))' }}>
-            {cinema.name}
-          </h3>
-          <Button
+        <div className="relative h-[40dvh] shrink-0 sm:h-[46dvh]" style={{ backgroundColor: 'rgb(var(--surface-muted))' }}>
+          <div
+            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2"
+            style={{ background: 'radial-gradient(circle at 50% 40%, #16203a, #0b1120)', color: 'rgb(var(--text-soft))' }}
+          >
+            <MapPin className="h-8 w-8" style={{ color: 'rgb(var(--accent))' }} strokeWidth={1.8} />
+          </div>
+          <iframe
+            title={`Map of ${cinema.name}`}
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(`${cinema.name} Berlin`)}&z=15&output=embed`}
+            className="absolute inset-0 h-full w-full border-0"
+            style={{ filter: 'invert(1) hue-rotate(180deg)' }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+          <button
             ref={closeBtnRef}
             onClick={onClose}
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
             aria-label="Close"
+            className="absolute right-3.5 top-3.5 flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:opacity-80"
+            style={{ backgroundColor: 'rgba(10,14,23,.8)', borderColor: 'rgb(var(--border-strong))', color: 'rgb(var(--text-muted))' }}
           >
-            <X className="h-5 w-5" />
-          </Button>
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="space-y-3">
+        <div className="p-5 sm:p-6">
+          <h3 id={titleId} className="serif mb-1 text-2xl" style={{ color: 'rgb(var(--text))' }}>
+            {cinema.name}
+          </h3>
+
           {(cinema.address || (cinema.postalCode && cinema.city)) && (
-            <div className="flex items-start">
-              <span className="w-20 font-medium" style={{ color: 'rgb(var(--text))' }}>Address: </span>
+            <div className="mt-3 flex items-start gap-2.5 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'rgb(var(--text-soft))' }} />
               <a
                 href={`https://www.google.com/maps/search/${mapsQuery}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="cursor-pointer underline transition-colors hover:text-[rgb(var(--accent))]"
-                style={{ color: 'rgb(var(--text-muted))' }}
+                className="underline transition-colors hover:text-[rgb(var(--accent))]"
+                style={{ textUnderlineOffset: '2px' }}
               >
                 {cinema.address}
                 {cinema.address && cinema.postalCode && cinema.city && ', '}
@@ -122,22 +127,32 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
             </div>
           )}
 
-          {cinema.websiteUrl && (
-            <div className="pt-2">
+          <div className="mt-5 flex flex-wrap gap-3">
+            {cinema.websiteUrl && (
               <a
                 href={cinema.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-primary px-4 py-2 text-sm"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:opacity-90"
+                style={{ backgroundColor: 'rgb(var(--accent-strong))' }}
               >
                 <ExternalLink className="h-4 w-4" />
                 Open cinema site
               </a>
-            </div>
-          )}
+            )}
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${mapsQuery}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-[rgb(var(--surface-muted))]"
+              style={{ borderColor: 'rgb(var(--border-strong))', color: 'rgb(var(--text-muted))' }}
+            >
+              <Navigation className="h-4 w-4" />
+              Directions
+            </a>
+          </div>
         </div>
-        </div>
-      </Card>
+      </div>
     </div>
   );
 };

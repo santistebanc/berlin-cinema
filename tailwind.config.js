@@ -9,13 +9,13 @@ module.exports = {
     extend: {
       borderRadius: {
         'none': '0',
-        'sm': '2px',
-        DEFAULT: '3px',
-        'md': '4px',
-        'lg': '5px',
-        'xl': '6px',
-        '2xl': '8px',
-        '3xl': '10px',
+        'sm': '4px',
+        DEFAULT: '6px',
+        'md': '7px',
+        'lg': '10px',
+        'xl': '12px',
+        '2xl': '14px',
+        '3xl': '18px',
         'full': '9999px',
       },
       colors: {
@@ -45,7 +45,8 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        serif: ['DM Serif Display', 'Georgia', 'serif'],
       },
     },
   },

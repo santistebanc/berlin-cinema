@@ -13,15 +13,15 @@ const ShowingEntry: React.FC<Props> = ({ cinema, variants, colorClass, label, on
   <button
     onClick={() => onCinemaClick(cinema)}
     className={cn(
-      'flex min-w-0 items-center gap-1 px-1 py-1 text-sm leading-4 font-medium transition-opacity hover:opacity-80',
+      'flex max-w-full min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium leading-4 transition-opacity hover:opacity-80 sm:max-w-[240px]',
       colorClass
     )}
     title={variants.length > 0 ? `${cinema} · ${variants.join(' ')}` : cinema}
   >
-    <span className="truncate leading-4">{label}</span>
+    <span className="min-w-0 truncate">{label}</span>
     {variants.length > 0 && (
-      <span className="flex shrink-0 items-center gap-0.5 opacity-70 leading-4">
-        ·{variants.map(v => <span key={v} className="max-w-[6rem] truncate">{v}</span>)}
+      <span className="shrink-0 truncate text-[11px] font-semibold opacity-70">
+        {variants.join(' ')}
       </span>
     )}
   </button>

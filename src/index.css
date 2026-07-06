@@ -22,42 +22,16 @@
 
 @layer base {
   :root {
-    color-scheme: light;
-    --bg: 248 250 252;
-    --surface: 255 255 255;
-    --surface-muted: 241 245 249;
-    --surface-elevated: 255 255 255;
-    --text: 15 23 42;
-    --text-muted: 71 85 105;
-    --text-soft: 100 116 139;
-    --border: 226 232 240;
-    --border-strong: 203 213 225;
-    --accent: 234 88 12;
-    --accent-strong: 194 65 12;
-    --accent-soft: 255 237 213;
-    --accent-text: 154 52 18;
-    --info-soft: 219 234 254;
-    --info-border: 147 197 253;
-    --info-text: 30 64 175;
-    --danger-soft: 254 242 242;
-    --danger-border: 254 202 202;
-    --danger-text: 153 27 27;
-    --overlay: 15 23 42;
-    --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06);
-    --shadow-lg: 0 12px 28px -14px rgb(15 23 42 / 0.28);
-  }
-
-  .dark {
     color-scheme: dark;
-    --bg: 3 7 18;
-    --surface: 17 24 39;
-    --surface-muted: 31 41 55;
-    --surface-elevated: 17 24 39;
+    --bg: 10 14 23;
+    --surface: 5 8 19;
+    --surface-muted: 13 20 36;
+    --surface-elevated: 10 15 28;
     --text: 243 244 246;
     --text-muted: 209 213 219;
-    --text-soft: 156 163 175;
-    --border: 55 65 81;
-    --border-strong: 75 85 99;
+    --text-soft: 148 163 184;
+    --border: 31 41 55;
+    --border-strong: 55 65 81;
     --accent: 251 146 60;
     --accent-strong: 154 52 18;
     --accent-soft: 67 20 7;
@@ -69,8 +43,8 @@
     --danger-border: 127 29 29;
     --danger-text: 254 202 202;
     --overlay: 0 0 0;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.24);
-    --shadow-lg: 0 12px 28px -14px rgb(0 0 0 / 0.5);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 30px 60px -30px rgb(0 0 0 / 0.8);
   }
 
   html {
@@ -79,7 +53,7 @@
     font-kerning: normal;
     font-feature-settings: 'kern' 1, 'liga' 1;
   }
-  
+
   body {
     background-color: rgb(var(--bg));
     color: rgb(var(--text));
@@ -87,6 +61,10 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
+}
+
+.serif {
+  font-family: 'DM Serif Display', Georgia, serif;
 }
 
 @layer components {
@@ -156,20 +134,23 @@
   .ui-card {
     background-color: rgb(var(--surface));
     border: 1px solid rgb(var(--border));
+    border-radius: 0.875rem;
     box-shadow: var(--shadow-sm);
   }
 
   .ui-muted-surface {
     background-color: rgb(var(--surface-muted));
     border-color: rgb(var(--border));
+    border-radius: 0.75rem;
   }
 
   .ui-input {
     width: 100%;
-    border: 1px solid rgb(var(--border-strong));
-    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
+    background-color: rgb(5 8 15);
     color: rgb(var(--text));
     padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
     transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
   }
 
@@ -190,6 +171,7 @@
     gap: 0.5rem;
     font-weight: 500;
     line-height: 1.2;
+    border-radius: 0.625rem;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
   }
 
@@ -249,6 +231,7 @@
     display: inline-flex;
     align-items: center;
     border: 1px solid transparent;
+    border-radius: 0.375rem;
     padding: 0.125rem 0.5rem;
     font-size: 0.75rem;
     font-weight: 500;
@@ -301,39 +284,22 @@
    Outside @layer so these beat all Tailwind utilities.
    Each cinema gets a stable hue for at-a-glance identification.
 ──────────────────────────────────────────────────────────────── */
-.cinema-badge { border: 1px solid transparent; }
+.cinema-badge { border: none; }
 
-/* Hues evenly spaced 22.5° apart: 0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5 */
-.cinema-badge-0  { background-color: oklch(0.94 0.04 0);     color: oklch(0.36 0.13 0);     border-color: oklch(0.82 0.08 0); }
-.cinema-badge-1  { background-color: oklch(0.94 0.04 22.5);  color: oklch(0.36 0.13 22.5);  border-color: oklch(0.82 0.08 22.5); }
-.cinema-badge-2  { background-color: oklch(0.94 0.04 45);    color: oklch(0.36 0.13 45);    border-color: oklch(0.82 0.08 45); }
-.cinema-badge-3  { background-color: oklch(0.94 0.04 67.5);  color: oklch(0.38 0.13 67.5);  border-color: oklch(0.82 0.08 67.5); }
-.cinema-badge-4  { background-color: oklch(0.94 0.04 90);    color: oklch(0.40 0.13 90);    border-color: oklch(0.82 0.08 90); }
-.cinema-badge-5  { background-color: oklch(0.94 0.04 112.5); color: oklch(0.38 0.13 112.5); border-color: oklch(0.82 0.08 112.5); }
-.cinema-badge-6  { background-color: oklch(0.94 0.04 135);   color: oklch(0.36 0.13 135);   border-color: oklch(0.82 0.08 135); }
-.cinema-badge-7  { background-color: oklch(0.94 0.04 157.5); color: oklch(0.36 0.13 157.5); border-color: oklch(0.82 0.08 157.5); }
-.cinema-badge-8  { background-color: oklch(0.94 0.04 180);   color: oklch(0.36 0.13 180);   border-color: oklch(0.82 0.08 180); }
-.cinema-badge-9  { background-color: oklch(0.94 0.04 202.5); color: oklch(0.36 0.13 202.5); border-color: oklch(0.82 0.08 202.5); }
-.cinema-badge-10 { background-color: oklch(0.94 0.04 225);   color: oklch(0.36 0.13 225);   border-color: oklch(0.82 0.08 225); }
-.cinema-badge-11 { background-color: oklch(0.94 0.04 247.5); color: oklch(0.36 0.13 247.5); border-color: oklch(0.82 0.08 247.5); }
-.cinema-badge-12 { background-color: oklch(0.94 0.04 270);   color: oklch(0.36 0.13 270);   border-color: oklch(0.82 0.08 270); }
-.cinema-badge-13 { background-color: oklch(0.94 0.04 292.5); color: oklch(0.36 0.13 292.5); border-color: oklch(0.82 0.08 292.5); }
-.cinema-badge-14 { background-color: oklch(0.94 0.04 315);   color: oklch(0.36 0.13 315);   border-color: oklch(0.82 0.08 315); }
-.cinema-badge-15 { background-color: oklch(0.94 0.04 337.5); color: oklch(0.36 0.13 337.5); border-color: oklch(0.82 0.08 337.5); }
-
-.dark .cinema-badge-0  { background-color: oklch(0.30 0.06 0     / 0.8); color: oklch(0.82 0.09 0    ); border-color: oklch(0.48 0.08 0     / 0.8); }
-.dark .cinema-badge-1  { background-color: oklch(0.30 0.06 22.5  / 0.8); color: oklch(0.82 0.09 22.5 ); border-color: oklch(0.48 0.08 22.5  / 0.8); }
-.dark .cinema-badge-2  { background-color: oklch(0.30 0.06 45    / 0.8); color: oklch(0.82 0.09 45   ); border-color: oklch(0.48 0.08 45    / 0.8); }
-.dark .cinema-badge-3  { background-color: oklch(0.30 0.06 67.5  / 0.8); color: oklch(0.84 0.09 67.5 ); border-color: oklch(0.48 0.08 67.5  / 0.8); }
-.dark .cinema-badge-4  { background-color: oklch(0.30 0.06 90    / 0.8); color: oklch(0.86 0.09 90   ); border-color: oklch(0.48 0.08 90    / 0.8); }
-.dark .cinema-badge-5  { background-color: oklch(0.30 0.06 112.5 / 0.8); color: oklch(0.84 0.09 112.5); border-color: oklch(0.48 0.08 112.5 / 0.8); }
-.dark .cinema-badge-6  { background-color: oklch(0.30 0.06 135   / 0.8); color: oklch(0.82 0.09 135  ); border-color: oklch(0.48 0.08 135   / 0.8); }
-.dark .cinema-badge-7  { background-color: oklch(0.30 0.06 157.5 / 0.8); color: oklch(0.82 0.09 157.5); border-color: oklch(0.48 0.08 157.5 / 0.8); }
-.dark .cinema-badge-8  { background-color: oklch(0.30 0.06 180   / 0.8); color: oklch(0.82 0.09 180  ); border-color: oklch(0.48 0.08 180   / 0.8); }
-.dark .cinema-badge-9  { background-color: oklch(0.30 0.06 202.5 / 0.8); color: oklch(0.82 0.09 202.5); border-color: oklch(0.48 0.08 202.5 / 0.8); }
-.dark .cinema-badge-10 { background-color: oklch(0.30 0.06 225   / 0.8); color: oklch(0.82 0.09 225  ); border-color: oklch(0.48 0.08 225   / 0.8); }
-.dark .cinema-badge-11 { background-color: oklch(0.30 0.06 247.5 / 0.8); color: oklch(0.82 0.09 247.5); border-color: oklch(0.48 0.08 247.5 / 0.8); }
-.dark .cinema-badge-12 { background-color: oklch(0.30 0.06 270   / 0.8); color: oklch(0.82 0.09 270  ); border-color: oklch(0.48 0.08 270   / 0.8); }
-.dark .cinema-badge-13 { background-color: oklch(0.30 0.06 292.5 / 0.8); color: oklch(0.82 0.09 292.5); border-color: oklch(0.48 0.08 292.5 / 0.8); }
-.dark .cinema-badge-14 { background-color: oklch(0.30 0.06 315   / 0.8); color: oklch(0.82 0.09 315  ); border-color: oklch(0.48 0.08 315   / 0.8); }
-.dark .cinema-badge-15 { background-color: oklch(0.30 0.06 337.5 / 0.8); color: oklch(0.82 0.09 337.5); border-color: oklch(0.48 0.08 337.5 / 0.8); }
+/* Hues evenly spaced 22.5° apart */
+.cinema-badge-0  { background-color: oklch(.30 .06 0 / .85); color: oklch(.84 .10 0); }
+.cinema-badge-1  { background-color: oklch(.30 .06 22.5 / .85); color: oklch(.84 .10 22.5); }
+.cinema-badge-2  { background-color: oklch(.30 .06 45 / .85); color: oklch(.84 .10 45); }
+.cinema-badge-3  { background-color: oklch(.30 .06 67.5 / .85); color: oklch(.84 .10 67.5); }
+.cinema-badge-4  { background-color: oklch(.30 .06 90 / .85); color: oklch(.84 .10 90); }
+.cinema-badge-5  { background-color: oklch(.30 .06 112.5 / .85); color: oklch(.84 .10 112.5); }
+.cinema-badge-6  { background-color: oklch(.30 .06 135 / .85); color: oklch(.84 .10 135); }
+.cinema-badge-7  { background-color: oklch(.30 .06 157.5 / .85); color: oklch(.84 .10 157.5); }
+.cinema-badge-8  { background-color: oklch(.30 .06 180 / .85); color: oklch(.84 .10 180); }
+.cinema-badge-9  { background-color: oklch(.30 .06 202.5 / .85); color: oklch(.84 .10 202.5); }
+.cinema-badge-10 { background-color: oklch(.30 .06 225 / .85); color: oklch(.84 .10 225); }
+.cinema-badge-11 { background-color: oklch(.30 .06 247.5 / .85); color: oklch(.84 .10 247.5); }
+.cinema-badge-12 { background-color: oklch(.30 .06 270 / .85); color: oklch(.84 .10 270); }
+.cinema-badge-13 { background-color: oklch(.30 .06 292.5 / .85); color: oklch(.84 .10 292.5); }
+.cinema-badge-14 { background-color: oklch(.30 .06 315 / .85); color: oklch(.84 .10 315); }
+.cinema-badge-15 { background-color: oklch(.30 .06 337.5 / .85); color: oklch(.84 .10 337.5); }

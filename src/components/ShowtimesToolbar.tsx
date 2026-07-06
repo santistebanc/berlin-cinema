@@ -52,85 +52,86 @@ const ShowtimesToolbar: React.FC<ShowtimesToolbarProps> = ({
   const variantOptions = availableVariants.map(v => ({ value: v, label: v }));
 
   return (
-    <div className="flex flex-wrap items-center gap-2 p-2 sm:p-3">
+    <div className="flex flex-wrap items-center gap-2 p-3 sm:p-4">
       <div
         role="group"
         aria-label="View mode"
-        className="inline-flex shrink-0 overflow-hidden border"
-        style={{ borderColor: 'rgb(var(--border-strong))' }}
+        className="inline-flex shrink-0 gap-0.5 rounded-lg border p-0.5"
+        style={{ borderColor: 'rgb(var(--border-strong))', backgroundColor: 'rgb(var(--surface-muted))' }}
       >
         <button
           type="button"
           onClick={() => setTableMode('stacked')}
           aria-pressed={tableMode === 'stacked'}
           className={cn(
-            'inline-flex h-9 w-9 items-center justify-center transition-colors',
+            'inline-flex h-[30px] w-[34px] items-center justify-center rounded-md transition-colors',
             tableMode === 'stacked'
-              ? 'bg-[rgb(var(--accent-strong))] text-white'
-              : 'bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
+              ? 'bg-[rgb(var(--accent))] text-[rgb(10,14,23)]'
+              : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]'
           )}
           title="Stacked view"
         >
-          <Columns className="h-3.5 w-3.5" />
+          <Columns className="h-[15px] w-[15px]" />
         </button>
         <button
           type="button"
           onClick={() => setTableMode('grid')}
           aria-pressed={tableMode === 'grid'}
           className={cn(
-            'inline-flex h-9 w-9 items-center justify-center border-l transition-colors',
-            'border-[rgb(var(--border-strong))]',
+            'inline-flex h-[30px] w-[34px] items-center justify-center rounded-md transition-colors',
             tableMode === 'grid'
-              ? 'bg-[rgb(var(--accent-strong))] text-white'
-              : 'bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
+              ? 'bg-[rgb(var(--accent))] text-[rgb(10,14,23)]'
+              : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]'
           )}
           title="Grid view"
         >
-          <LayoutGrid className="h-3.5 w-3.5" />
+          <LayoutGrid className="h-[15px] w-[15px]" />
         </button>
       </div>
 
-      <MultiSelectDropdown
-        label="Cinemas"
-        options={cinemaOptions}
-        selected={selectedCinemas}
-        onToggle={toggleCinema}
-        onToggleAll={toggleAllCinemas}
-        allSelected={allCinemasSelected}
-      />
-
-      <MultiSelectDropdown
-        label="Dates"
-        options={dateOptions}
-        selected={selectedDates}
-        onToggle={toggleDate}
-        onToggleAll={toggleAllDates}
-        allSelected={allDatesSelected}
-      />
-
-      {availableVariants.length > 1 && (
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
         <MultiSelectDropdown
-          label="Versions"
-          options={variantOptions}
-          selected={selectedVariants}
-          onToggle={toggleVariant}
-          onToggleAll={toggleAllVariants}
-          allSelected={allVariantsSelected}
+          label="Cinemas"
+          options={cinemaOptions}
+          selected={selectedCinemas}
+          onToggle={toggleCinema}
+          onToggleAll={toggleAllCinemas}
+          allSelected={allCinemasSelected}
         />
-      )}
 
-      {hasFilters && (
-        <button
-          type="button"
-          onClick={resetFilters}
-          className="inline-flex h-9 items-center gap-1 rounded px-2 text-xs transition-colors hover:bg-[rgb(var(--surface-muted))]"
-          style={{ color: 'rgb(var(--text-muted))' }}
-          title="Reset all filters"
-        >
-          <X className="h-3 w-3" />
-          Reset
-        </button>
-      )}
+        <MultiSelectDropdown
+          label="Dates"
+          options={dateOptions}
+          selected={selectedDates}
+          onToggle={toggleDate}
+          onToggleAll={toggleAllDates}
+          allSelected={allDatesSelected}
+        />
+
+        {availableVariants.length > 1 && (
+          <MultiSelectDropdown
+            label="Versions"
+            options={variantOptions}
+            selected={selectedVariants}
+            onToggle={toggleVariant}
+            onToggleAll={toggleAllVariants}
+            allSelected={allVariantsSelected}
+          />
+        )}
+
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="inline-flex h-9 items-center gap-1 rounded px-2 text-xs transition-colors hover:bg-[rgb(var(--surface-muted))]"
+            style={{ color: 'rgb(var(--text-muted))' }}
+            title="Reset all filters"
+          >
+            <X className="h-3 w-3" />
+            Reset
+          </button>
+        )}
+      </div>
     </div>
   );
 };

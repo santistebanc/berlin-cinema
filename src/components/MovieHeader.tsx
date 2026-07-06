@@ -1,115 +1,151 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ExternalLink, Play } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, Check, ExternalLink, Play, Share2 } from 'lucide-react';
 import { Movie } from '../types';
-import Badge from './ui/Badge';
 import MoviePoster from './ui/MoviePoster';
-import RatingBadge from './ui/RatingBadge';
-
-const PlotSection: React.FC<{ plot: string }> = ({ plot }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [clamped, setClamped] = useState(false);
-  const ref = useRef<HTMLParagraphElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const check = () => setClamped(el.scrollHeight > el.clientHeight);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [plot]);
-
-  return (
-    <div>
-      <p
-        ref={ref}
-        className={`body-muted text-sm leading-relaxed ${expanded ? '' : 'line-clamp-3'}`}
-      >
-        {plot}
-      </p>
-      {(clamped || expanded) && (
-        <button
-          onClick={() => setExpanded(v => !v)}
-          className="mt-1 text-xs font-medium transition-colors"
-          style={{ color: 'rgb(var(--accent))' }}
-        >
-          {expanded ? 'Show less' : 'Show more'}
-        </button>
-      )}
-    </div>
-  );
-};
 
 interface Props {
   movie: Movie;
   plot?: string | null;
+  onBack: () => void;
+  onShare: () => void;
+  shared: boolean;
 }
 
-const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
-  const [plotOpen, setPlotOpen] = useState(false);
-
+const MovieHeader: React.FC<Props> = ({ movie, plot, onBack, onShare, shared }) => {
+  const displayTitle = movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title;
+  const rating = movie.imdbRating ?? movie.rating;
+  const votes = movie.imdbVotes ?? movie.voteCount;
+  const subBits = [movie.director, movie.country].filter(Boolean);
 
   return (
-    <div className="ui-muted-surface p-3 sm:p-6">
-      <div className="flex gap-6">
-        {/* Left: poster + all metadata */}
-        <div className="min-w-0 flex-1">
-          {/* Poster + title row */}
-          <div className="mb-3 flex gap-3 sm:gap-5">
-            <div className="flex-shrink-0">
-              <MoviePoster src={movie.posterUrl} alt={movie.title} title={movie.tmdbTitle || movie.altTitle || movie.title} className="h-28 w-[75px] sm:h-40 sm:w-[107px]" />
-            </div>
-            <div className="min-w-0 flex-1">
+    <div>
+      {/* Hero */}
+      <div className="relative">
+        {movie.backdropUrl && (
+          <div className="absolute inset-0 overflow-hidden">
+            <img src={movie.backdropUrl} alt="" className="h-full w-full object-cover" style={{ objectPosition: 'center 30%' }} />
+            <div
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(to top, rgb(var(--surface)) 6%, rgb(var(--surface) / .6) 46%, rgb(var(--surface) / .35))' }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(to right, rgb(var(--surface) / .8), rgb(var(--surface) / .15) 70%)' }}
+            />
+          </div>
+        )}
+
+        <div className="relative p-4 pb-6 sm:p-6 lg:p-9">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
+              style={{ color: 'rgb(var(--accent-text))' }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to films
+            </button>
+            <button
+              onClick={onShare}
+              aria-label={shared ? 'Link copied' : 'Share this movie'}
+              className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:opacity-80"
+              style={{ backgroundColor: 'rgb(var(--surface) / .55)', borderColor: 'rgb(var(--border))', color: 'rgb(var(--text-muted))' }}
+            >
+              {shared ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <div className="mt-6 flex gap-4 sm:mt-10 sm:gap-7">
+            <MoviePoster
+              src={movie.posterUrl}
+              alt={movie.title}
+              title={movie.tmdbTitle || movie.altTitle || movie.title}
+              className="h-[150px] w-[100px] shrink-0 rounded-xl object-cover shadow-2xl sm:h-[258px] sm:w-[172px]"
+              style={{ border: '1px solid rgba(255,255,255,.08)' }}
+            />
+            <div className="min-w-0 flex-1 pb-1">
               <h1
-                className="mb-1 text-left text-[1.5rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[2.25rem]"
-                style={{ color: 'rgb(var(--text))' }}
+                className="serif text-[1.7rem] leading-[1.05] sm:text-[3rem]"
+                style={{ color: 'rgb(var(--text))', textShadow: '0 2px 24px rgba(0,0,0,.5)' }}
               >
-                {movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title}
+                {displayTitle}
               </h1>
-              {movie.title && movie.title.toLowerCase() !== (movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title).toLowerCase() && (
-                <p className="mb-1 text-sm" style={{ color: 'rgb(var(--text-soft))' }}>
-                  {movie.title}
-                </p>
+              {subBits.length > 0 && (
+                <div className="mt-1.5 text-sm" style={{ color: 'rgb(var(--text-soft))' }}>
+                  {subBits.join(' · ')}
+                </div>
               )}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
-                {movie.originalLanguage && <span className="rounded bg-[rgb(var(--accent)/0.15)] px-1.5 py-0.5 text-xs font-medium uppercase" style={{ color: 'rgb(var(--accent))' }}>{movie.originalLanguage.toUpperCase()}</span>}
+
+              <div className="tabular mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
+                {movie.originalLanguage && (
+                  <span
+                    className="rounded px-2 py-0.5 text-xs font-bold tracking-wide"
+                    style={{ backgroundColor: 'rgb(var(--accent) / .16)', color: 'rgb(var(--accent-text))' }}
+                  >
+                    {movie.originalLanguage.toUpperCase()}
+                  </span>
+                )}
                 {movie.year && <span>{movie.year}</span>}
-                {movie.runtime && <span>{movie.runtime} min</span>}
-                <RatingBadge
-                  imdbRating={movie.imdbRating ?? null}
-                  tmdbRating={movie.rating}
-                  imdbVotes={movie.imdbVotes ?? null}
-                  tmdbVotes={movie.voteCount}
-                  allRatings={movie.allRatings ?? null}
-                />
-                {movie.country && <span>{movie.country}</span>}
+                {movie.runtime && (
+                  <>
+                    <span className="opacity-40">·</span>
+                    <span>{movie.runtime} min</span>
+                  </>
+                )}
+                {rating != null && (
+                  <>
+                    <span className="opacity-40">·</span>
+                    <span className="inline-flex items-center gap-1 font-bold" style={{ color: '#fbbf24' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01z"/></svg>
+                      {rating.toFixed(1)}
+                      {votes != null && (
+                        <span className="text-xs font-medium" style={{ color: 'rgb(var(--text-soft))' }}>
+                          · {votes >= 1000 ? `${(votes / 1000).toFixed(0)}k` : votes}
+                        </span>
+                      )}
+                    </span>
+                  </>
+                )}
+                {movie.ageRating && (
+                  <span className="rounded border px-1.5 text-xs font-semibold" style={{ borderColor: 'rgb(var(--border-strong))' }}>
+                    FSK {movie.ageRating}
+                  </span>
+                )}
               </div>
 
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <div className="mt-3.5 flex flex-wrap gap-1.5">
                 {movie.genres?.map((genre) => (
-                  <Badge key={genre} tone="muted" className="px-2 py-1">{genre}</Badge>
+                  <span
+                    key={genre}
+                    className="rounded-md px-2.5 py-0.5 text-xs font-medium"
+                    style={{ backgroundColor: 'rgb(var(--surface-muted) / .7)', border: '1px solid rgb(var(--border-strong))', color: 'rgb(var(--text-muted))' }}
+                  >
+                    {genre}
+                  </span>
                 ))}
-                {movie.variants && movie.variants.length > 0
-                  ? movie.variants.map((variant) => (
-                      <Badge key={variant} tone="accent" className="px-1">{variant}</Badge>
-                    ))
-                  : <Badge tone="muted" className="px-1">No variants</Badge>
-                }
+                {movie.variants.map((variant) => (
+                  <span
+                    key={variant}
+                    className="rounded-md px-2.5 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: 'rgb(var(--accent-soft))', border: '1px solid rgb(var(--accent) / .4)', color: 'rgb(var(--accent-text))' }}
+                  >
+                    {variant}
+                  </span>
+                ))}
               </div>
 
               {(movie.trailerUrl || movie.imdbId) && (
-                <div className="mt-2 flex items-center gap-3">
+                <div className="mt-4 flex items-center gap-5">
                   {movie.trailerUrl && (
                     <a
                       href={movie.trailerUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
                       style={{ color: 'rgb(var(--accent))' }}
                     >
-                      <Play className="h-3.5 w-3.5" />
-                      Trailer
+                      <Play className="h-4 w-4" fill="currentColor" />
+                      Watch trailer
                     </a>
                   )}
                   {movie.imdbId && (
@@ -117,7 +153,7 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
                       href={`https://www.imdb.com/title/${movie.imdbId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
                       style={{ color: 'rgb(var(--text-soft))' }}
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -128,85 +164,62 @@ const MovieHeader: React.FC<Props> = ({ movie, plot }) => {
               )}
             </div>
           </div>
-          {/* Director + cast: mobile only (moved to right column on desktop) */}
-          {(movie.director || (movie.cast && movie.cast.length > 0) || plot) && (
-            <div className="lg:hidden">
-              <button
-                onClick={() => setPlotOpen(o => !o)}
-                className="inline-flex items-center gap-1 text-sm font-medium transition-colors"
-                style={{ color: 'rgb(var(--text-soft))' }}
-              >
-                <ChevronDown
-                  className="h-4 w-4 transition-transform duration-200"
-                  style={{ transform: plotOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                />
-                {plotOpen ? 'Hide details' : 'Show details'}
-              </button>
-              {plotOpen && (
-                <div className="mt-2 space-y-2">
-
-                  {plot && <PlotSection plot={plot} />}
-                  {movie.allRatings && movie.allRatings.length > 0 && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                      {movie.allRatings.map(r => (
-                        <span key={r.source}>
-                          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>{r.source}</span>{' '}
-                          <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{r.value}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {movie.director && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Director</span>
-                      <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.director}</span>
-                    </div>
-                  )}
-                  {movie.cast && movie.cast.length > 0 && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Cast</span>
-                      <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.cast.join(', ')}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
+      </div>
 
-        {/* Right: director, cast, plot — desktop only */}
-        {(movie.director || (movie.cast && movie.cast.length > 0) || plot) && (
-          <div
-            className="hidden lg:flex lg:w-1/2 lg:shrink-0 lg:flex-col lg:gap-2 lg:border-l lg:pl-6 xl:w-[55%]"
-            style={{ borderColor: 'rgb(var(--border))' }}
-          >
-
-            {plot && <PlotSection plot={plot} />}
+      {/* Synopsis band — the details under the title */}
+      {(plot || movie.director || (movie.cast && movie.cast.length > 0)) && (
+        <div className="flex flex-col gap-6 border-t p-4 sm:flex-row sm:gap-10 sm:p-6 lg:p-9" style={{ borderColor: 'rgb(var(--border))' }}>
+          <div className="min-w-0 flex-[1.4]">
+            {movie.tagline && (
+              <div className="serif mb-2.5 text-lg italic" style={{ color: 'rgb(var(--accent-text))' }}>
+                &ldquo;{movie.tagline}&rdquo;
+              </div>
+            )}
+            {plot && (
+              <p className="text-[15px] leading-relaxed" style={{ color: 'rgb(var(--text-muted))' }}>
+                {plot}
+              </p>
+            )}
             {movie.allRatings && movie.allRatings.length > 0 && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                {movie.allRatings.map(r => (
-                  <span key={r.source}>
-                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>{r.source}</span>{' '}
-                    <span className="font-medium" style={{ color: 'rgb(var(--text-muted))' }}>{r.value}</span>
-                  </span>
+              <div className="mt-4 flex flex-wrap gap-6">
+                {movie.allRatings.map((r) => (
+                  <div key={r.source}>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(var(--text-soft))' }}>
+                      {r.source}
+                    </div>
+                    <div className="mt-0.5 text-base font-bold" style={{ color: 'rgb(var(--text))' }}>
+                      {r.value}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
+          </div>
+          <div className="min-w-0 flex-1 border-t pt-4 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0" style={{ borderColor: 'rgb(var(--border))' }}>
             {movie.director && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Director</span>
-                <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.director}</span>
-              </div>
+              <>
+                <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(var(--text-soft))' }}>
+                  Director
+                </div>
+                <div className="mt-0.5 text-[15px]" style={{ color: 'rgb(var(--text)) ' }}>
+                  {movie.director}
+                </div>
+              </>
             )}
             {movie.cast && movie.cast.length > 0 && (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgb(var(--text-soft))' }}>Cast</span>
-                <span className="text-sm" style={{ color: 'rgb(var(--text-muted))' }}>{movie.cast.join(', ')}</span>
-              </div>
+              <>
+                <div className="mt-4 text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgb(var(--text-soft))' }}>
+                  Cast
+                </div>
+                <div className="mt-0.5 text-[15px] leading-relaxed" style={{ color: 'rgb(var(--text-muted))' }}>
+                  {movie.cast.join(', ')}
+                </div>
+              </>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
