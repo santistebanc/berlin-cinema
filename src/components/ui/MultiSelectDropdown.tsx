@@ -139,10 +139,10 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       type="button"
       onClick={handleTriggerClick}
       className={cn(
-        'inline-flex h-9 items-center gap-1.5 rounded border px-3 text-xs font-medium transition-colors',
+        'inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors',
         !allSelected
           ? 'border-[rgb(var(--accent-strong))] bg-[rgb(var(--accent-strong))] text-white'
-          : 'border-[rgb(var(--border-strong))] bg-[rgb(var(--surface))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface-muted))]'
+          : 'border-[rgb(var(--border-strong))] bg-[rgb(var(--surface-muted))] text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--surface))]'
       )}
     >
       {label}
@@ -159,7 +159,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     <div
       ref={panelRef}
       onMouseDown={e => e.stopPropagation()}
-      className="fixed z-[200] min-w-44 overflow-hidden rounded border shadow-lg"
+      className="fixed z-[200] min-w-44 overflow-hidden rounded-xl border shadow-lg"
       style={{
         top: dropdownPos.top,
         left: dropdownPos.left,
