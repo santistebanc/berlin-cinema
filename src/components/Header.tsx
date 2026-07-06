@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Film } from 'lucide-react';
+import Logo from './Logo';
 import SearchBar from './SearchBar';
-import ThemeToggle from './ThemeToggle';
 import { Movie } from '../types';
 
 interface HeaderProps {
@@ -15,31 +14,27 @@ const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
     <header
       className="w-full border-b"
       style={{
-        backgroundColor: 'rgb(var(--surface))',
+        backgroundColor: 'rgb(var(--surface-muted))',
         borderColor: 'rgb(var(--border))',
-        boxShadow: 'var(--shadow-sm)',
       }}
     >
       <div className="px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center gap-5 h-20">
           <Link
             to="/"
             aria-label="OV Berlin — home"
             title={`Build: ${__BUILD_VERSION__}`}
-            className="flex items-center gap-3 transition-colors"
+            className="flex shrink-0 items-center gap-3"
             style={{ color: 'rgb(var(--accent))' }}
           >
-            <Film className="h-8 w-8" />
-            <p className="hidden sm:block text-sm font-semibold tracking-[-0.01em]" style={{ color: 'rgb(var(--text))' }}>
-              OV Berlin
-            </p>
+            <Logo className="h-11 w-11" />
+            <span className="serif hidden text-2xl sm:block">
+              <span style={{ color: 'rgb(var(--accent))' }}>OV</span>{' '}
+              <span style={{ color: 'rgb(var(--text))' }}>Berlin</span>
+            </span>
           </Link>
-          
+
           <SearchBar movies={movies} onSearch={onSearch} />
-          
-          <div className="flex items-center space-x-4">
-            <ThemeToggle />
-          </div>
         </div>
       </div>
     </header>

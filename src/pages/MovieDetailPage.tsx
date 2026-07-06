@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, Share2 } from 'lucide-react';
 import { useMovies } from '../contexts/MovieContext';
 import { buildCinemaColors } from '../utils/cinemaUtils';
 import { useShowtimeFilters } from '../hooks/useShowtimeFilters';
@@ -9,8 +8,6 @@ import MovieHeader from '../components/MovieHeader';
 import ShowtimesTable from '../components/ShowtimesTable';
 import CinemaPopup, { CinemaPopupInfo } from '../components/CinemaPopup';
 import DetailPageState from '../components/detail/DetailPageState';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
 
 const MovieDetailPage: React.FC = () => {
   const { title } = useParams<{ title: string }>();
@@ -136,33 +133,18 @@ const MovieDetailPage: React.FC = () => {
         {ogImage && <meta name="twitter:image" content={ogImage} />}
       </Helmet>
 
-      <div className="page-shell">
-        <div className="flex flex-col gap-1.5 sm:gap-3">
-          <div className="flex items-center justify-between">
-            <Button
-              onClick={() => navigate('/')}
-              variant="link"
-              className="justify-start"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Movies
-            </Button>
-            <Button
-              onClick={handleShare}
-              variant="ghost"
-              size="icon"
-              aria-label={copied ? 'Link copied' : 'Share this movie'}
-            >
-              {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-            </Button>
-          </div>
-
-           <Card className="overflow-hidden">
-             <MovieHeader movie={movie} plot={movie.plot} />
-           </Card>
+      <div className="flex flex-col gap-6 sm:gap-8">
+        <div style={{ backgroundColor: 'rgb(var(--surface))' }}>
+          <MovieHeader
+            movie={movie}
+            plot={movie.plot}
+            onBack={() => navigate('/')}
+            onShare={handleShare}
+            shared={copied}
+          />
         </div>
 
-         <Card className="overflow-clip">
+        <div className="px-0 sm:px-6 lg:px-9">
           <ShowtimesTable
             movie={movie}
             tableMode={filters.tableMode}
@@ -183,7 +165,7 @@ const MovieDetailPage: React.FC = () => {
             cinemaColors={cinemaColors}
             onCinemaClick={handleCinemaClick}
           />
-        </Card>
+        </div>
       </div>
 
       <CinemaPopup

@@ -52,44 +52,42 @@ const ShowtimesGrid: React.FC<Props> = ({
       })
     );
 
-  const tableMinWidth = 56 + datesWithShowings.length * 180;
+  const tableMinWidth = 64 + datesWithShowings.length * 180;
 
   const colgroup = (
     <colgroup>
-      <col style={{ width: 56, minWidth: 56, maxWidth: 56 }} />
+      <col style={{ width: 64, minWidth: 64, maxWidth: 64 }} />
     </colgroup>
   );
 
   return (
-    <div>
-      {/* Sticky header — clipped, synced to body scroll via native listener */}
+    <div className="rounded-xl border" style={{ borderColor: 'rgb(var(--border))' }}>
+      {/* Sticky header — clipped, synced to body scroll via native listener.
+          Note: this outer wrapper must NOT set overflow itself — any ancestor
+          with overflow other than visible becomes the sticky containing block,
+          which stops the header from sticking to the window as you scroll. */}
       <div
         ref={headerRef}
-        className="sticky z-20 overflow-hidden"
-        style={{ top: 0, borderBottom: '1px solid rgb(var(--border) / 0.4)' }}
+        className="sticky z-20 overflow-hidden rounded-t-xl"
+        style={{ top: 0, borderBottom: '1px solid rgb(var(--border))' }}
       >
-        <table
-          className="w-full table-fixed"
-          style={{ minWidth: tableMinWidth, backgroundColor: 'rgb(var(--surface-muted))' }}
-        >
+        <table className="w-full table-fixed" style={{ minWidth: tableMinWidth, backgroundColor: 'rgb(var(--surface-muted))' }}>
           {colgroup}
           <thead>
             <tr>
               <th
-                className="sticky left-0 whitespace-nowrap px-2 py-2 text-left text-xs font-semibold"
-                style={{ backgroundColor: 'rgb(var(--surface-muted))', color: 'rgb(var(--text))' }}
+                className="sticky left-0 whitespace-nowrap px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider"
+                style={{ backgroundColor: 'rgb(var(--surface-muted))', color: 'rgb(var(--text-soft))' }}
               >
                 Time
               </th>
               {datesWithShowings.map(date => (
-                <th
-                  key={date}
-                  className="px-1 py-2 text-left text-xs font-semibold"
-                  style={{ color: 'rgb(var(--text))' }}
-                >
+                <th key={date} className="border-l px-3 py-2.5 text-left" style={{ borderColor: 'rgb(var(--border))' }}>
                   <div className="whitespace-nowrap">
-                    {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}{' '}
-                    <span className="font-normal" style={{ color: 'rgb(var(--text-muted))' }}>
+                    <span className="text-sm font-bold" style={{ color: 'rgb(var(--text))' }}>
+                      {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
+                    </span>
+                    <span className="ml-1.5 text-sm" style={{ color: 'rgb(var(--text-muted))' }}>
                       {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
                     </span>
                   </div>
@@ -101,19 +99,15 @@ const ShowtimesGrid: React.FC<Props> = ({
       </div>
 
       {/* Scrollable body */}
-      <div ref={bodyRef} className="overflow-x-auto">
+      <div ref={bodyRef} className="overflow-x-auto rounded-b-xl">
         <table className="w-full table-fixed" style={{ minWidth: tableMinWidth }}>
           {colgroup}
           <tbody>
             {allTimes.map(time => (
-              <tr
-                key={time}
-                className="border-b transition-colors hover:bg-[rgb(var(--surface-muted)/0.5)]"
-                style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
-              >
+              <tr key={time} className="border-t" style={{ borderColor: 'rgb(var(--border) / .4)' }}>
                 <td
-                  className="tabular sticky left-0 z-10 whitespace-nowrap bg-[rgb(var(--surface))] px-2 py-1 font-mono text-sm"
-                  style={{ color: 'rgb(var(--text-soft))' }}
+                  className="tabular sticky left-0 z-10 whitespace-nowrap px-3 py-1.5 align-top font-mono text-sm"
+                  style={{ backgroundColor: 'rgb(var(--surface))', color: 'rgb(var(--text-soft))' }}
                 >
                   {time}
                 </td>
@@ -122,9 +116,9 @@ const ShowtimesGrid: React.FC<Props> = ({
                     matchesFilters(s, selectedCinemas, selectedVariants)
                   );
                   return (
-                    <td key={date} className="max-w-[120px] px-1 py-1 text-left">
+                    <td key={date} className="border-l px-2 py-1.5 align-top" style={{ borderColor: 'rgb(var(--border) / .4)' }}>
                       {filtered.length > 0 ? (
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex min-w-0 flex-col gap-1">
                           {filtered.map((showing, idx) => (
                             <ShowingEntry
                               key={idx}
@@ -137,7 +131,7 @@ const ShowtimesGrid: React.FC<Props> = ({
                           ))}
                         </div>
                       ) : (
-                        <div className="flex min-h-9 items-center px-2 text-xs" style={{ color: 'rgb(var(--text-soft))' }}>—</div>
+                        <div className="flex min-h-8 items-center px-1 text-xs" style={{ color: 'rgb(var(--text-soft))' }}>—</div>
                       )}
                     </td>
                   );

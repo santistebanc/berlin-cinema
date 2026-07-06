@@ -35,7 +35,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies: _movies, onSearch: _onSea
   };
 
   return (
-    <div className="relative mx-4 max-w-2xl flex-1">
+    <div className="relative mx-auto w-full max-w-xl flex-1">
       <div className="relative">
         <TextInput
           type="text"
@@ -43,11 +43,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies: _movies, onSearch: _onSea
           placeholder="Search title, director, actor, genre…"
           value={searchQuery}
           onChange={handleInputChange}
-          className="py-2 pl-10 pr-10"
+          className={`h-10 py-2 pl-10 ${searchQuery ? 'pr-10' : 'pr-4'} text-sm transition-shadow ${
+            searchQuery ? 'border-[rgb(var(--accent))] shadow-[0_0_0_3px_rgb(var(--accent)/0.16)]' : ''
+          }`}
         />
 
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Search className="h-5 w-5" style={{ color: 'rgb(var(--text-soft))' }} />
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+          <Search className="h-4 w-4" style={{ color: searchQuery ? 'rgb(var(--accent))' : 'rgb(var(--text-soft))' }} />
         </div>
 
         {searchQuery && (
@@ -55,9 +57,9 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies: _movies, onSearch: _onSea
             onClick={clearSearch}
             variant="ghost"
             size="icon"
-            className="absolute inset-y-0 right-1 my-auto h-8 w-8"
+            className="absolute inset-y-0 right-1 my-auto h-8 w-8 rounded-full"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>

@@ -4,7 +4,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import MovieDetailPage from './pages/MovieDetailPage';
-import { ThemeProvider } from './contexts/ThemeContext';
 import { MovieProvider, useMovies } from './contexts/MovieContext';
 
 // Module-level flag — suppresses save listener during our own scrollTo calls
@@ -37,18 +36,14 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(var(--bg))' }}>
       <Header movies={movies} onSearch={() => {}} />
-      <main className="py-3 sm:py-6">
+      <main>
         <Routes>
           <Route path="/" element={
-            <div className="px-3 sm:px-6 lg:px-8">
+            <div className="px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
               <HomePage movies={movies} loading={loading} error={error} />
             </div>
           } />
-          <Route path="/:title" element={
-            <div className="px-0 sm:px-6 lg:px-8">
-              <MovieDetailPage />
-            </div>
-          } />
+          <Route path="/:title" element={<MovieDetailPage />} />
         </Routes>
       </main>
     </div>
@@ -58,11 +53,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <HelmetProvider>
-      <ThemeProvider>
-        <MovieProvider>
-          <AppContent />
-        </MovieProvider>
-      </ThemeProvider>
+      <MovieProvider>
+        <AppContent />
+      </MovieProvider>
     </HelmetProvider>
   );
 };

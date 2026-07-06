@@ -30,67 +30,57 @@ const ShowtimesStacked: React.FC<Props> = ({
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
   return (
-    <div>
-      {filteredDates.map(date => {
+    // No overflow set here: any ancestor with overflow other than visible becomes
+    // the sticky containing block, which stops the date headers below from
+    // sticking to the window as you scroll.
+    <div className="rounded-xl border" style={{ borderColor: 'rgb(var(--border))' }}>
+      {filteredDates.map((date, dateIdx) => {
         const dateShowings = showings[date];
         const filteredTimes = Object.keys(dateShowings)
           .filter(time => dateShowings[time].some(s => matchesFilters(s, selectedCinemas, selectedVariants)))
           .sort();
 
         return (
-          <div key={date}>
+          <div key={date} className={dateIdx > 0 ? 'border-t' : ''} style={{ borderColor: 'rgb(var(--border))' }}>
             <div
-              className="sticky z-10 border-b px-3 py-2 text-xs"
-              style={{
-                top: 0,
-                backgroundColor: 'rgb(var(--surface-muted))',
-                borderColor: 'rgb(var(--border))',
-              }}
+              className={dateIdx === 0 ? 'sticky top-0 z-10 flex items-baseline gap-2 rounded-t-xl px-4 py-2' : 'sticky top-0 z-10 flex items-baseline gap-2 px-4 py-2'}
+              style={{ backgroundColor: 'rgb(var(--surface-muted))', borderBottom: '1px solid rgb(var(--border))' }}
             >
-              <span className="text-xs font-semibold" style={{ color: 'rgb(var(--text))' }}>
+              <span className="text-[13px] font-bold" style={{ color: 'rgb(var(--text))' }}>
                 {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
               </span>
-              <span className="ml-1.5 text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+              <span className="text-[13px]" style={{ color: 'rgb(var(--text-muted))' }}>
                 {new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
               </span>
             </div>
-            <table className="w-full table-fixed">
-              <tbody>
-                {filteredTimes.map(time => {
-                  const showingsList = dateShowings[time].filter(s =>
-                    matchesFilters(s, selectedCinemas, selectedVariants)
-                  );
-                  return (
-                    <tr
-                      key={time}
-                      className="border-b transition-colors hover:bg-[rgb(var(--surface-muted)/0.5)]"
-                      style={{ borderColor: 'rgb(var(--border) / 0.4)' }}
-                    >
-                      <td
-                        className="tabular w-14 whitespace-nowrap bg-[rgb(var(--surface))] px-2 py-1 font-mono text-sm"
-                        style={{ color: 'rgb(var(--text-soft))' }}
-                      >
-                        {time}
-                      </td>
-                      <td className="w-full px-2 py-1">
-                        <div className="flex flex-wrap gap-0.5">
-                          {showingsList.map((showing, idx) => (
-                            <ShowingEntry
-                              key={idx}
-                              cinema={showing.cinema}
-                              variants={showing.variants}
-                              colorClass={cinemaColors[showing.cinema] ?? ''}
-                              label={showing.cinema}
-                              onCinemaClick={onCinemaClick}
-                            />
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {filteredTimes.map((time, timeIdx) => {
+              const showingsList = dateShowings[time].filter(s =>
+                matchesFilters(s, selectedCinemas, selectedVariants)
+              );
+              return (
+                <div
+                  key={time}
+                  className="flex gap-3 px-4 py-2"
+                  style={{ borderTop: timeIdx > 0 ? '1px solid rgb(var(--border) / .4)' : undefined }}
+                >
+                  <span className="tabular w-11 shrink-0 pt-0.5 font-mono text-[13.5px]" style={{ color: 'rgb(var(--text-soft))' }}>
+                    {time}
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                    {showingsList.map((showing, idx) => (
+                      <ShowingEntry
+                        key={idx}
+                        cinema={showing.cinema}
+                        variants={showing.variants}
+                        colorClass={cinemaColors[showing.cinema] ?? ''}
+                        label={showing.cinema}
+                        onCinemaClick={onCinemaClick}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
       })}
