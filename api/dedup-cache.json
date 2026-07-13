@@ -377,6 +377,13 @@
       "reason": "same OSM address",
       "method": "address",
       "at": "2026-07-09T02:48:37.998Z"
+    },
+    "open air kino kulturfabrik berlin moabit|open air sommerkino des neuen kranzler ecks": {
+      "same": true,
+      "confidence": 0.9056423124230946,
+      "reason": "embedding similarity 0.91",
+      "method": "embedding",
+      "at": "2026-07-13T19:21:17.587Z"
     }
   },
   "movies": {
