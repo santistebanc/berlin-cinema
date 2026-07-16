@@ -414,6 +414,55 @@
       "reason": "embedding similarity 0.67",
       "method": "embedding",
       "at": "2026-07-15T02:13:25.953Z"
+    },
+    "obsession|obsession du sollst mich lieben": {
+      "same": false,
+      "confidence": 0.7249274105586657,
+      "reason": "embedding similarity 0.72",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.706Z"
+    },
+    "virginia woolf's night & day|virginia woolf's night and day": {
+      "same": true,
+      "confidence": 0.9144487855689205,
+      "reason": "embedding similarity 0.91",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.764Z"
+    },
+    "moana|vaiana": {
+      "same": false,
+      "confidence": 0.5886375494310614,
+      "reason": "embedding similarity 0.59",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.783Z"
+    },
+    "star wars: the mandalorian & grogu|star wars: the mandalorian and grogu": {
+      "same": true,
+      "confidence": 0.9359047813221011,
+      "reason": "embedding similarity 0.94",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.866Z"
+    },
+    "ninxs das leben glitzert|niñxs das leben glitzert": {
+      "same": false,
+      "confidence": 0.7062548025043363,
+      "reason": "embedding similarity 0.71",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.938Z"
+    },
+    "hannah montana|hannah montana der film": {
+      "same": false,
+      "confidence": 0.6829146555966146,
+      "reason": "embedding similarity 0.68",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:46.016Z"
+    },
+    "in a whisper|in a whsper": {
+      "same": true,
+      "confidence": 0.917217608083908,
+      "reason": "embedding similarity 0.92",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:46.061Z"
     }
   }
 }
