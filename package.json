@@ -41,6 +41,7 @@
     "build": "vite build",
     "postbuild": "ts-node --project tsconfig.server.json scripts/generate-og-pages.ts",
     "scrape": "ts-node --project tsconfig.server.json scripts/scrape.ts",
+    "test": "ts-node --project tsconfig.server.json api/tmdb-client.test.ts",
     "scrape:force": "ts-node --project tsconfig.server.json scripts/scrape.ts --force-enrich",
     "screenshots": "ts-node --project tsconfig.server.json scripts/screenshot.ts",
     "screenshots:local": "ts-node --project tsconfig.server.json scripts/screenshot.ts http://localhost:4173",

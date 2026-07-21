@@ -9,6 +9,7 @@ import {
   logResolverStatus,
   mergeMovieRecords,
 } from '../api/entity-resolver';
+import { tokenSetRatio } from '../api/fuzzy-match';
 import { Movie } from '../src/types';
 import fs from 'fs';
 import path from 'path';
@@ -129,6 +130,20 @@ function copyTmdbFields(from: Movie, to: Movie) {
   to.tmdbFetched = true;
 }
 
+function canReuseTmdbCache(movie: Movie, cached: Movie): boolean {
+  if (!cached.tmdbFetched) return false;
+
+  if (movie.year && cached.year && Math.abs(movie.year - cached.year) > 1) {
+    return false;
+  }
+
+  if (movie.director && cached.director && tokenSetRatio(movie.director, cached.director) < 0.65) {
+    return false;
+  }
+
+  return true;
+}
+
 export interface MergeOptions {
   forceEnrich?: boolean;
   skipBerlinDe?: boolean;
@@ -177,6 +192,27 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
   }
 
   const data = { movies: mergedMovies, total: mergedMovies.length, scrapedAt: new Date().toISOString() };
+
+  // "OF" ("Originalfassung") means the same thing as "OV" — normalize regardless
+  // of TMDb enrichment/language, and regardless of stale raw scrape caches.
+  for (const movie of data.movies) {
+    movie.variants = [...new Set(movie.variants.map((v: string) => v === 'OF' ? 'OV' : v))];
+    for (const times of Object.values(movie.showings as Record<string, Record<string, any[]>>)) {
+      for (const [time, entries] of Object.entries(times)) {
+        for (const entry of entries) {
+          if (entry.variants) entry.variants = entry.variants.map((v: string) => v === 'OF' ? 'OV' : v);
+        }
+        const seen = new Set<string>();
+        times[time] = entries.filter((entry: any) => {
+          const key = entry.cinema + '|' + (entry.variants ?? []).slice().sort().join('|');
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+    }
+  }
+
   const existingMovies = tmdb ? loadExistingMovies() : new Map();
 
   if (tmdb) {
@@ -190,13 +226,16 @@ export async function merge(opts: MergeOptions = {}): Promise<void> {
       if (isSpecial) { movie.tmdbFetched = true; continue; }
 
       const oldMovie = existingMovies.get(movie.title.toLowerCase());
-      if (!forceEnrich && oldMovie?.tmdbFetched) {
+      if (!forceEnrich && oldMovie && canReuseTmdbCache(movie, oldMovie)) {
         copyTmdbFields(oldMovie, movie);
         cacheHits++;
         continue;
       }
 
-      const tmdbData = await tmdb.enrichMovie(movie.title, movie.altTitle);
+      const tmdbData = await tmdb.enrichMovie(movie.title, movie.altTitle, {
+        year: movie.year,
+        director: movie.director,
+      });
       if (tmdbData) {
         enrichedCount++;
         movie.originalTitle = tmdbData.originalTitle;
