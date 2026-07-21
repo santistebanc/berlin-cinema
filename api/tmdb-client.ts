@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { parseTitle } from './title-utils';
+import { tokenSetRatio } from './fuzzy-match';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
@@ -14,6 +15,8 @@ interface TmdbSearchResult {
   genre_ids: number[];
   original_language: string;
   vote_average: number;
+  vote_count?: number;
+  popularity?: number;
 }
 
 interface TmdbMovieDetails {
@@ -58,6 +61,11 @@ export interface TmdbMovieData {
   keywords: string[];
 }
 
+export interface TmdbSearchContext {
+  year?: number | null;
+  director?: string | null;
+}
+
 class TmdbClient {
   private apiKey: string;
   private requestCount: number = 0;
@@ -82,7 +90,52 @@ class TmdbClient {
     }
   }
 
-  async searchMovie(title: string): Promise<TmdbSearchResult | null> {
+  private yearFromDate(date: string | null | undefined): number | null {
+    if (!date) return null;
+    const year = parseInt(date.split('-')[0], 10);
+    return Number.isFinite(year) ? year : null;
+  }
+
+  private titleMatchScore(result: TmdbSearchResult, title: string): number {
+    const expected = title.toLowerCase();
+    const titleLower = result.title.toLowerCase();
+    const originalLower = result.original_title.toLowerCase();
+
+    if (titleLower === expected) return 1;
+    if (originalLower === expected) return 0.95;
+    return Math.max(tokenSetRatio(result.title, title), tokenSetRatio(result.original_title, title));
+  }
+
+  private movieSearchScore(result: TmdbSearchResult, title: string, context: TmdbSearchContext): number {
+    let score = this.titleMatchScore(result, title) * 3;
+
+    const resultYear = this.yearFromDate(result.release_date);
+    if (context.year && resultYear) {
+      const yearDiff = Math.abs(context.year - resultYear);
+      if (yearDiff === 0) score += 1.25;
+      else if (yearDiff === 1) score += 0.35;
+      else score -= Math.min(1.5, yearDiff * 0.15);
+    }
+
+    if (result.poster_path) score += 0.15;
+    if (result.overview) score += 0.08;
+    if (result.popularity) score += Math.min(0.35, Math.log10(result.popularity + 1) * 0.12);
+    if (result.vote_count) score += Math.min(0.25, Math.log10(result.vote_count + 1) * 0.08);
+
+    return score;
+  }
+
+  private async directorScore(movieId: number, expectedDirector: string): Promise<number> {
+    const fullData = await this.getMovieDetails(movieId);
+    const director = fullData?.credits.crew.find(c => c.job === 'Director')?.name;
+    if (!director) return 0;
+    const score = tokenSetRatio(director, expectedDirector);
+    if (score > 0.9) return 1.5;
+    if (score > 0.65) return 0.75;
+    return -0.75;
+  }
+
+  async searchMovie(title: string, context: TmdbSearchContext = {}): Promise<TmdbSearchResult | null> {
     await this.rateLimit();
     try {
       const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
@@ -98,14 +151,25 @@ class TmdbClient {
       const results = response.data.results as TmdbSearchResult[];
       if (!results || results.length === 0) return null;
 
-      // Find best match: exact title match first, then closest
-      const exactMatch = results.find(r =>
-        r.title.toLowerCase() === title.toLowerCase()
-      );
-      if (exactMatch) return exactMatch;
+      const ranked = results
+        .map((result, index) => ({
+          result,
+          index,
+          score: this.movieSearchScore(result, title, context),
+        }))
+        .sort((a, b) => b.score - a.score || a.index - b.index);
 
-      // Prefer results with posters and recent releases
-      return results.find(r => r.poster_path) ?? results[0];
+      if (context.director) {
+        const titleCloseEnough = ranked
+          .filter(r => this.titleMatchScore(r.result, title) >= 0.9)
+          .slice(0, 5);
+        for (const candidate of titleCloseEnough) {
+          candidate.score += await this.directorScore(candidate.result.id, context.director);
+        }
+        ranked.sort((a, b) => b.score - a.score || a.index - b.index);
+      }
+
+      return ranked[0].result;
     } catch (err) {
       console.error(`  TMDb search failed for "${title}":`, (err as Error).message);
       return null;
@@ -161,20 +225,20 @@ class TmdbClient {
     return `${TMDB_IMAGE_BASE_URL}/${size}${posterPath}`;
   }
 
-  async enrichMovie(title: string, altTitle?: string | null): Promise<TmdbMovieData | null> {
+  async enrichMovie(title: string, altTitle?: string | null, context: TmdbSearchContext = {}): Promise<TmdbMovieData | null> {
     const searchTitle = parseTitle(title).baseTitle;
-    let searchResult = await this.searchMovie(searchTitle);
+    let searchResult = await this.searchMovie(searchTitle, context);
 
     if (!searchResult && title.includes(' - ')) {
       const baseTitle = parseTitle(title.split(' - ')[0].trim()).baseTitle;
       console.log(`  Retrying TMDb search with base title: "${baseTitle}"`);
-      searchResult = await this.searchMovie(baseTitle);
+      searchResult = await this.searchMovie(baseTitle, context);
     }
 
     if (!searchResult && altTitle) {
       const altSearch = parseTitle(altTitle).baseTitle;
       console.log(`  Retrying TMDb search with altTitle: "${altSearch}"`);
-      searchResult = await this.searchMovie(altSearch);
+      searchResult = await this.searchMovie(altSearch, context);
     }
 
     if (!searchResult) {
