@@ -69,6 +69,7 @@ export interface TmdbSearchContext {
 interface TmdbSearchCandidate {
   result: TmdbSearchResult;
   query: string;
+  language: string;
   order: number;
 }
 
@@ -141,14 +142,14 @@ class TmdbClient {
     return -0.75;
   }
 
-  async searchMovie(title: string, context: TmdbSearchContext = {}): Promise<TmdbSearchResult | null> {
+  async searchMovie(title: string, context: TmdbSearchContext = {}, language = 'en-US'): Promise<TmdbSearchResult | null> {
     await this.rateLimit();
     try {
       const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
         params: {
           api_key: this.apiKey,
           query: title,
-          language: 'en-US',
+          language,
           page: 1,
         },
         timeout: 10000,
@@ -176,6 +177,27 @@ class TmdbClient {
     } catch (err) {
       console.error(`  TMDb search failed for "${title}":`, (err as Error).message);
       return null;
+    }
+  }
+
+  private async searchMovieCandidates(title: string, language: string): Promise<TmdbSearchResult[]> {
+    await this.rateLimit();
+    try {
+      const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
+        params: {
+          api_key: this.apiKey,
+          query: title,
+          language,
+          page: 1,
+        },
+        timeout: 10000,
+      });
+
+      const results = response.data.results as TmdbSearchResult[];
+      return results?.slice(0, 5) ?? [];
+    } catch (err) {
+      console.error(`  TMDb search failed for "${title}" (${language}):`, (err as Error).message);
+      return [];
     }
   }
 
@@ -275,12 +297,15 @@ class TmdbClient {
     }
 
     const candidates: TmdbSearchCandidate[] = [];
+    const languages = ['en-US', 'de-DE'];
     for (const [order, query] of searches.entries()) {
       if (order > 0) {
         console.log(`  Trying additional TMDb search for "${title}" with: "${query}"`);
       }
-      const result = await this.searchMovie(query, context);
-      if (result) candidates.push({ result, query, order });
+      for (const language of languages) {
+        const results = await this.searchMovieCandidates(query, language);
+        candidates.push(...results.map(result => ({ result, query, language, order })));
+      }
     }
 
     const searchResult = await this.chooseBestCandidate(candidates, context);
