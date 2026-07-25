@@ -6,15 +6,16 @@ const originalGet = axios.get;
 
 function movieDetails(id: number, director: string) {
   const isNolanOdyssey = id === 2026;
+  const isSpaceOdyssey = id === 2001;
   return {
     id,
-    title: isNolanOdyssey ? 'The Odyssey' : id === 3000 ? 'Die Odyssee der Kinder' : 'The Odyssey',
+    title: isNolanOdyssey ? 'The Odyssey' : id === 3000 ? 'Die Odyssee der Kinder' : isSpaceOdyssey ? '2001: A Space Odyssey' : 'The Odyssey',
     overview: '',
     tagline: null,
     runtime: 120,
     vote_average: 0,
     vote_count: 0,
-    release_date: isNolanOdyssey || id === 3000 ? '2026-07-17' : '1997-05-18',
+    release_date: isNolanOdyssey || id === 3000 ? '2026-07-17' : isSpaceOdyssey ? '1968-04-02' : '1997-05-18',
     poster_path: null,
     backdrop_path: null,
     genres: [],
@@ -153,9 +154,77 @@ async function testEnrichSearchesAltTitleBeforeAcceptingGermanFalsePositive() {
   }
 }
 
+async function testEnrichSearchesLocalizedTitlesForGermanReleaseNames() {
+  (axios as any).get = async (url: string, opts?: { params?: { query?: string; language?: string } }) => {
+    if (url.includes('/search/movie')) {
+      const query = opts?.params?.query;
+      const language = opts?.params?.language;
+      if (query === '2001: Odyssee im Weltraum' && language === 'en-US') {
+        return {
+          data: {
+            results: [
+              {
+                id: 4000,
+                title: 'Von Shining bis 2001 – Odyssee im Weltraum',
+                original_title: 'Von Shining bis 2001 – Odyssee im Weltraum',
+                release_date: '2019-01-01',
+                poster_path: '/doc.jpg',
+                overview: 'Wrong documentary match',
+                genre_ids: [],
+                original_language: 'de',
+                vote_average: 0,
+                vote_count: 1,
+                popularity: 7,
+              },
+            ],
+          },
+        };
+      }
+
+      if (query === '2001: Odyssee im Weltraum' && language === 'de-DE') {
+        return {
+          data: {
+            results: [
+              {
+                id: 2001,
+                title: '2001: Odyssee im Weltraum',
+                original_title: '2001: A Space Odyssey',
+                release_date: '1968-04-02',
+                poster_path: '/space.jpg',
+                overview: 'Kubrick film',
+                genre_ids: [],
+                original_language: 'en',
+                vote_average: 8,
+                vote_count: 1000,
+                popularity: 20,
+              },
+            ],
+          },
+        };
+      }
+    }
+
+    if (url.includes('/movie/4000')) return { data: movieDetails(4000, 'Christian Leblé') };
+    if (url.includes('/movie/2001')) return { data: movieDetails(2001, 'Stanley Kubrick') };
+
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  try {
+    const client = new TmdbClient('test-key');
+    const result = await client.enrichMovie('2001: Odyssee im Weltraum');
+
+    assert.equal(result?.tmdbTitle, '2001: A Space Odyssey');
+    assert.equal(result?.director, 'Stanley Kubrick');
+  } finally {
+    (axios as any).get = originalGet;
+  }
+}
+
 Promise.resolve()
   .then(testSearchUsesYearAndDirectorForAmbiguousExactTitles)
   .then(testEnrichSearchesAltTitleBeforeAcceptingGermanFalsePositive)
+  .then(testEnrichSearchesLocalizedTitlesForGermanReleaseNames)
   .then(() => console.log('tmdb-client tests passed'))
   .catch(err => {
     console.error(err);
