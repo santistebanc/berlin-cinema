@@ -144,7 +144,7 @@ const MovieDetailPage: React.FC = () => {
           />
         </div>
 
-        <div className="px-0 sm:px-6 lg:px-9">
+        <div className="px-0 pb-6 sm:px-6 sm:pb-8 lg:px-9 lg:pb-10">
           <ShowtimesTable
             movie={movie}
             tableMode={filters.tableMode}
