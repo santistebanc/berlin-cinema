@@ -133,6 +133,15 @@ function copyTmdbFields(from: Movie, to: Movie) {
 function canReuseTmdbCache(movie: Movie, cached: Movie): boolean {
   if (!cached.tmdbFetched) return false;
 
+  const cachedTitle = cached.tmdbTitle || cached.originalTitle;
+  if (cachedTitle) {
+    const titleScore = tokenSetRatio(movie.title, cachedTitle);
+    const altScore = movie.altTitle ? tokenSetRatio(movie.altTitle, cachedTitle) : 0;
+    if (Math.max(titleScore, altScore) < 0.75) {
+      return false;
+    }
+  }
+
   if (movie.year && cached.year && Math.abs(movie.year - cached.year) > 1) {
     return false;
   }
