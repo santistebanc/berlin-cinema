@@ -66,6 +66,12 @@ export interface TmdbSearchContext {
   director?: string | null;
 }
 
+interface TmdbSearchCandidate {
+  result: TmdbSearchResult;
+  query: string;
+  order: number;
+}
+
 class TmdbClient {
   private apiKey: string;
   private requestCount: number = 0;
@@ -160,10 +166,7 @@ class TmdbClient {
         .sort((a, b) => b.score - a.score || a.index - b.index);
 
       if (context.director) {
-        const titleCloseEnough = ranked
-          .filter(r => this.titleMatchScore(r.result, title) >= 0.9)
-          .slice(0, 5);
-        for (const candidate of titleCloseEnough) {
+        for (const candidate of ranked.slice(0, 5)) {
           candidate.score += await this.directorScore(candidate.result.id, context.director);
         }
         ranked.sort((a, b) => b.score - a.score || a.index - b.index);
@@ -225,21 +228,62 @@ class TmdbClient {
     return `${TMDB_IMAGE_BASE_URL}/${size}${posterPath}`;
   }
 
+  private async chooseBestCandidate(candidates: TmdbSearchCandidate[], context: TmdbSearchContext): Promise<TmdbSearchResult | null> {
+    const ranked = new Map<number, { result: TmdbSearchResult; score: number; order: number }>();
+
+    for (const candidate of candidates) {
+      const score = this.movieSearchScore(candidate.result, candidate.query, context);
+      const existing = ranked.get(candidate.result.id);
+      if (!existing || score > existing.score) {
+        ranked.set(candidate.result.id, {
+          result: candidate.result,
+          score,
+          order: Math.min(existing?.order ?? candidate.order, candidate.order),
+        });
+      }
+    }
+
+    const sorted = Array.from(ranked.values())
+      .sort((a, b) => b.score - a.score || a.order - b.order);
+
+    if (context.director) {
+      for (const candidate of sorted.slice(0, 5)) {
+        candidate.score += await this.directorScore(candidate.result.id, context.director);
+      }
+      sorted.sort((a, b) => b.score - a.score || a.order - b.order);
+    }
+
+    return sorted[0]?.result ?? null;
+  }
+
   async enrichMovie(title: string, altTitle?: string | null, context: TmdbSearchContext = {}): Promise<TmdbMovieData | null> {
     const searchTitle = parseTitle(title).baseTitle;
-    let searchResult = await this.searchMovie(searchTitle, context);
+    const searches = [searchTitle];
 
-    if (!searchResult && title.includes(' - ')) {
+    if (title.includes(' - ')) {
       const baseTitle = parseTitle(title.split(' - ')[0].trim()).baseTitle;
-      console.log(`  Retrying TMDb search with base title: "${baseTitle}"`);
-      searchResult = await this.searchMovie(baseTitle, context);
+      if (baseTitle && !searches.includes(baseTitle)) {
+        searches.push(baseTitle);
+      }
     }
 
-    if (!searchResult && altTitle) {
+    if (altTitle) {
       const altSearch = parseTitle(altTitle).baseTitle;
-      console.log(`  Retrying TMDb search with altTitle: "${altSearch}"`);
-      searchResult = await this.searchMovie(altSearch, context);
+      if (altSearch && !searches.includes(altSearch)) {
+        searches.push(altSearch);
+      }
     }
+
+    const candidates: TmdbSearchCandidate[] = [];
+    for (const [order, query] of searches.entries()) {
+      if (order > 0) {
+        console.log(`  Trying additional TMDb search for "${title}" with: "${query}"`);
+      }
+      const result = await this.searchMovie(query, context);
+      if (result) candidates.push({ result, query, order });
+    }
+
+    const searchResult = await this.chooseBestCandidate(candidates, context);
 
     if (!searchResult) {
       console.log(`  No TMDb match for "${title}"`);
