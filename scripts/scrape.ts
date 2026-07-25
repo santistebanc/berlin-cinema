@@ -13,7 +13,9 @@ async function main() {
     scrapeCriticDe(),
     skipBerlinDe
       ? Promise.resolve().then(() => console.log('berlin.de: skipped'))
-      : scrapeBerlinDe(),
+      : scrapeBerlinDe().catch(err => {
+        console.warn(`berlin.de: scrape failed, continuing with cached raw data: ${(err as Error).message}`);
+      }),
   ]);
 
   await merge({ forceEnrich, skipBerlinDe });
