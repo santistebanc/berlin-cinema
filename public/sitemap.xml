@@ -973,6 +973,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.site/finding-connection</loc>
+    <lastmod>2026-08-13</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.site/the-little-sister</loc>
     <lastmod>2026-08-13</lastmod>
     <changefreq>daily</changefreq>
@@ -1082,12 +1088,6 @@
   </url>
   <url>
     <loc>https://ovberlin.site/ninja-motherfcking-destruction</loc>
-    <lastmod>2026-08-13</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.site/finding-connection</loc>
     <lastmod>2026-08-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
