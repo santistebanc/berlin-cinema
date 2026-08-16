@@ -1,0 +1,538 @@
+{
+  "cinemas": {
+    "babylon kreuzberg|freiluftkino kreuzberg": {
+      "same": true,
+      "confidence": 0.9095986789822254,
+      "reason": "embedding similarity 0.91",
+      "method": "embedding",
+      "at": "2026-07-05T21:41:43.656Z"
+    },
+    "freilichtbuehne weissensee|freiluftkino neue zukunft": {
+      "same": true,
+      "confidence": 0.9107707642023812,
+      "reason": "embedding similarity 0.91",
+      "method": "embedding",
+      "at": "2026-07-05T21:41:44.093Z"
+    },
+    "alhambra|alhambra": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "cinemaxx|cinemaxx": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "cinestar cubix am alexanderplatz|cinestar cubix am alexanderplatz": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "cinestar berlin tegel|cinestar der filmpalast wildau": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "delphi lux|delphi lux": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "rollberg kino|rollberg kino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "uci kinowelt am eastgate|uci kinowelt gropius passagen": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "uci kinowelt berlin east side gallery luxe|uci kinowelt gropius passagen": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "uci kinowelt gropius passagen|uci kinowelt gropius passagen": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "zoo palast|zoo palast": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "b ware ladenkino|b ware ladenkino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "babylon kreuzberg|babylon kreuzberg": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "cinestar der filmpalast wildau|cinestar kino in der kulturbrauerei": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "filmtheater am friedrichshain|filmtheater am friedrichshain": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "kino intimes|kino intimes": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "moviemento|moviemento": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "odeon|odeon": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "filmrauschpalast im kulturfabrik moabit|filmrauschpalast im kulturfabrik moabit": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "hackesche hoefe kino|hackesche hoefe kino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "passage kinos|passage kinos": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "cinemotion berlin hohenschoenhausen|cinemotion berlin hohenschoenhausen": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "delphi filmpalast am zoo|delphi filmpalast am zoo": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "filmkunst 66|filmkunst 66": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "yorck kinos|yorck kinos": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "il kino|il kino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "babylon mitte|babylon mitte": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "international|international": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "xenon|xenon": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "kino krokodil|kino krokodil": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "lichtblick kino|lichtblick kino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "wolf kino berlin|wolf kino berlin": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "tilsiter lichtspiele|tilsiter lichtspiele": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "neues off|neues off": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "casablanca|casablanca": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "bali kino|bali kino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "zeughauskino|zeughauskino deutsches historisches museum": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-07-05T21:41:48.274Z"
+    },
+    "cinema paris|cinema paris": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.752Z"
+    },
+    "acud kino|acud kino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "thalia|thalia": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "arsenal|arsenal": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "colosseum filmtheater|colosseum filmtheater": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "uci kinowelt gropius passagen|uci kinowelt potsdam": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "uci kinowelt am lausitzpark|uci kinowelt gropius passagen": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "delphi filmpalast am zoo|filmpalast": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "cosima filmtheater|cosima filmtheater": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "kant kino|kant kino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-04T08:33:55.467Z"
+    },
+    "sinema transtopia|sinema transtopia": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-01T08:17:20.088Z"
+    },
+    "zeughauskino|zeughauskino": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "freiluftkino neue zukunft|freiluftkino rehberge": {
+      "same": true,
+      "confidence": 0.8842172589445632,
+      "reason": "embedding similarity 0.88",
+      "method": "embedding",
+      "at": "2026-07-06T17:09:40.564Z"
+    },
+    "eva lichtspiele|eva lichtspiele": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "cinestar der filmpalast wildau|cinestar hellersdorf": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    },
+    "arsenal|arsenal institut fuer film und videokunst e v": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-07-09T02:48:37.998Z"
+    },
+    "open air kino kulturfabrik berlin moabit|open air sommerkino des neuen kranzler ecks": {
+      "same": true,
+      "confidence": 0.9056423124230946,
+      "reason": "embedding similarity 0.91",
+      "method": "embedding",
+      "at": "2026-07-13T19:21:17.587Z"
+    },
+    "freiluftkino friedrichshagen|freiluftkino neue zukunft": {
+      "same": true,
+      "confidence": 0.9289735632068368,
+      "reason": "embedding similarity 0.93",
+      "method": "embedding",
+      "at": "2026-08-03T19:27:50.691Z"
+    },
+    "cinestar der filmpalast wildau|cinestar der filmpalast wildau": {
+      "same": true,
+      "confidence": 0.99,
+      "reason": "same OSM address",
+      "method": "address",
+      "at": "2026-08-16T12:34:39.753Z"
+    }
+  },
+  "movies": {
+    "sneak preview|sneak preview ab 18": {
+      "same": true,
+      "confidence": 0.9095706816323446,
+      "reason": "embedding similarity 0.91",
+      "method": "embedding",
+      "at": "2026-07-05T21:41:48.640Z"
+    },
+    "national theatre live: les liaisons dangereuses|national theatre london: les liaisons dangereuses": {
+      "same": true,
+      "confidence": 0.8707774529821691,
+      "reason": "embedding similarity 0.87",
+      "method": "embedding",
+      "at": "2026-07-06T17:10:25.938Z"
+    },
+    "gefaehrliche liebschaften|national theatre london: les liaisons dangereuses": {
+      "same": false,
+      "confidence": 0.42722405702592403,
+      "reason": "embedding similarity 0.43",
+      "method": "embedding",
+      "at": "2026-07-09T09:36:12.406Z"
+    },
+    "sommer|éric rohmer's sommer conte d'été": {
+      "same": false,
+      "confidence": 0.6654943154914095,
+      "reason": "embedding similarity 0.67",
+      "method": "embedding",
+      "at": "2026-07-15T02:13:25.953Z"
+    },
+    "obsession|obsession du sollst mich lieben": {
+      "same": false,
+      "confidence": 0.7249274105586657,
+      "reason": "embedding similarity 0.72",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.706Z"
+    },
+    "virginia woolf's night & day|virginia woolf's night and day": {
+      "same": true,
+      "confidence": 0.9144487855689205,
+      "reason": "embedding similarity 0.91",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.764Z"
+    },
+    "moana|vaiana": {
+      "same": false,
+      "confidence": 0.5886375494310614,
+      "reason": "embedding similarity 0.59",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.783Z"
+    },
+    "star wars: the mandalorian & grogu|star wars: the mandalorian and grogu": {
+      "same": true,
+      "confidence": 0.9359047813221011,
+      "reason": "embedding similarity 0.94",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.866Z"
+    },
+    "ninxs das leben glitzert|niñxs das leben glitzert": {
+      "same": false,
+      "confidence": 0.7062548025043363,
+      "reason": "embedding similarity 0.71",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:45.938Z"
+    },
+    "hannah montana|hannah montana der film": {
+      "same": false,
+      "confidence": 0.6829146555966146,
+      "reason": "embedding similarity 0.68",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:46.016Z"
+    },
+    "in a whisper|in a whsper": {
+      "same": true,
+      "confidence": 0.917217608083908,
+      "reason": "embedding similarity 0.92",
+      "method": "embedding",
+      "at": "2026-07-16T08:11:46.061Z"
+    },
+    "khali balak min nafsak|khaly balak min nafsak": {
+      "same": false,
+      "confidence": 0.7498028977272619,
+      "reason": "embedding similarity 0.75",
+      "method": "embedding",
+      "at": "2026-07-21T08:24:44.340Z"
+    },
+    "blues brothers|the blues brothers extended version": {
+      "same": true,
+      "confidence": 0.9175749276791133,
+      "reason": "embedding similarity 0.92",
+      "method": "embedding",
+      "at": "2026-07-27T19:26:57.003Z"
+    },
+    "don't kill us twice: close to the bone|don't kill us twice: nanamui series": {
+      "same": false,
+      "confidence": 0.674840058487575,
+      "reason": "embedding similarity 0.67",
+      "method": "embedding",
+      "at": "2026-07-27T19:26:57.088Z"
+    },
+    "don't kill us twice: close to the bone|don't kill us twice: voices of the war era in shimakutuba": {
+      "same": false,
+      "confidence": 0.636692564001053,
+      "reason": "embedding similarity 0.64",
+      "method": "embedding",
+      "at": "2026-07-27T19:26:57.106Z"
+    },
+    "shorts attack sundance shorts 2026|sundance shorts 2026": {
+      "same": false,
+      "confidence": 0.7489579887502877,
+      "reason": "embedding similarity 0.75",
+      "method": "embedding",
+      "at": "2026-08-03T19:30:06.329Z"
+    },
+    "national theatre london: audience|national theatre london: the audience": {
+      "same": true,
+      "confidence": 0.9335792406009513,
+      "reason": "embedding similarity 0.93",
+      "method": "embedding",
+      "at": "2026-08-11T01:30:47.885Z"
+    },
+    "chihiros reise ins zauberland|falsch chihiros reise ins zauberland": {
+      "same": false,
+      "confidence": 0.818773058157655,
+      "reason": "embedding similarity 0.82",
+      "method": "embedding",
+      "at": "2026-08-11T01:30:47.909Z"
+    },
+    "doppelt national theatre london: the audience|national theatre london: audience": {
+      "same": true,
+      "confidence": 0.9021121052432045,
+      "reason": "embedding similarity 0.90",
+      "method": "embedding",
+      "at": "2026-08-11T19:01:22.240Z"
+    }
+  }
+}
