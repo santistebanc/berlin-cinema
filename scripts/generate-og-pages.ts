@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const BASE_URL = 'https://ovberlin.site';
+const BASE_URL = 'https://ovberlin.online';
 const distDir = path.join(__dirname, '../dist');
 
 function toSlug(title: string): string {

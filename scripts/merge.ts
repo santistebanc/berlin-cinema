@@ -21,7 +21,7 @@ const tmdb = TMDB_API_KEY ? new TmdbClient(TMDB_API_KEY) : null;
 const CRITIC_RAW = path.join(__dirname, '../data/critic-raw.json');
 const BERLIN_RAW = path.join(__dirname, '../data/berlin-raw.json');
 const MOVIES_JSON = path.join(__dirname, '../public/movies.json');
-const BASE_URL = 'https://ovberlin.site';
+const BASE_URL = 'https://ovberlin.online';
 
 function toSlug(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-');

@@ -2,7 +2,7 @@
 
 Browse what's playing in Berlin cinemas right now — original version (OV) and subtitled (OmU) films, with showtimes, ratings, trailers, and cinema info.
 
-Live at **[ovberlin.site](https://ovberlin.site)**
+Live at **[ovberlin.online](https://ovberlin.online)**
 
 | | |
 |---|---|
