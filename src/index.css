@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+@layer utilities {
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --bg: 10 14 23;
+    --surface: 5 8 19;
+    --surface-muted: 13 20 36;
+    --surface-elevated: 10 15 28;
+    --text: 243 244 246;
+    --text-muted: 209 213 219;
+    --text-soft: 148 163 184;
+    --border: 31 41 55;
+    --border-strong: 55 65 81;
+    --accent: 251 146 60;
+    --accent-strong: 154 52 18;
+    --accent-soft: 67 20 7;
+    --accent-text: 254 215 170;
+    --info-soft: 30 41 59;
+    --info-border: 30 64 175;
+    --info-text: 191 219 254;
+    --danger-soft: 69 10 10;
+    --danger-border: 127 29 29;
+    --danger-text: 254 202 202;
+    --overlay: 0 0 0;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 30px 60px -30px rgb(0 0 0 / 0.8);
+  }
+
+  html {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-optical-sizing: auto;
+    font-kerning: normal;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+  }
+
+  body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--text));
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+.serif {
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+@layer components {
+  .page-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .page-shell {
+      gap: 2rem;
+    }
+  }
+
+  .page-intro {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(var(--text-soft));
+  }
+
+  .font-display {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .page-title {
+    font-size: 1.875rem;
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: rgb(var(--text));
+  }
+
+  .section-title {
+    font-size: 1rem;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: rgb(var(--text));
+  }
+
+  .body-muted {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: rgb(var(--text-muted));
+  }
+
+  .caption {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: rgb(var(--text-soft));
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  .ui-card {
+    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
+    border-radius: 0.875rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ui-muted-surface {
+    background-color: rgb(var(--surface-muted));
+    border-color: rgb(var(--border));
+    border-radius: 0.75rem;
+  }
+
+  .ui-input {
+    width: 100%;
+    border: 1px solid rgb(var(--border));
+    background-color: rgb(5 8 15);
+    color: rgb(var(--text));
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+  }
+
+  .ui-input::placeholder {
+    color: rgb(var(--text-soft));
+  }
+
+  .ui-input:focus {
+    outline: none;
+    border-color: rgb(var(--accent));
+    box-shadow: 0 0 0 3px rgb(var(--accent) / 0.18);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+    border-radius: 0.625rem;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+  }
+
+  .btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .btn-primary {
+    background-color: rgb(var(--accent-strong));
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: rgb(var(--accent-strong) / 0.85);
+  }
+
+  .btn-outline {
+    border: 1px solid rgb(var(--border-strong));
+    background-color: rgb(var(--surface));
+    color: rgb(var(--text-muted));
+  }
+
+  .btn-outline:hover {
+    background-color: rgb(var(--surface-muted));
+  }
+
+  .btn-subtle {
+    background-color: rgb(var(--surface-muted));
+    color: rgb(var(--text-muted));
+  }
+
+  .btn-subtle:hover {
+    background-color: rgb(var(--border));
+  }
+
+  .btn-ghost {
+    color: rgb(var(--text-muted));
+  }
+
+  .btn-ghost:hover {
+    background-color: rgb(var(--surface-muted));
+  }
+
+  .btn-link {
+    color: rgb(var(--accent));
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .btn-link:hover {
+    color: rgb(var(--accent-strong));
+    text-decoration: underline;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1rem;
+  }
+
+  .badge-accent {
+    background-color: rgb(var(--accent-soft));
+    border-color: rgb(var(--accent) / 0.4);
+    color: rgb(var(--accent-text));
+  }
+
+  .badge-info {
+    background-color: rgb(var(--info-soft));
+    border-color: rgb(var(--info-border));
+    color: rgb(var(--info-text));
+  }
+
+  .badge-muted,
+  .badge-neutral {
+    background-color: rgb(var(--surface-muted));
+    border-color: rgb(var(--border));
+    color: rgb(var(--text-muted));
+  }
+
+  .status-banner {
+    border: 1px solid rgb(var(--border));
+    padding: 1rem;
+  }
+
+  .status-banner-danger {
+    background-color: rgb(var(--danger-soft));
+    border-color: rgb(var(--danger-border));
+    color: rgb(var(--danger-text));
+  }
+
+  .status-banner-info {
+    background-color: rgb(var(--info-soft));
+    border-color: rgb(var(--info-border));
+    color: rgb(var(--info-text));
+  }
+
+  .poster-fallback {
+    border: 2px dashed rgb(var(--border-strong));
+  }
+
+}
+
+/* ── Cinema label palette ───────────────────────────────────────
+   Outside @layer so these beat all Tailwind utilities.
+   Each cinema gets a stable hue for at-a-glance identification.
+──────────────────────────────────────────────────────────────── */
+.cinema-badge { border: none; }
+
+/* Hues evenly spaced 22.5° apart */
+.cinema-badge-0  { background-color: oklch(.30 .06 0 / .85); color: oklch(.84 .10 0); }
+.cinema-badge-1  { background-color: oklch(.30 .06 22.5 / .85); color: oklch(.84 .10 22.5); }
+.cinema-badge-2  { background-color: oklch(.30 .06 45 / .85); color: oklch(.84 .10 45); }
+.cinema-badge-3  { background-color: oklch(.30 .06 67.5 / .85); color: oklch(.84 .10 67.5); }
+.cinema-badge-4  { background-color: oklch(.30 .06 90 / .85); color: oklch(.84 .10 90); }
+.cinema-badge-5  { background-color: oklch(.30 .06 112.5 / .85); color: oklch(.84 .10 112.5); }
+.cinema-badge-6  { background-color: oklch(.30 .06 135 / .85); color: oklch(.84 .10 135); }
+.cinema-badge-7  { background-color: oklch(.30 .06 157.5 / .85); color: oklch(.84 .10 157.5); }
+.cinema-badge-8  { background-color: oklch(.30 .06 180 / .85); color: oklch(.84 .10 180); }
+.cinema-badge-9  { background-color: oklch(.30 .06 202.5 / .85); color: oklch(.84 .10 202.5); }
+.cinema-badge-10 { background-color: oklch(.30 .06 225 / .85); color: oklch(.84 .10 225); }
+.cinema-badge-11 { background-color: oklch(.30 .06 247.5 / .85); color: oklch(.84 .10 247.5); }
+.cinema-badge-12 { background-color: oklch(.30 .06 270 / .85); color: oklch(.84 .10 270); }
+.cinema-badge-13 { background-color: oklch(.30 .06 292.5 / .85); color: oklch(.84 .10 292.5); }
+.cinema-badge-14 { background-color: oklch(.30 .06 315 / .85); color: oklch(.84 .10 315); }
+.cinema-badge-15 { background-color: oklch(.30 .06 337.5 / .85); color: oklch(.84 .10 337.5); }
