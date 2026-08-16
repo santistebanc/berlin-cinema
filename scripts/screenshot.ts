@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import path from 'path';
 
-const BASE_URL = process.argv[2] || 'https://ovberlin.site';
+const BASE_URL = process.argv[2] || 'https://ovberlin.online';
 const OUT_DIR = path.join(__dirname, '../docs');
 const DESKTOP = { width: 1280, height: 800 };
 const MOBILE = { width: 390, height: 600 };

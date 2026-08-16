@@ -89,7 +89,7 @@ const MovieDetailPage: React.FC = () => {
   ].filter(Boolean);
   const metaDescription = metaParts.join(' · ');
   const filterParams = searchParams.toString();
-  const shareUrl = `https://ovberlin.site/${movie.slug}${filterParams ? `?${filterParams}` : ''}`;
+  const shareUrl = `https://ovberlin.online/${movie.slug}${filterParams ? `?${filterParams}` : ''}`;
   const ogImage = movie.backdropUrl || movie.posterUrl;
   const ogImageWidth = movie.backdropUrl ? '1280' : '500';
   const ogImageHeight = movie.backdropUrl ? '720' : '750';
