@@ -379,6 +379,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.online/the-delinquents</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.online/the-musicians</loc>
     <lastmod>2026-08-18</lastmod>
     <changefreq>daily</changefreq>
@@ -806,12 +812,6 @@
   </url>
   <url>
     <loc>https://ovberlin.online/the-color-purple</loc>
-    <lastmod>2026-08-18</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.online/the-delinquents</loc>
     <lastmod>2026-08-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
