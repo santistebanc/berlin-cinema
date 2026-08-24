@@ -540,6 +540,13 @@
       "reason": "embedding similarity 0.90",
       "method": "embedding",
       "at": "2026-08-11T19:01:22.240Z"
+    },
+    "terminator 2 tag der abrechnung|terminator 2: tag der abrechnung 35th anniversary": {
+      "same": true,
+      "confidence": 0.9410589474264209,
+      "reason": "embedding similarity 0.94",
+      "method": "embedding",
+      "at": "2026-08-24T18:41:56.176Z"
     }
   }
 }
