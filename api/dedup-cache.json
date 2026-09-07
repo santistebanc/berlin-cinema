@@ -554,6 +554,20 @@
       "reason": "embedding similarity 0.94",
       "method": "embedding",
       "at": "2026-08-24T18:41:56.176Z"
+    },
+    "doppelt hard boiled|hard boiled": {
+      "same": false,
+      "confidence": 0.7704685475942168,
+      "reason": "embedding similarity 0.77",
+      "method": "embedding",
+      "at": "2026-09-07T21:13:33.965Z"
+    },
+    "alfilm arabisches filmfestival berlin|alfilm arabisches filmfestival berlin 2024": {
+      "same": true,
+      "confidence": 0.9579604659959666,
+      "reason": "embedding similarity 0.96",
+      "method": "embedding",
+      "at": "2026-09-07T21:13:34.052Z"
     }
   }
 }
