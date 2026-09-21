@@ -625,6 +625,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.online/mephisto</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.online/paprika</loc>
     <lastmod>2026-09-21</lastmod>
     <changefreq>daily</changefreq>
