@@ -603,6 +603,13 @@
       "reason": "embedding similarity 0.93",
       "method": "embedding",
       "at": "2026-09-18T03:27:07.524Z"
+    },
+    "don camillo und pepone|don camillo und peppone": {
+      "same": false,
+      "confidence": 0.7587688933875408,
+      "reason": "embedding similarity 0.76",
+      "method": "embedding",
+      "at": "2026-09-22T16:24:54.459Z"
     }
   }
 }
