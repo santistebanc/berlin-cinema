@@ -67,7 +67,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/avengers-endgame-encore</loc>
+    <loc>https://ovberlin.online/avengers-endgame</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -98,12 +98,6 @@
   </url>
   <url>
     <loc>https://ovberlin.online/shepherds</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.online/backrooms</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -565,19 +559,25 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/the-lies-of-the-victors</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/all-my-sisters</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.online/backrooms</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.online/coyote-vs-acme</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/ice-cream-man</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -595,7 +595,19 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.online/primetime</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.online/a-stroll-to-syracuse</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/sunny-dancer</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -655,12 +667,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/faust</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/ghost-in-the-shell</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -715,13 +721,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/cocorico-2</loc>
+    <loc>https://ovberlin.online/don-camillo-und-pepone</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/primetime</loc>
+    <loc>https://ovberlin.online/cocorico-2</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -734,6 +740,12 @@
   </url>
   <url>
     <loc>https://ovberlin.online/vive-le-punk</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/chopin-a-sonata-in-paris</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -781,13 +793,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/sunny-dancer</loc>
+    <loc>https://ovberlin.online/kuzma-strashno-veselyi</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/kuzma-strashno-veselyi</loc>
+    <loc>https://ovberlin.online/the-dreamed-adventure</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -853,12 +865,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/the-dreamed-adventure</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/albrecht-weinberg-es-ist-immer-in-meinem-kopf</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -872,6 +878,24 @@
   </url>
   <url>
     <loc>https://ovberlin.online/transit</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/hope</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/oasis-dont-look-back-in-anger</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/the-secret-agent</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -907,12 +931,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/berlin-syndrome</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/disunited-nations</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -943,12 +961,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/oasis-dont-look-back-in-anger</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/where-the-waves-took-her</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -973,6 +985,18 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://ovberlin.online/a-poet</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/i-swear</loc>
+    <lastmod>2026-09-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.online/bouchra</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -991,12 +1015,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/di-bole-hadippa</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -1009,12 +1027,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/phantasm</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/antarctica</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
@@ -1022,12 +1034,6 @@
   </url>
   <url>
     <loc>https://ovberlin.online/birthright</loc>
-    <lastmod>2026-09-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.online/spirited-away</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
