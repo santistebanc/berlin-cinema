@@ -624,6 +624,27 @@
       "reason": "embedding similarity 0.89",
       "method": "embedding",
       "at": "2026-09-28T23:00:52.369Z"
+    },
+    "festival of animation|festival of animation berlin 2026": {
+      "same": false,
+      "confidence": 0.7993713268769314,
+      "reason": "embedding similarity 0.80",
+      "method": "embedding",
+      "at": "2026-10-05T23:50:30.755Z"
+    },
+    "national theatre live: the misanthrope|national theatre london: the misanthrope": {
+      "same": true,
+      "confidence": 0.8705334099220405,
+      "reason": "embedding similarity 0.87",
+      "method": "embedding",
+      "at": "2026-10-05T23:50:30.833Z"
+    },
+    "female filmmakers festival berlin 2026|festival of animation berlin 2026": {
+      "same": false,
+      "confidence": 0.6901417260331487,
+      "reason": "embedding similarity 0.69",
+      "method": "embedding",
+      "at": "2026-10-05T23:50:30.867Z"
     }
   }
 }
