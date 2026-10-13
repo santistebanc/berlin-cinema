@@ -659,6 +659,20 @@
       "reason": "embedding similarity 0.92",
       "method": "embedding",
       "at": "2026-10-13T00:15:46.915Z"
+    },
+    "newgen film festival 2026|ukrainisches film festival": {
+      "same": false,
+      "confidence": 0.62328089566075,
+      "reason": "embedding similarity 0.62",
+      "method": "embedding",
+      "at": "2026-10-13T22:22:51.122Z"
+    },
+    "newgen film festival 2026|ukrainian film festival berlin 2026": {
+      "same": false,
+      "confidence": 0.6995049117604046,
+      "reason": "embedding similarity 0.70",
+      "method": "embedding",
+      "at": "2026-10-13T22:22:51.151Z"
     }
   }
 }
