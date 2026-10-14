@@ -7,6 +7,12 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://ovberlin.online/naza</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://ovberlin.online/the-social-reckoning</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
@@ -170,6 +176,18 @@
   </url>
   <url>
     <loc>https://ovberlin.online/robu-404</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/the-dreamed-adventure</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ovberlin.online/coyote-vs-acme</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -697,12 +715,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/home-stories</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/shepherds</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
@@ -757,12 +769,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/pale-flower</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/equinox-flower</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
@@ -805,31 +811,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/coyote-vs-acme</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/forever-16</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/naza</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/boris-skossyreff-the-scammer-who-became-a-king</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.online/the-cabinet-of-caligari</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -943,18 +931,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/jailer</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.online/the-dreamed-adventure</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/hen</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
@@ -1063,12 +1039,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/the-earth-sings</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/the-postman-always-rings-twice</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
@@ -1105,12 +1075,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/virginia-woolfs-night-day</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/jennifers-body</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
@@ -1129,12 +1093,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/the-stranger</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://ovberlin.online/lady-bird</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
@@ -1147,7 +1105,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ovberlin.online/a-stroll-to-syracuse</loc>
+    <loc>https://ovberlin.online/b-movie-lust-sound-in-west-berlin-1979-1989</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -1178,12 +1136,6 @@
   </url>
   <url>
     <loc>https://ovberlin.online/antarctica</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://ovberlin.online/frida-kahlo</loc>
     <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
