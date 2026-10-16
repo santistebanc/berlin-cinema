@@ -42,7 +42,7 @@ export function filmDisplayGroups(store: PipelineStore, entities: Entity[], scre
         && sourceTitles.get(y.id)!.includes(title))));
   const confirmedIdsConflict = (a: Entity, b: Entity) => !!(a.data.tmdbId && b.data.tmdbId && a.data.tmdbId !== b.data.tmdbId
     || a.data.verifiedImdbId && b.data.verifiedImdbId && a.data.verifiedImdbId !== b.data.verifiedImdbId);
-  const scheduleCompatible = (a: Entity, b: Entity) => a.kind === 'film' && b.kind === 'film'
+  const scheduleCompatible = (a: Entity, b: Entity) => a.kind === b.kind && (a.kind === 'film' || a.kind === 'programme')
     && !separated.has(a.id) && !separated.has(b.id) && !confirmedIdsConflict(a, b);
   const schedules = (groups: Map<string, Entity[]>, repeatedOnly: boolean) => {
     const matches = filmScreeningMatches(groups, screenings).filter(match => !repeatedOnly || match.rule === 'distinctive-screening-pattern');

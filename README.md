@@ -66,8 +66,12 @@ while retaining their combined source evidence and API candidates for review.
 
 Explicit Met broadcast, named film-festival, sneak-preview, shorts-programme and
 film-series labels establish programme classification without a model request.
-Unidentified programmes remain scoped to their source records; their films are
-not guessed or merged across sources. Exact generic labels such as `Festival`
+Unidentified programmes remain scoped to their source records until schedule
+evidence consolidates them; their constituent films are not guessed from the
+label. When two programme listings share essentially the same exclusive
+cinema/date/time timetable (including one source republishing under multiple
+listing URLs), they publish as one instance regardless of title wording. Partial
+overlaps that do not cover either timetable stay separate. Exact generic labels such as `Festival`
 can use a reversible special-programme fallback after successful detail checks
 find no director, cast or year on the available records. Missing, failed or
 unsupported checks retain review; credits found on another source prevent the
