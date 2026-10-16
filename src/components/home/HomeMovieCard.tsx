@@ -27,7 +27,10 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
     <Link
       to={to}
       className="group block"
-      onClick={(event) => navigateWithPosterTransition(event, posterRef.current, () => navigate(to))}
+      onClick={(event) => {
+        sessionStorage.setItem('scroll:/', String(window.scrollY));
+        navigateWithPosterTransition(event, posterRef.current, () => navigate(to));
+      }}
     >
       <div
         ref={posterRef}
@@ -67,7 +70,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
           </div>
         )}
 
-        {rating != null && (
+        {rating != null && rating > 0 && (
           <div
             className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold"
             style={{

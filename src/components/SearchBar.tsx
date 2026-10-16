@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Movie } from '../types';
 import Button from './ui/Button';
 import TextInput from './ui/TextInput';
+import { getHomeSearch, homePathWithSearch, setHomeSearch } from '../utils/homeSearch';
 
 interface SearchBarProps {
   movies: Movie[];
@@ -15,18 +16,40 @@ const SearchBar: React.FC<SearchBarProps> = ({ movies: _movies, onSearch: _onSea
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isHome = pathname === '/';
-  const searchQuery = searchParams.get('search') ?? '';
+  const urlSearch = searchParams.get('search') ?? '';
+  const [searchQuery, setSearchQuery] = useState(() => urlSearch || getHomeSearch());
+
+  useEffect(() => {
+    if (!isHome) {
+      setSearchQuery(getHomeSearch());
+      return;
+    }
+    if (!urlSearch) {
+      const stored = getHomeSearch();
+      if (stored) {
+        setSearchParams({ search: stored }, { replace: true });
+        setSearchQuery(stored);
+        return;
+      }
+    }
+    setSearchQuery(urlSearch);
+    setHomeSearch(urlSearch);
+  }, [isHome, urlSearch, setSearchParams]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
+    setSearchQuery(query);
+    setHomeSearch(query);
     if (isHome) {
       setSearchParams(query.trim() ? { search: query } : {}, { replace: true });
     } else {
-      navigate(query.trim() ? `/?search=${encodeURIComponent(query)}` : '/');
+      navigate(homePathWithSearch(query));
     }
   };
 
   const clearSearch = () => {
+    setSearchQuery('');
+    setHomeSearch('');
     if (isHome) {
       setSearchParams({}, { replace: true });
     } else {

@@ -8,6 +8,7 @@ import MovieHeader from '../components/MovieHeader';
 import ShowtimesTable from '../components/ShowtimesTable';
 import CinemaPopup, { CinemaPopupInfo } from '../components/CinemaPopup';
 import DetailPageState from '../components/detail/DetailPageState';
+import { homePathWithSearch } from '../utils/homeSearch';
 
 const MovieDetailPage: React.FC = () => {
   const { title } = useParams<{ title: string }>();
@@ -64,7 +65,7 @@ const MovieDetailPage: React.FC = () => {
       <DetailPageState
         actionLabel="Back to listings"
         message={`We couldn’t load the film details right now. ${error}`}
-        onAction={() => navigate('/')}
+        onAction={() => navigate(homePathWithSearch())}
         title="Error Loading Movies"
       />
     );
@@ -75,7 +76,7 @@ const MovieDetailPage: React.FC = () => {
       <DetailPageState
         actionLabel="Back to listings"
         message="That film isn’t in the current listings. Go back to browse what’s playing now."
-        onAction={() => navigate('/')}
+        onAction={() => navigate(homePathWithSearch())}
         title="Movie Not Found"
       />
     );
@@ -141,7 +142,7 @@ const MovieDetailPage: React.FC = () => {
           <MovieHeader
             movie={movie}
             plot={movie.plot}
-            onBack={() => navigate('/')}
+            onBack={() => navigate(homePathWithSearch())}
             onShare={handleShare}
             shared={copied}
           />
