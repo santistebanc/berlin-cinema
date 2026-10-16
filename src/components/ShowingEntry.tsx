@@ -22,11 +22,15 @@ const ShowingEntry: React.FC<Props> = ({ cinema, variants, colorClass, label, on
     title={[cinema, ...variants, edition, uncertain && 'Source descriptions disagree; verify with the cinema', stale && 'Source refresh unavailable; last observed within 24 hours'].filter(Boolean).join(' · ')}
   >
     <span className="min-w-0 whitespace-normal text-left [overflow-wrap:anywhere]">{label}</span>
-    {(uncertain || stale) && <span className="text-[10px] font-medium">{uncertain ? 'Check version' : 'Last known'}</span>}
-    {edition && <span className="text-[10px] opacity-70">{edition}</span>}
-    {variants.length > 0 && (
-      <span className="max-w-[40%] shrink-0 whitespace-normal text-left text-[11px] font-semibold opacity-70 [overflow-wrap:anywhere]">
-        {variants.join(' ')}
+    {(uncertain || stale || edition || variants.length > 0) && (
+      <span className="ml-auto flex shrink-0 items-center gap-1.5 text-right">
+        {(uncertain || stale) && <span className="text-[10px] font-medium">{uncertain ? 'Check version' : 'Last known'}</span>}
+        {edition && <span className="text-[10px] opacity-70">{edition}</span>}
+        {variants.length > 0 && (
+          <span className="whitespace-nowrap text-[11px] font-semibold opacity-70">
+            {variants.join(' ')}
+          </span>
+        )}
       </span>
     )}
   </button>
