@@ -30,7 +30,7 @@ Live at **[ovberlin.online](https://ovberlin.online)**
 
 ### Cinema info
 - Tap any cinema name to open a popup with a **Google Maps embed** and direct **website link**
-- Cinema websites resolved via OpenStreetMap
+- Cinema websites from explicit source links and verified OpenStreetMap cinema records
 
 ### Other
 - **Dark / light theme**
