@@ -93,7 +93,7 @@
 
   .brand-mark { width: 48px; height: 48px; }
   .brand-name { display: block; font-size: 28px; line-height: 1.15; }
-  .brand-caption { display: block; margin-top: 5px; color: rgb(var(--text-soft)); font-size: 12px; }
+  .brand-caption { display: block; color: rgb(var(--text-soft)); font-size: 12px; }
   .header-search { position: relative; width: 100%; max-width: 520px; justify-self: center; }
   .header-programme-summary { justify-self: end; text-align: right; font-size: 12px; line-height: 1.75; white-space: nowrap; }
   .header-programme-summary time { color: rgb(var(--text-muted)); }
