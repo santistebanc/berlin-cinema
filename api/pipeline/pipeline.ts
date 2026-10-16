@@ -13,6 +13,7 @@ import { refreshListingObservations } from './source-details';
 import { CachedFilmEvidence, creditNames } from './identity-evidence';
 import { filmDisplayGroups } from './film-groups';
 import { consolidateVenues } from './venue-groups';
+import { attachVenueWebsites } from './venue-websites';
 import { GeoapifyGeocoder, VenueGeocoder } from './geocoding';
 import { IdentityResolver, flag, identityConflict, interpret, linkEvidence } from './resolve';
 import { enrichEntity } from './enrichment';
@@ -101,6 +102,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     let venues = new Map<string, Entity>(); const films = new Map<string, Entity>(); const parsed = new Map<string, ParsedLabel>();
     for (const observation of venueObservations) venues.set(observation.subject, await resolver.venue(observation));
     venues = consolidateVenues(store, venues, now);
+    venues = attachVenueWebsites(store, venues, venueObservations, osm);
     for (const observation of active.filter(o => o.kind === 'listing' && listingSubjects.has(o.subject))) {
       const label = await interpret(store, engine, observation); parsed.set(observation.subject, label);
       films.set(observation.subject, await resolver.film(observation, label));
