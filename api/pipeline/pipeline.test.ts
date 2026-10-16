@@ -284,7 +284,8 @@ async function main() {
     const unchanged = await execute(store, [batch('source-a', [raw()], { observedAt: '2026-10-15T11:00:00Z' })]);
     assert.equal(unchanged.movies[0].id, firstId); checks += 4;
 
-    const remakes = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Same Film', '1980')]), batch('b', [raw('Same Film', '2026')]), batch('c', [raw('Same Film', null)])]);
+    const remakes = await execute(new PipelineStore(':memory:'), ['1980', '2026', null].map((year, index) => batch(String(index),
+      [raw('Same Film', year, { showings: [{ cinema: 'Example Cinema', date: '2026-10-16', time: `${18 + index}:00` }] })])));
     assert.equal(remakes.total, 3, 'Undated listings cannot be guessed into a remake'); checks++;
     {
       const titleFallback = await execute(new PipelineStore(':memory:'), [batch('a', [raw('A Film', '2026', { url: 'https://source-a.test/film' })]),
@@ -311,7 +312,11 @@ async function main() {
         'Same-name records from one source retain separate URL-to-identity mappings'); checks += 2;
       const conflictingDirectors = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Same Film', '2026')]),
         batch('b', [raw('Same Film', '2026', { director: 'Other Director' })])]);
-      assert.equal(conflictingDirectors.total, 2, 'An exact title cannot override contradictory directors'); checks++;
+      assert.equal(conflictingDirectors.total, 1, 'A complete title and shared viewing outweigh contradictory raw source directors'); checks++;
+      const separateSchedules = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Same Film', '2026')]),
+        batch('b', [raw('Same Film', '2026', { director: 'Other Director',
+          showings: [{ cinema: 'Example Cinema', date: '2026-10-16', time: '22:00' }] })])]);
+      assert.equal(separateSchedules.total, 2, 'Without shared screenings the contradictory director evidence still separates the films'); checks++;
       const qualifiers = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Vaiana', null, { director: null, cast: null })]),
         batch('b', [raw('Vaiana (Live Action)', null, { director: null, cast: null, originalTitle: 'Vaiana' })])]);
       assert.equal(qualifiers.total, 2, 'Distinguishing title qualifiers survive title matching'); checks++;
@@ -625,7 +630,7 @@ async function main() {
       assert.equal(correctedKind.movies[0].kind, 'film'); assert.equal(correctedKind.review.open, 0); checks += 3;
     }
     const conflict = await execute(new PipelineStore(':memory:'), [batch('a', [raw('A Film', '2026')]), batch('b', [raw('A Film', '2026', { director: 'Other Director' })])]);
-    assert.equal(conflict.total, 2, 'Conflicting source directors prevent automatic joining'); checks++;
+    assert.equal(conflict.total, 1, 'A shared viewing and complete title outweigh conflicting source directors'); checks++;
 
     const freshness = new PipelineStore(':memory:');
     await execute(freshness, [batch('a')]);

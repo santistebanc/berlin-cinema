@@ -41,7 +41,8 @@ export function reviewEvidence(store: PipelineStore, issue: ReviewIssue): Review
   const activeSubjects = filmIdentity ? new Set(store.observations(undefined, true).map(o => o.subject)) : new Set<string>();
   const entityId = issue.subject.startsWith('entity:') ? issue.subject.slice(7) : d.entityId;
   const entity = entityId ? store.entity(entityId) : null;
-  const primary = [...(d.observation ? [d.observation] : d.observations ?? []), ...(entityId ? store.linkedObservations(entityId) : [])] as Observation[];
+  const primary = [...(d.observation ? [d.observation] : d.observations ?? []),
+    ...[...new Set<string>([entityId, ...(d.entityIds ?? [])].filter(Boolean))].flatMap(id => store.linkedObservations(id))] as Observation[];
   const primaryIds = new Set(primary.map(o => o.id));
   const baseline = d.listing ?? d.parsed ?? entity?.data ?? {};
   const title = baseline.title || entity?.name || primary[0]?.data.rawTitle || primary[0]?.data.name;
