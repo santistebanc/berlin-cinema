@@ -31,9 +31,9 @@ const sortMoviesByShowtimes = (movies: Movie[]): Movie[] => {
 };
 
 export const useHomePageMovies = (movies: Movie[]) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') ?? '');
 
   useEffect(() => {
     setSearchQuery(searchParams.get('search') ?? '');

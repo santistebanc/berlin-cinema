@@ -12,37 +12,40 @@ const ReviewPage = lazy(() => import('./pages/ReviewPage'));
 // Module-level flag — suppresses save listener during our own scrollTo calls
 let suppressSave = false;
 
+const HOME_SCROLL_KEY = 'scroll:/';
+
 const AppContent: React.FC = () => {
   const { movies, loading, error } = useMovies();
   const location = useLocation();
+  const isHome = location.pathname === '/';
   const scrollYRef = useRef(0);
 
-  // Save on scroll events — but not during our own programmatic scrollTo.
+  // Only the home page remembers its scroll position; every other page opens at the top.
   // Cleanup writes the last real position (ref), not window.scrollY after restore.
   useEffect(() => {
-    const path = location.pathname;
+    if (!isHome) return;
     const save = () => {
       scrollYRef.current = window.scrollY;
-      if (!suppressSave) sessionStorage.setItem(`scroll:${path}`, String(window.scrollY));
+      if (!suppressSave) sessionStorage.setItem(HOME_SCROLL_KEY, String(window.scrollY));
     };
     scrollYRef.current = window.scrollY;
     window.addEventListener('scroll', save, { passive: true });
     return () => {
       window.removeEventListener('scroll', save);
-      if (!suppressSave) sessionStorage.setItem(`scroll:${path}`, String(scrollYRef.current));
+      if (!suppressSave) sessionStorage.setItem(HOME_SCROLL_KEY, String(scrollYRef.current));
     };
-  }, [location.pathname]);
+  }, [isHome]);
 
   // Restore before paint; suppress save listener during the programmatic scroll so it
   // can't overwrite the stored position with 0
   useLayoutEffect(() => {
     history.scrollRestoration = 'manual';
     if (loading) return;
-    const saved = sessionStorage.getItem(`scroll:${location.pathname}`);
+    const saved = isHome ? sessionStorage.getItem(HOME_SCROLL_KEY) : null;
     suppressSave = true;
     window.scrollTo(0, saved ? parseInt(saved) : 0);
     requestAnimationFrame(() => { suppressSave = false; });
-  }, [location.pathname, loading]);
+  }, [location.pathname, isHome, loading]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(var(--bg))' }}>
