@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -15,6 +15,31 @@ interface MultiSelectDropdownProps {
   onToggle: (value: string) => void;
   onToggleAll: () => void;
   allSelected: boolean;
+}
+
+interface Placement {
+  top: number;
+  left: number;
+  maxHeight: number;
+}
+
+const TRIGGER_GAP = 4;
+const VIEWPORT_MARGIN = 8;
+
+/** Open below unless the panel only fits (or fits better) above; keep it horizontally inside the viewport. */
+function placePanel(trigger: DOMRect, panel: DOMRect): Placement {
+  const viewportWidth = document.documentElement.clientWidth;
+  const spaceBelow = window.innerHeight - trigger.bottom - TRIGGER_GAP - VIEWPORT_MARGIN;
+  const spaceAbove = trigger.top - TRIGGER_GAP - VIEWPORT_MARGIN;
+  const openUp = panel.height > spaceBelow && spaceAbove > spaceBelow;
+  const maxHeight = Math.max(openUp ? spaceAbove : spaceBelow, 0);
+  const height = Math.min(panel.height, maxHeight);
+
+  const overflowsRight = trigger.left + panel.width > viewportWidth - VIEWPORT_MARGIN;
+  const preferredLeft = overflowsRight ? trigger.right - panel.width : trigger.left;
+  const left = Math.max(VIEWPORT_MARGIN, Math.min(preferredLeft, viewportWidth - VIEWPORT_MARGIN - panel.width));
+
+  return { top: openUp ? trigger.top - TRIGGER_GAP - height : trigger.bottom + TRIGGER_GAP, left, maxHeight };
 }
 
 const Checkbox: React.FC<{ checked: boolean }> = ({ checked }) => (
@@ -51,7 +76,7 @@ const OptionList: React.FC<{
       <Checkbox checked={allSelected} />
       All
     </button>
-    <div className={cn('overflow-y-auto overscroll-contain', mobile ? 'max-h-[60vh]' : 'max-h-56')}>
+    <div className={cn('min-h-0 overflow-y-auto overscroll-contain', mobile ? 'max-h-[60vh]' : 'max-h-56')}>
       {options.map(opt => {
         const checked = selected.includes(opt.value);
         return (
@@ -84,7 +109,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const [placement, setPlacement] = useState<Placement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -108,12 +133,25 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       if (panelRef.current?.contains(e.target as Node)) return;
       setOpen(false);
     };
+    const onResize = () => setOpen(false);
     document.addEventListener('mousedown', onMouseDown);
     window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
     return () => {
       document.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
     };
+  }, [open, isMobile]);
+
+  // Measure the hidden panel before paint, then place it where it fits.
+  useLayoutEffect(() => {
+    if (!open || isMobile) {
+      setPlacement(null);
+      return;
+    }
+    if (!triggerRef.current || !panelRef.current) return;
+    setPlacement(placePanel(triggerRef.current.getBoundingClientRect(), panelRef.current.getBoundingClientRect()));
   }, [open, isMobile]);
 
   useEffect(() => {
@@ -123,13 +161,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     return () => { document.body.style.overflow = prev; };
   }, [open, isMobile]);
 
-  const handleTriggerClick = () => {
-    if (!isMobile && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setDropdownPos({ top: rect.bottom + 4, left: rect.left });
-    }
-    setOpen(o => !o);
-  };
+  const handleTriggerClick = () => setOpen(o => !o);
 
   const activeCount = allSelected ? 0 : selected.length;
 
@@ -155,14 +187,16 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     </button>
   );
 
-  const dropdown = open && !isMobile && dropdownPos && createPortal(
+  const dropdown = open && !isMobile && createPortal(
     <div
       ref={panelRef}
       onMouseDown={e => e.stopPropagation()}
-      className="fixed z-[200] min-w-44 overflow-hidden rounded-xl border shadow-lg"
+      className="fixed z-[200] flex min-w-44 flex-col overflow-hidden rounded-xl border shadow-lg"
       style={{
-        top: dropdownPos.top,
-        left: dropdownPos.left,
+        top: placement?.top ?? 0,
+        left: placement?.left ?? 0,
+        maxHeight: placement?.maxHeight,
+        visibility: placement ? 'visible' : 'hidden',
         backgroundColor: 'rgb(var(--surface))',
         borderColor: 'rgb(var(--border-strong))',
       }}
