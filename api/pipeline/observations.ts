@@ -31,7 +31,8 @@ export function adaptBatch(batch: SourceBatch): Observation[] {
       const venue = observation(batch.source, 'venue', venueKey, { name: cinema.name,
         address: cinema.address || '', url: sourceUrl, postalCode: cinema.postalCode || null,
         // Scrapers' default city='Berlin' is not evidence of geography.
-        explicitCity: cinema.explicitCity ?? null, addressEvidence: cinema.addressEvidence ?? null }, batch.observedAt);
+        explicitCity: cinema.explicitCity ?? null, addressEvidence: cinema.addressEvidence ?? null,
+        ...(cinema.websiteUrl && cinema.websiteEvidence ? { websiteUrl: cinema.websiteUrl, websiteEvidence: cinema.websiteEvidence } : {}) }, batch.observedAt);
       observations.push(venue); venues.set(cinema.name, venue);
     }
     for (const showing of showings ?? []) {
