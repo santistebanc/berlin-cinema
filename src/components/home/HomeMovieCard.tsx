@@ -1,17 +1,21 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { Movie } from '../../types';
 import MoviePoster from '../ui/MoviePoster';
 import { getCardTags } from '../../utils/movieTags';
+import { navigateWithPosterTransition } from '../../utils/posterTransition';
 
 interface HomeMovieCardProps {
   movie: Movie;
 }
 
 const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
+  const navigate = useNavigate();
+  const posterRef = useRef<HTMLDivElement>(null);
   const rating = movie.imdbRating ?? movie.rating;
   const tags = getCardTags(movie.variants);
+  const to = `/${movie.slug}`;
 
   const metaBits = [
     movie.originalLanguage?.toUpperCase(),
@@ -20,8 +24,13 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
   ].filter(Boolean);
 
   return (
-    <Link to={`/${movie.slug}`} className="group block">
+    <Link
+      to={to}
+      className="group block"
+      onClick={(event) => navigateWithPosterTransition(event, posterRef.current, () => navigate(to))}
+    >
       <div
+        ref={posterRef}
         className="relative aspect-[2/3] overflow-hidden rounded-[8px]"
         style={{ backgroundColor: 'rgb(var(--surface-muted))', boxShadow: '0 16px 34px -18px rgba(0,0,0,.85)' }}
       >

@@ -329,6 +329,35 @@
 
 }
 
+/* ── Home → detail poster morph (View Transitions) ───────────── */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.movie-poster-transition { view-transition-name: movie-poster; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: var(--ease-out);
+}
+
+::view-transition-group(movie-poster) {
+  animation-duration: 300ms;
+  animation-timing-function: var(--ease-in-out);
+}
+
+::view-transition-old(movie-poster),
+::view-transition-new(movie-poster) {
+  animation-duration: 300ms;
+  animation-timing-function: var(--ease-in-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(movie-poster) { animation: none; }
+}
+
 /* ── Cinema label palette ───────────────────────────────────────
    Outside @layer so these beat all Tailwind utilities.
    Each cinema gets a stable hue for at-a-glance identification.
