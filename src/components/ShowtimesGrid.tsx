@@ -127,7 +127,6 @@ const ShowtimesGrid: React.FC<Props> = ({
                               cinema={showing.cinema}
                               variants={showing.variants}
                               uncertain={showing.uncertain}
-                              stale={showing.stale}
                               edition={showing.edition}
                               colorClass={cinemaColors[showing.cinema] ?? ''}
                               label={showing.cinema}
