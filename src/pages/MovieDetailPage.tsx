@@ -21,7 +21,7 @@ const MovieDetailPage: React.FC = () => {
     }
 
     const decodedTitle = decodeURIComponent(title);
-    return movies.find((candidate) => candidate.slug === decodedTitle) ?? null;
+    return movies.find((candidate) => candidate.slug === decodedTitle || candidate.slugAliases?.includes(decodedTitle)) ?? null;
   }, [movies, title]);
 
   const [searchParams] = useSearchParams();
@@ -38,6 +38,9 @@ const MovieDetailPage: React.FC = () => {
         postalCode: cinema.postalCode || '',
         url: cinema.url || '',
         websiteUrl: cinema.websiteUrl,
+        latitude: cinema.latitude,
+        longitude: cinema.longitude,
+        locationEvidence: cinema.locationEvidence,
       });
     }
   };

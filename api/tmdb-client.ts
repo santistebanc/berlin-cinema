@@ -1,383 +1,134 @@
 import axios from 'axios';
-import { parseTitle } from './title-utils';
-import { tokenSetRatio } from './fuzzy-match';
+import type { AuditDecision } from '../src/types/audit';
 
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
-
-interface TmdbSearchResult {
-  id: number;
-  title: string;
-  original_title: string;
-  release_date: string;
-  poster_path: string | null;
-  overview: string;
-  genre_ids: number[];
-  original_language: string;
-  vote_average: number;
-  vote_count?: number;
-  popularity?: number;
+const BASE = 'https://api.themoviedb.org/3';
+export interface TmdbSearchResult {
+  id: number; title: string; original_title: string; release_date: string; overview: string;
+  poster_path?: string | null; original_language?: string;
 }
-
-interface TmdbMovieDetails {
-  id: number;
-  title: string;
-  overview: string;
-  tagline: string | null;
-  runtime: number | null;
-  vote_average: number;
-  vote_count: number;
-  release_date: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  genres: { id: number; name: string }[];
-  original_language: string;
-}
-
-interface TmdbCredits {
-  crew: { job: string; name: string }[];
-  cast: { name: string; order: number }[];
-}
-
 export interface TmdbMovieData {
-  tmdbTitle: string | null;
-  originalTitle: string | null; // Original title in the movie's original language
-  alternativeTitles: string[]; // Titles in other languages for search
-  tagline: string | null;
-  posterUrl: string | null;
-  backdropUrl: string | null;
-  plot: string | null;
-  runtime: number | null;
-  rating: number | null;
-  voteCount: number | null;
-  genres: string[] | null;
-  releaseYear: number | null;
-  director: string | null;
-  cast: string[] | null;
-  originalLanguage: string | null;
-  trailerUrl: string | null;
-  imdbId: string | null;
-  ageRating: string | null;
-  keywords: string[];
+  tmdbTitle: string | null; originalTitle: string | null; alternativeTitles: string[]; tagline: string | null;
+  posterUrl: string | null; backdropUrl: string | null; plot: string | null; runtime: number | null;
+  rating: number | null; voteCount: number | null; genres: string[]; releaseYear: number | null;
+  director: string | null; cast: string[] | null; originalLanguage: string | null; trailerUrl: string | null;
+  imdbId: string | null; ageRating: string | null; keywords: string[];
+  country: string | null; directors: string[]; writers: string[];
+  releaseDate: string | null; germanReleaseDate: string | null;
+  spokenLanguages: { code: string; name: string }[];
+  productionCountries: { code: string; name: string }[];
+  productionCompanies: { id: number; name: string; country: string | null }[];
+  certifications: { country: string; certification: string; releaseType: number; releaseDate: string | null }[];
+  homepage: string | null; status: string | null;
+  externalIds: Record<string, any>;
 }
 
-export interface TmdbSearchContext {
-  year?: number | null;
-  director?: string | null;
+const names = (people: any[]) => [...new Set<string>(people.map(person => person.name).filter(Boolean))];
+const dateOnly = (value: any): string | null => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value)) return null;
+  const date = value.slice(0, 10); const parsed = Date.parse(date);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === date ? date : null;
+};
+const imageUrl = (path: any, size = 'w342') => typeof path === 'string' && path.startsWith('/') ? `https://image.tmdb.org/t/p/${size}${path}` : null;
+
+/** Pure projection: all original credits, images, translations and release records remain in the cached detail bundle. */
+export function tmdbMovieData(data: any, originalTitle?: string): TmdbMovieData {
+  const details = data.details ?? {}; const credits = data.credits ?? { crew: [], cast: [] };
+  const directors = names((credits.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)));
+  const countries = (details.production_countries ?? []).map((country: any) => ({ code: country.iso_3166_1, name: country.name })).filter((country: any) => country.code && country.name);
+  const releases = (data.releaseDates ?? details.release_dates?.results ?? []).flatMap((region: any) => (region.release_dates ?? [])
+    .map((release: any) => ({ country: region.iso_3166_1, certification: release.certification || '', releaseType: release.type, releaseDate: dateOnly(release.release_date) })));
+  const german = releases.filter((release: any) => release.country === 'DE');
+  const releaseRank = (type: number) => { const index = [3, 2, 1, 4, 5, 6].indexOf(type); return index < 0 ? 99 : index; };
+  const preferred = (items: any[]) => [...items].sort((a, b) => (releaseRank(a.releaseType) - releaseRank(b.releaseType))
+    || (a.releaseDate || '9999').localeCompare(b.releaseDate || '9999'));
+  const trailer = [...(data.videos ?? details.videos?.results ?? [])].filter((video: any) => video.site === 'YouTube' && video.key)
+    .sort((a: any, b: any) => Number(b.type === 'Trailer') - Number(a.type === 'Trailer') || Number(!!b.official) - Number(!!a.official))[0];
+  const cast = names([...(credits.cast ?? [])].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))).slice(0, 6);
+  const translations = data.translations?.translations ?? details.translations?.translations ?? [];
+  const localized = ['en', 'de', details.original_language].filter(Boolean).flatMap(language => translations.filter((item: any) => item.iso_639_1 === language));
+  const aliases = data.alternativeTitles ?? details.alternative_titles?.titles ?? [];
+  const images = data.images ?? details.images ?? {};
+  const externalIds = { ...(data.externalIds ?? details.external_ids ?? {}) };
+  const date = dateOnly(details.release_date);
+  return {
+    tmdbTitle: details.title || null, originalTitle: originalTitle || details.original_title || details.title || null,
+    alternativeTitles: [...new Set<string>([...translations.map((item: any) => item.data?.title), ...aliases.map((item: any) => item.title)].filter(Boolean))],
+    tagline: details.tagline || localized.find((item: any) => item.data?.tagline)?.data.tagline || null, posterUrl: imageUrl(details.poster_path || images.posters?.[0]?.file_path),
+    backdropUrl: imageUrl(details.backdrop_path || images.backdrops?.[0]?.file_path, 'w780'), plot: details.overview || localized.find((item: any) => item.data?.overview)?.data.overview || null,
+    runtime: Number.isFinite(details.runtime) && details.runtime > 0 ? details.runtime : null,
+    rating: details.vote_average ?? null, voteCount: details.vote_count ?? null, genres: (details.genres ?? []).map((genre: any) => genre.name),
+    releaseYear: date ? Number(date.slice(0, 4)) : null, releaseDate: date,
+    germanReleaseDate: preferred(german.filter((release: any) => release.releaseDate))[0]?.releaseDate ?? null,
+    director: directors.join(', ') || null, directors, writers: names((credits.crew ?? []).filter((person: any) => ['Writer', 'Screenplay', 'Story', 'Novel', 'Book'].includes(person.job))),
+    cast: cast.length ? cast : null, originalLanguage: details.original_language || null,
+    spokenLanguages: (details.spoken_languages ?? []).map((language: any) => ({ code: language.iso_639_1, name: language.english_name || language.name })).filter((language: any) => language.code),
+    country: countries.map((country: any) => country.name).join(', ') || null, productionCountries: countries,
+    productionCompanies: (details.production_companies ?? []).map((company: any) => ({ id: company.id, name: company.name, country: company.origin_country || null })),
+    trailerUrl: trailer ? `https://www.youtube.com/watch?v=${encodeURIComponent(trailer.key)}` : null,
+    imdbId: externalIds.imdb_id || details.imdb_id || null, externalIds,
+    ageRating: preferred(german.filter((release: any) => release.certification))[0]?.certification || null,
+    certifications: releases.filter((release: any) => release.certification),
+    keywords: data.keywords ?? (details.keywords?.keywords ?? []).map((keyword: any) => keyword.name),
+    homepage: /^https?:\/\//i.test(details.homepage || '') ? details.homepage : null, status: details.status || null,
+  };
 }
 
-interface TmdbSearchCandidate {
-  result: TmdbSearchResult;
-  query: string;
-  language: string;
-  order: number;
+export function tmdbCandidate(data: any, search?: TmdbSearchResult): any {
+  const metadata = tmdbMovieData(data);
+  return { ...metadata, id: data.details?.id ?? search?.id, title: metadata.tmdbTitle || search?.title,
+    originalTitle: metadata.originalTitle || search?.original_title, year: metadata.releaseYear || Number(search?.release_date?.slice(0, 4)) || null,
+    overview: metadata.plot || search?.overview || null };
 }
 
-class TmdbClient {
-  private apiKey: string;
-  private requestCount: number = 0;
-  private lastReset: number = Date.now();
-
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-  }
-
-  private async rateLimit() {
-    this.requestCount++;
-    // TMDb rate limit: 40 requests per 10 seconds
-    if (this.requestCount >= 35) {
-      const elapsed = Date.now() - this.lastReset;
-      const wait = Math.max(0, 10000 - elapsed);
-      if (wait > 0) {
-        console.log(`  TMDb rate limit: waiting ${Math.ceil(wait / 1000)}s...`);
-        await new Promise(r => setTimeout(r, wait));
-      }
-      this.requestCount = 0;
-      this.lastReset = Date.now();
-    }
-  }
-
-  private yearFromDate(date: string | null | undefined): number | null {
-    if (!date) return null;
-    const year = parseInt(date.split('-')[0], 10);
-    return Number.isFinite(year) ? year : null;
-  }
-
-  private titleMatchScore(result: TmdbSearchResult, title: string): number {
-    const expected = title.toLowerCase();
-    const titleLower = result.title.toLowerCase();
-    const originalLower = result.original_title.toLowerCase();
-
-    if (titleLower === expected) return 1;
-    if (originalLower === expected) return 0.95;
-    return Math.max(tokenSetRatio(result.title, title), tokenSetRatio(result.original_title, title));
-  }
-
-  private movieSearchScore(result: TmdbSearchResult, title: string, context: TmdbSearchContext): number {
-    let score = this.titleMatchScore(result, title) * 3;
-
-    const resultYear = this.yearFromDate(result.release_date);
-    if (context.year && resultYear) {
-      const yearDiff = Math.abs(context.year - resultYear);
-      if (yearDiff === 0) score += 1.25;
-      else if (yearDiff === 1) score += 0.35;
-      else score -= Math.min(1.5, yearDiff * 0.15);
-    }
-
-    if (result.poster_path) score += 0.15;
-    if (result.overview) score += 0.08;
-    if (result.popularity) score += Math.min(0.35, Math.log10(result.popularity + 1) * 0.12);
-    if (result.vote_count) score += Math.min(0.25, Math.log10(result.vote_count + 1) * 0.08);
-
-    return score;
-  }
-
-  private async directorScore(movieId: number, expectedDirector: string): Promise<number> {
-    const fullData = await this.getMovieDetails(movieId);
-    const director = fullData?.credits.crew.find(c => c.job === 'Director')?.name;
-    if (!director) return 0;
-    const score = tokenSetRatio(director, expectedDirector);
-    if (score > 0.9) return 1.5;
-    if (score > 0.65) return 0.75;
-    return -0.75;
-  }
-
-  async searchMovie(title: string, context: TmdbSearchContext = {}, language = 'en-US'): Promise<TmdbSearchResult | null> {
-    await this.rateLimit();
+/** TMDb retrieves evidence. Identity acceptance belongs to the pipeline resolver. */
+export default class TmdbClient {
+  private requests: number[] = [];
+  private errors: { route: string; status: number | null; reason: string }[] = [];
+  retrievalErrors() { return [...this.errors]; }
+  constructor(private apiKey: string, private onDecision?: (decision: AuditDecision) => void) {}
+  private async get(route: string, params: Record<string, any>): Promise<any | null> {
+    this.requests = this.requests.filter(at => at > Date.now() - 10000);
+    if (this.requests.length >= 35) await new Promise(resolve => setTimeout(resolve, Math.max(0, this.requests[0] + 10000 - Date.now())));
+    this.requests.push(Date.now());
     try {
-      const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
-        params: {
-          api_key: this.apiKey,
-          query: title,
-          language,
-          page: 1,
-        },
-        timeout: 10000,
-      });
-
-      const results = response.data.results as TmdbSearchResult[];
-      if (!results || results.length === 0) return null;
-
-      const ranked = results
-        .map((result, index) => ({
-          result,
-          index,
-          score: this.movieSearchScore(result, title, context),
-        }))
-        .sort((a, b) => b.score - a.score || a.index - b.index);
-
-      if (context.director) {
-        for (const candidate of ranked.slice(0, 5)) {
-          candidate.score += await this.directorScore(candidate.result.id, context.director);
-        }
-        ranked.sort((a, b) => b.score - a.score || a.index - b.index);
-      }
-
-      return ranked[0].result;
-    } catch (err) {
-      console.error(`  TMDb search failed for "${title}":`, (err as Error).message);
+      const response = await axios.get(`${BASE}${route}`, { params: { api_key: this.apiKey, ...params }, timeout: 10000, maxRedirects: 0, maxContentLength: 8 * 1024 * 1024 });
+      return response.data;
+    } catch (error: any) {
+      this.errors.push({ route, status: error.response?.status ?? null,
+        reason: error.response?.status ? `TMDb HTTP ${error.response.status}` : error.code === 'ECONNABORTED' ? 'TMDb request timed out' : 'TMDb network request failed' });
+      this.onDecision?.({ entity: 'pipeline', subject: 'TMDb retrieval', provider: 'TMDb', action: 'request-failed',
+        details: { route, status: error.response?.status ?? null } });
       return null;
     }
   }
-
-  private async searchMovieCandidates(title: string, language: string): Promise<TmdbSearchResult[]> {
-    await this.rateLimit();
-    try {
-      const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
-        params: {
-          api_key: this.apiKey,
-          query: title,
-          language,
-          page: 1,
-        },
-        timeout: 10000,
-      });
-
-      const results = response.data.results as TmdbSearchResult[];
-      return results?.slice(0, 5) ?? [];
-    } catch (err) {
-      console.error(`  TMDb search failed for "${title}" (${language}):`, (err as Error).message);
-      return [];
+  async candidates(titles: string[]): Promise<TmdbSearchResult[]> {
+    const results = new Map<number, TmdbSearchResult>();
+    for (const title of [...new Set(titles.filter(Boolean))].slice(0, 3)) {
+      for (const language of ['en-US', 'de-DE']) {
+        const response = await this.get('/search/movie', { query: title, language, page: 1 });
+        const normalizeTitle = (value: string) => value.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+        const exact = (response?.results ?? []).filter((result: any) => [result.title, result.original_title]
+          .some(label => typeof label === 'string' && normalizeTitle(label) === normalizeTitle(title)));
+        for (const result of [...exact, ...(response?.results?.slice(0, 5) ?? [])]) if (Number.isInteger(result.id)) results.set(result.id, result);
+        this.onDecision?.({ entity: 'movie', subject: title, provider: 'TMDb', action: 'candidate-retrieval',
+          details: { query: title, language, candidates: response?.results?.slice(0, 5) ?? [], selection: 'Retrieval only; no candidate automatically selected.' } });
+      }
     }
+    return [...results.values()];
   }
-
-  async getMovieDetails(movieId: number): Promise<{ details: TmdbMovieDetails; credits: TmdbCredits; videos: { key: string; site: string; type: string }[]; externalIds: Record<string, string>; releaseDates: any[]; keywords: string[]; translations: any } | null> {
-    await this.rateLimit();
-    try {
-      const response = await axios.get(`${TMDB_BASE_URL}/movie/${movieId}`, {
-        params: {
-          api_key: this.apiKey,
-          language: 'en-US',
-          append_to_response: 'credits,videos,external_ids,release_dates,keywords,translations',
-        },
-        timeout: 10000,
-      });
-
-      const data = response.data;
-      return {
-        details: {
-          id: data.id,
-          title: data.title,
-          overview: data.overview,
-          tagline: data.tagline || null,
-          runtime: data.runtime,
-          vote_average: data.vote_average,
-          vote_count: data.vote_count || 0,
-          release_date: data.release_date,
-          poster_path: data.poster_path,
-          backdrop_path: data.backdrop_path,
-          genres: data.genres || [],
-          original_language: data.original_language,
-        },
-        credits: {
-          crew: data.credits?.crew || [],
-          cast: data.credits?.cast || [],
-        },
-        videos: (data.videos?.results || []) as { key: string; site: string; type: string }[],
-        externalIds: data.external_ids || {},
-        releaseDates: data.release_dates?.results || [],
-        keywords: (data.keywords?.keywords || []).map((k: any) => k.name) as string[],
-        translations: data.translations || null,
-      };
-    } catch (err) {
-      console.error(`  TMDb details failed for movie ${movieId}:`, (err as Error).message);
-      return null;
-    }
+  async getMovieDetails(id: number): Promise<any | null> {
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid TMDb identity');
+    const data = await this.get(`/movie/${id}`, { language: 'en-US', append_to_response: 'credits,videos,external_ids,release_dates,keywords,translations,alternative_titles,images', include_image_language: 'en,de,null' });
+    if (!data || data.id !== id) return null;
+    return { details: data, credits: data.credits ?? { crew: [], cast: [] }, videos: data.videos?.results ?? [],
+      externalIds: data.external_ids ?? {}, releaseDates: data.release_dates?.results ?? [],
+      keywords: (data.keywords?.keywords ?? []).map((k: any) => k.name), translations: data.translations ?? null,
+      alternativeTitles: data.alternative_titles?.titles ?? [], images: data.images ?? {} };
   }
-
-  buildPosterUrl(posterPath: string | null, size: 'w92' | 'w154' | 'w185' | 'w342' | 'w500' | 'w780' | 'original' = 'w342'): string | null {
-    if (!posterPath) return null;
-    return `${TMDB_IMAGE_BASE_URL}/${size}${posterPath}`;
-  }
-
-  private async chooseBestCandidate(candidates: TmdbSearchCandidate[], context: TmdbSearchContext): Promise<TmdbSearchResult | null> {
-    const ranked = new Map<number, { result: TmdbSearchResult; score: number; order: number }>();
-
-    for (const candidate of candidates) {
-      const score = this.movieSearchScore(candidate.result, candidate.query, context);
-      const existing = ranked.get(candidate.result.id);
-      if (!existing || score > existing.score) {
-        ranked.set(candidate.result.id, {
-          result: candidate.result,
-          score,
-          order: Math.min(existing?.order ?? candidate.order, candidate.order),
-        });
-      }
-    }
-
-    const sorted = Array.from(ranked.values())
-      .sort((a, b) => b.score - a.score || a.order - b.order);
-
-    if (context.director) {
-      for (const candidate of sorted.slice(0, 5)) {
-        candidate.score += await this.directorScore(candidate.result.id, context.director);
-      }
-      sorted.sort((a, b) => b.score - a.score || a.order - b.order);
-    }
-
-    return sorted[0]?.result ?? null;
-  }
-
-  async enrichMovie(title: string, altTitle?: string | null, context: TmdbSearchContext = {}): Promise<TmdbMovieData | null> {
-    const searchTitle = parseTitle(title).baseTitle;
-    const searches = [searchTitle];
-
-    if (title.includes(' - ')) {
-      const baseTitle = parseTitle(title.split(' - ')[0].trim()).baseTitle;
-      if (baseTitle && !searches.includes(baseTitle)) {
-        searches.push(baseTitle);
-      }
-    }
-
-    if (altTitle) {
-      const altSearch = parseTitle(altTitle).baseTitle;
-      if (altSearch && !searches.includes(altSearch)) {
-        searches.push(altSearch);
-      }
-    }
-
-    const candidates: TmdbSearchCandidate[] = [];
-    const languages = ['en-US', 'de-DE'];
-    for (const [order, query] of searches.entries()) {
-      if (order > 0) {
-        console.log(`  Trying additional TMDb search for "${title}" with: "${query}"`);
-      }
-      for (const language of languages) {
-        const results = await this.searchMovieCandidates(query, language);
-        candidates.push(...results.map(result => ({ result, query, language, order })));
-      }
-    }
-
-    const searchResult = await this.chooseBestCandidate(candidates, context);
-
-    if (!searchResult) {
-      console.log(`  No TMDb match for "${title}"`);
-      return null;
-    }
-
-    const fullData = await this.getMovieDetails(searchResult.id);
-    if (!fullData) return null;
-
-    const { details, credits, videos, externalIds, releaseDates, keywords } = fullData;
-
-    const preferredRelease = releaseDates.find((r: any) => r.iso_3166_1 === 'DE')
-      ?? releaseDates.find((r: any) => r.iso_3166_1 === 'US');
-    const ageRating = preferredRelease?.release_dates
-      ?.find((rd: any) => rd.certification)?.certification || null;
-
-    const director = credits.crew.find(c => c.job === 'Director')?.name || null;
-    const cast = credits.cast
-      .sort((a, b) => a.order - b.order)
-      .slice(0, 6)
-      .map(c => c.name);
-
-    const releaseYear = details.release_date
-      ? parseInt(details.release_date.split('-')[0])
-      : null;
-
-    const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')
-      ?? videos.find(v => v.site === 'YouTube');
-    const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
-
-    console.log(`  ✓ Enriched "${title}" → "${details.title}"`);
-
-    // Extract alternative titles from translations (titles in other languages)
-    const alternativeTitles: string[] = [];
-    if (fullData.translations?.translations) {
-      // Use iso_639_1 for language codes, and 'name' for the title in that language
-      const targetLanguages = ['de', 'fr', 'es', 'it', 'pt', 'ja', 'ko', 'zh', 'ru'];
-      for (const translation of fullData.translations.translations) {
-        const langCode = (translation.iso_639_1 || translation.iso_3166_1 || '').toLowerCase();
-        const localTitle = translation.name;
-        if (targetLanguages.includes(langCode) && localTitle &&
-            localTitle !== searchResult.original_title && localTitle !== details.title) {
-          alternativeTitles.push(localTitle);
-        }
-      }
-    }
-
-    return {
-      tmdbTitle: details.title || null,
-      originalTitle: searchResult.original_title || details.title || null,
-      alternativeTitles,
-      tagline: details.tagline || null,
-      posterUrl: this.buildPosterUrl(details.poster_path, 'w342'),
-      backdropUrl: this.buildPosterUrl(details.backdrop_path, 'w780'),
-      plot: details.overview || null,
-      runtime: details.runtime,
-      rating: details.vote_average,
-      voteCount: details.vote_count || null,
-      genres: details.genres.map(g => g.name),
-      releaseYear,
-      director,
-      cast: cast.length > 0 ? cast : null,
-      originalLanguage: details.original_language || null,
-      trailerUrl,
-      imdbId: externalIds.imdb_id || null,
-      ageRating,
-      keywords,
-    };
+  buildPosterUrl(image: string | null, size = 'w342'): string | null { return image ? `https://image.tmdb.org/t/p/${size}${image}` : null; }
+  async enrichSelected(id: number, originalTitle?: string, _sourceTitle = '', bundle?: any): Promise<TmdbMovieData | null> {
+    if (bundle && bundle.details?.id !== id) throw new Error('TMDb detail bundle does not match the selected identity');
+    const data = bundle ?? await this.getMovieDetails(id);
+    return data ? tmdbMovieData(data, originalTitle) : null;
   }
 }
-
-export default TmdbClient;

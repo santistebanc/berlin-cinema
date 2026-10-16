@@ -1,10 +1,13 @@
-import React, { useEffect, useLayoutEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import MovieDetailPage from './pages/MovieDetailPage';
 import { MovieProvider, useMovies } from './contexts/MovieContext';
+
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const ReviewPage = lazy(() => import('./pages/ReviewPage'));
 
 // Module-level flag — suppresses save listener during our own scrollTo calls
 let suppressSave = false;
@@ -35,9 +38,11 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(var(--bg))' }}>
-      <Header movies={movies} onSearch={() => {}} />
+      {!/^\/admin(?:\/|$)/.test(location.pathname) && <Header movies={movies} onSearch={() => {}} />}
       <main>
         <Routes>
+          <Route path="/admin/review" element={<Suspense fallback={<p className="body-muted p-8">Opening local review…</p>}><ReviewPage /></Suspense>} />
+          <Route path="/admin/*" element={<Suspense fallback={<p className="body-muted p-8">Loading data audit…</p>}><AdminPage /></Suspense>} />
           <Route path="/" element={
             <div className="px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
               <HomePage movies={movies} loading={loading} error={error} />

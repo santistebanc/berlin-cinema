@@ -1,4 +1,21 @@
+import type { Modality } from '../../api/pipeline/domain';
+
+export interface SourceAlias {
+  source: string;
+  subject: string;
+  url: string | null;
+  recordId: string | number | null;
+  entityId: string;
+  evidenceFingerprint: string;
+  labels: string[];
+}
+
 export interface Movie {
+  id?: string;
+  identityGroupKey?: string;
+  kind?: 'film' | 'programme';
+  slugAliases?: string[];
+  identityStatus?: 'verified' | 'source-only';
   title: string;
   slug: string;
   criticTitle: string | null;
@@ -33,11 +50,33 @@ export interface Movie {
   keywords: string[];
   tmdbFetched?: boolean;
   omdbFetchedAt?: string;
+  directors?: string[];
+  writers?: string[];
+  spokenLanguages?: { code: string | null; name: string }[];
+  productionCountries?: { code: string; name: string }[];
+  productionCompanies?: { id: number; name: string; country: string | null }[];
+  releaseDate?: string | null;
+  germanReleaseDate?: string | null;
+  certifications?: { country: string; certification: string; releaseType?: number; releaseDate?: string | null }[];
+  homepage?: string | null;
+  status?: string | null;
+  externalIds?: Record<string, any>;
+  awards?: string | null;
   isSpecial?: boolean;
   sourceTitles?: string[];
+  sourceAliases?: SourceAlias[];
 }
 
 export interface ShowingInfo {
+  id?: string;
+  venueId?: string;
+  uncertain?: boolean;
+  stale?: boolean;
+  edition?: string | null;
+  modality?: Modality;
+  alternatives?: Modality[];
+  sourceUrls?: string[];
+  lastObservedAt?: string;
   cinema: string;
   variants: string[]; // e.g. ['MXP 2D', 'OmU'], ['OV'], []
 }
@@ -52,11 +91,15 @@ export interface Showing {
 export interface Cinema {
   id: string;
   name: string;
+  sourceAliases?: SourceAlias[];
   address: string;
   city: string;
   postalCode: string;
   url: string;
   websiteUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  locationEvidence?: { source?: string; [key: string]: any };
   osmFetched?: boolean;
   showtimes: Showtime[];
 }
@@ -83,6 +126,7 @@ export interface ShowtimeEntry {
 }
 
 export interface ScrapingResult {
+  schemaVersion?: number;
   movies: Movie[];
   totalMovies: number;
   scrapedAt: string;

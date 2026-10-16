@@ -60,7 +60,7 @@ const MovieHeader: React.FC<Props> = ({ movie, plot, onBack, onShare, shared }) 
               src={movie.posterUrl}
               alt={movie.title}
               title={movie.tmdbTitle || movie.altTitle || movie.title}
-              className="h-[150px] w-[100px] shrink-0 rounded-xl object-cover shadow-2xl sm:h-[258px] sm:w-[172px]"
+              className="h-[150px] w-[100px] shrink-0 rounded-[8px] object-cover shadow-2xl sm:h-[258px] sm:w-[172px]"
               style={{ border: '1px solid rgba(255,255,255,.08)' }}
             />
             <div className="min-w-0 flex-1 pb-1">

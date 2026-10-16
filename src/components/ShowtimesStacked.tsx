@@ -8,6 +8,7 @@ interface Props {
   selectedDates: string[];
   selectedCinemas: string[];
   selectedVariants: string[];
+  includeUnknown?: boolean;
   cinemaColors: Record<string, string>;
   onCinemaClick: (name: string) => void;
 }
@@ -17,6 +18,7 @@ const ShowtimesStacked: React.FC<Props> = ({
   selectedDates,
   selectedCinemas,
   selectedVariants,
+  includeUnknown = true,
   cinemaColors,
   onCinemaClick,
 }) => {
@@ -24,7 +26,7 @@ const ShowtimesStacked: React.FC<Props> = ({
     .filter(date =>
       (selectedDates.length === 0 || selectedDates.includes(date)) &&
       Object.values(showings[date]).some(slots =>
-        slots.some(s => matchesFilters(s, selectedCinemas, selectedVariants))
+        slots.some(s => matchesFilters(s, selectedCinemas, selectedVariants, includeUnknown))
       )
     )
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
@@ -37,7 +39,7 @@ const ShowtimesStacked: React.FC<Props> = ({
       {filteredDates.map((date, dateIdx) => {
         const dateShowings = showings[date];
         const filteredTimes = Object.keys(dateShowings)
-          .filter(time => dateShowings[time].some(s => matchesFilters(s, selectedCinemas, selectedVariants)))
+          .filter(time => dateShowings[time].some(s => matchesFilters(s, selectedCinemas, selectedVariants, includeUnknown)))
           .sort();
 
         return (
@@ -55,7 +57,7 @@ const ShowtimesStacked: React.FC<Props> = ({
             </div>
             {filteredTimes.map((time, timeIdx) => {
               const showingsList = dateShowings[time].filter(s =>
-                matchesFilters(s, selectedCinemas, selectedVariants)
+                matchesFilters(s, selectedCinemas, selectedVariants, includeUnknown)
               );
               return (
                 <div
@@ -72,6 +74,9 @@ const ShowtimesStacked: React.FC<Props> = ({
                         key={idx}
                         cinema={showing.cinema}
                         variants={showing.variants}
+                        uncertain={showing.uncertain}
+                        stale={showing.stale}
+                        edition={showing.edition}
                         colorClass={cinemaColors[showing.cinema] ?? ''}
                         label={showing.cinema}
                         onCinemaClick={onCinemaClick}

@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import HttpClient from './http-client';
 import { parseTitle } from './title-utils';
+import { parseLabel, modalityTags } from './pipeline/labels';
 
 class MovieParser {
   private httpClient: HttpClient;
@@ -44,6 +45,8 @@ class MovieParser {
     const { cinemas, showings } = this.extractCinemaData($item, $);
 
     return {
+      rawTitle,
+      displayTitle,
       title,
       altTitle: altTitle !== title ? altTitle : null,
       director: movieDetails.director || null,
@@ -92,23 +95,7 @@ class MovieParser {
   }
 
   extractVariants(title: string): string[] {
-    const KNOWN: Record<string, string> = {
-      'imax': 'Imax',
-      'imax 3d': 'Imax 3D',
-      '3d': '3D',
-      '2d': '2D',
-      'mxp 2d': 'MXP 2D',
-      'expn': 'EXPN',
-      'ov w/ sub': 'OmU',
-      'ov': 'OV',
-    };
-    const variants: string[] = [];
-    const parens = [...title.matchAll(/\(([^)]+)\)/g)].map(m => m[1]);
-    for (const p of parens) {
-      const key = p.toLowerCase();
-      variants.push(KNOWN[key] ?? p);
-    }
-    return [...new Set(variants)];
+    return modalityTags(parseLabel(title).modality);
   }
 
   extractPosterUrl($item: any): string | undefined {
@@ -165,6 +152,7 @@ class MovieParser {
         if (cellText && $cell.hasClass('wird_gezeigt')) {
           const dateHeader = $headers.eq(cellIndex).text().trim();
           const parsedDate = this.parseDate(dateHeader);
+          if (!parsedDate) return;
           const dayOfWeek = this.getDayOfWeek(dateHeader);
           const times = this.parseTimes(cellText);
 
@@ -197,22 +185,29 @@ class MovieParser {
   }
 
   private resolveTimestamp(day: number, month: number): number {
-    const currentYear = new Date().getUTCFullYear();
+    const currentYear = Number(this.berlinDate().slice(0, 4));
+    if (month < 1 || month > 12 || day < 1 || day > 31) return NaN;
     const ts = Date.UTC(currentYear, month - 1, day);
+    if (new Date(ts).getUTCMonth() !== month - 1 || new Date(ts).getUTCDate() !== day) return NaN;
     const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     return ts < oneMonthAgo ? Date.UTC(currentYear + 1, month - 1, day) : ts;
   }
 
   parseDate(dateStr: string): string {
-    if (dateStr === 'Today') return new Date().toISOString().split('T')[0];
+    if (dateStr === 'Today') return this.berlinDate();
 
     const dateMatch = dateStr.match(/(\w{3})\s+(\d{1,2})\/(\d{1,2})/);
     if (dateMatch) {
       const ts = this.resolveTimestamp(parseInt(dateMatch[2]), parseInt(dateMatch[3]));
+      if (!Number.isFinite(ts)) return '';
       return new Date(ts).toISOString().split('T')[0];
     }
 
-    return new Date().toISOString().split('T')[0];
+    return '';
+  }
+
+  private berlinDate(): string {
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   }
 
   getDayOfWeek(dateStr: string): string {

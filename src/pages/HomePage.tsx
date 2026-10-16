@@ -28,7 +28,7 @@ const HomePage: React.FC<HomePageProps> = ({ movies, loading, error: propError }
         </Card>
       )}
 
-      {!loading && sortedMovies.length > 0 && (
+      {!loading && searchQuery.trim() && sortedMovies.length > 0 && (
         <p className="text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
           {searchQuery.trim()
             ? `${sortedMovies.length} of ${movies.length} films matching "${searchQuery}"`

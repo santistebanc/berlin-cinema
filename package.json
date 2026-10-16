@@ -4,10 +4,9 @@
   "description": "Frontend app for Berlin Cinema API",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
-    "@xenova/transformers": "^2.17.2",
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "clsx": "^2.0.0",
@@ -22,10 +21,10 @@
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
-    "@types/node": "^20.8.0",
+    "@types/node": "^24.19.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.3",
+    "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.14",
     "dotenv": "^17.4.2",
     "playwright": "^1.59.1",
@@ -33,15 +32,27 @@
     "tailwindcss": "^3.3.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.2.2",
-    "vite": "^5.4.10"
+    "vite": "^7.3.7"
   },
   "scripts": {
-    "predev": "npm run scrape",
+    "predev": "ts-node --project tsconfig.server.json scripts/prepare-dev.ts",
     "dev": "vite",
+    "prebuild": "npm run audit:seed",
     "build": "vite build",
     "postbuild": "ts-node --project tsconfig.server.json scripts/generate-og-pages.ts",
     "scrape": "ts-node --project tsconfig.server.json scripts/scrape.ts",
-    "test": "ts-node --project tsconfig.server.json api/tmdb-client.test.ts",
+    "admin": "npm run build && ts-node --project tsconfig.server.json scripts/admin.ts",
+    "admin:serve": "ts-node --project tsconfig.server.json scripts/admin.ts",
+    "pipeline:replay": "ts-node --project tsconfig.server.json scripts/replay-pipeline.ts",
+    "pipeline:cleanup": "ts-node --project tsconfig.server.json scripts/cleanup-pipeline.ts",
+    "pipeline:recheck-locations": "ts-node --project tsconfig.server.json scripts/recheck-locations.ts",
+    "pipeline:shadow": "ts-node --project tsconfig.server.json scripts/merge.ts --shadow",
+    "pipeline:eval": "ts-node --project tsconfig.server.json scripts/evaluate-pipeline.ts",
+    "typecheck": "tsc --noEmit --project tsconfig.server.json && tsc --noEmit --project tsconfig.app.json",
+    "test:pipeline": "ts-node --project tsconfig.server.json api/pipeline/pipeline.test.ts",
+    "test": "ts-node --project tsconfig.server.json api/tmdb-client.test.ts && ts-node --project tsconfig.server.json api/omdb-client.test.ts && ts-node --project tsconfig.server.json api/osm-client.test.ts && ts-node --project tsconfig.server.json api/berlin-de-scraper.test.ts && ts-node --project tsconfig.server.json api/audit-log.test.ts && ts-node --project tsconfig.server.json scripts/merge.test.ts && ts-node --project tsconfig.server.json scripts/sync-data.test.ts && ts-node --project tsconfig.server.json scripts/scrape.test.ts && npm run test:pipeline",
+    "audit:seed": "ts-node --project tsconfig.server.json scripts/seed-audit.ts",
+    "data:sync": "ts-node --project tsconfig.server.json scripts/sync-data.ts",
     "scrape:force": "ts-node --project tsconfig.server.json scripts/scrape.ts --force-enrich",
     "screenshots": "ts-node --project tsconfig.server.json scripts/screenshot.ts",
     "screenshots:local": "ts-node --project tsconfig.server.json scripts/screenshot.ts http://localhost:4173",

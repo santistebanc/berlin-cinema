@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
@@ -6,16 +6,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Build the app
 RUN npm run build
-
-# Remove dev dependencies after build
-RUN npm prune --omit=dev
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S appuser -u 1001 -G nodejs
@@ -27,7 +24,7 @@ EXPOSE 3003
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3003/api/movies', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://127.0.0.1:3003/api/review/state', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start server
-CMD ["node", "server.js"]
+CMD ["npm", "run", "admin:serve"]

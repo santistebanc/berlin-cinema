@@ -1,232 +1,64 @@
-import assert from 'assert';
+import assert from 'assert/strict';
 import axios from 'axios';
-import TmdbClient from './tmdb-client';
+import TmdbClient, { tmdbMovieData } from './tmdb-client';
 
-const originalGet = axios.get;
-
-function movieDetails(id: number, director: string) {
-  const isNolanOdyssey = id === 2026;
-  const isSpaceOdyssey = id === 2001;
-  return {
-    id,
-    title: isNolanOdyssey ? 'The Odyssey' : id === 3000 ? 'Die Odyssee der Kinder' : isSpaceOdyssey ? '2001: A Space Odyssey' : 'The Odyssey',
-    overview: '',
-    tagline: null,
-    runtime: 120,
-    vote_average: 0,
-    vote_count: 0,
-    release_date: isNolanOdyssey || id === 3000 ? '2026-07-17' : isSpaceOdyssey ? '1968-04-02' : '1997-05-18',
-    poster_path: null,
-    backdrop_path: null,
-    genres: [],
-    original_language: 'en',
-    credits: { crew: [{ job: 'Director', name: director }], cast: [] },
-    videos: { results: [] },
-    external_ids: {},
-    release_dates: { results: [] },
-    keywords: { keywords: [] },
-    translations: { translations: [] },
-  };
-}
-
-async function testSearchUsesYearAndDirectorForAmbiguousExactTitles() {
-  (axios as any).get = async (url: string) => {
-    if (url.includes('/search/movie')) {
-      return {
-        data: {
-          results: [
-            {
-              id: 1997,
-              title: 'The Odyssey',
-              original_title: 'The Odyssey',
-              release_date: '1997-05-18',
-              poster_path: '/old.jpg',
-              overview: 'Older adaptation',
-              genre_ids: [],
-              original_language: 'en',
-              vote_average: 6,
-              vote_count: 100,
-              popularity: 10,
-            },
-            {
-              id: 2026,
-              title: 'The Odyssey',
-              original_title: 'The Odyssey',
-              release_date: '2026-07-17',
-              poster_path: '/new.jpg',
-              overview: 'Nolan adaptation',
-              genre_ids: [],
-              original_language: 'en',
-              vote_average: 8,
-              vote_count: 10,
-              popularity: 8,
-            },
-          ],
-        },
-      };
-    }
-
-    if (url.includes('/movie/1997')) return { data: movieDetails(1997, 'Andrei Konchalovsky') };
-    if (url.includes('/movie/2026')) return { data: movieDetails(2026, 'Christopher Nolan') };
-
-    throw new Error(`Unexpected URL: ${url}`);
-  };
-
+async function main() {
+  const original = axios.get; const searches: any[] = []; const details: any[] = [];
   try {
-    const client = new TmdbClient('test-key');
-    const result = await client.searchMovie('The Odyssey', {
-      year: 2026,
-      director: 'Christopher Nolan',
-    });
-
-    assert.equal(result?.id, 2026);
-  } finally {
-    (axios as any).get = originalGet;
-  }
+    (axios as any).get = async (url: string, options: any) => {
+      if (url.includes('/search/movie')) { searches.push(options.params); return { data: { results: [
+        { id: 1997, title: 'The Odyssey', original_title: 'The Odyssey', release_date: '1997-01-01' },
+        { id: 2026, title: 'The Odyssey', original_title: 'The Odyssey', release_date: '2026-01-01' },
+      ] } }; }
+      assert.ok(url.endsWith('/movie/2026'), 'Only the externally selected identity can supply enrichment');
+      details.push(options.params);
+      return { data: { id: 2026, title: 'The Odyssey', original_title: 'Original source title', release_date: '2026-07-17',
+        overview: 'A plot', runtime: 120, vote_average: 0, vote_count: 0, poster_path: null,
+        production_countries: [{ iso_3166_1: 'GB', name: 'United Kingdom' }, { iso_3166_1: 'US', name: 'United States of America' }],
+        spoken_languages: [{ iso_639_1: 'en', english_name: 'English', name: 'English' }],
+        credits: { crew: [{ job: 'Director', name: 'Christopher Nolan' }, { job: 'Director', name: 'Co-director' }], cast: [{ name: 'First', order: 0 }] },
+        translations: { translations: [{ name: 'German', data: { title: 'Die Odyssee' } }] },
+        alternative_titles: { titles: [{ iso_3166_1: 'DE', title: 'Official alternative title', type: '' }] },
+        release_dates: { results: [{ iso_3166_1: 'US', release_dates: [{ certification: 'PG-13', type: 3, release_date: '2026-07-17T00:00:00Z' }] }] },
+        images: { posters: [], backdrops: [] },
+        external_ids: { imdb_id: 'tt1234567', wikidata_id: 'Q123' }, videos: { results: [{ type: 'Trailer', site: 'YouTube', key: 'unofficial', official: false }, { type: 'Trailer', site: 'YouTube', key: 'abc', official: true }] },
+      } };
+    };
+    const client = new TmdbClient('test-only'); const candidates = await client.candidates(['Die Odyssee', 'The Odyssey']);
+    assert.equal(candidates.length, 2, 'Keep distinct candidate IDs; do not select the first search result');
+    assert.equal(searches.length, 4); assert.ok(searches.some(p => p.language === 'de-DE')); assert.ok(searches.some(p => p.query === 'The Odyssey'));
+    const result = await client.enrichSelected(2026);
+    assert.ok(details[0].append_to_response.includes('alternative_titles'), 'Collect official alternative titles in the same detail request');
+    assert.ok(details[0].append_to_response.includes('images'));
+    assert.equal(result!.director, 'Christopher Nolan, Co-director'); assert.equal(result!.originalTitle, 'Original source title');
+    assert.deepEqual(result!.alternativeTitles, ['Die Odyssee', 'Official alternative title'], 'Keep both translated and official alternative titles');
+    assert.equal((result as any).country, 'United Kingdom, United States of America');
+    assert.deepEqual((result as any).directors, ['Christopher Nolan', 'Co-director']);
+    assert.equal((result as any).spokenLanguages[0].code, 'en');
+    assert.equal((result as any).releaseDate, '2026-07-17');
+    assert.equal(result!.ageRating, null, 'A US certificate must never be displayed as a German FSK rating');
+    assert.equal(result!.rating, 0, 'Zero is not missing'); assert.equal(result!.posterUrl, null);
+    assert.equal(result!.trailerUrl, 'https://www.youtube.com/watch?v=abc');
+    const bundle = await client.getMovieDetails(2026); const requestsBeforeReuse = details.length;
+    await client.enrichSelected(2026, undefined, '', bundle);
+    assert.equal(details.length, requestsBeforeReuse, 'Reuse a verified detail bundle instead of requesting the same movie again');
+    assert.equal(bundle.credits.crew.length, 2, 'Full credits are retained independently of the compact display projection');
+    const german = tmdbMovieData({ ...bundle, releaseDates: [{ iso_3166_1: 'DE', release_dates: [
+      { certification: '16', type: 4, release_date: '2026-08-01T00:00:00Z' },
+      { certification: '12', type: 3, release_date: '2026-07-16T00:00:00Z' },
+    ] }] });
+    assert.equal(german.ageRating, '12'); assert.equal(german.germanReleaseDate, '2026-07-16');
+    (axios as any).get = async () => ({ data: { results: [
+      ...Array.from({ length: 6 }, (_, index) => ({ id: index + 1, title: `Partial Title ${index}`, original_title: `Partial Title ${index}` })),
+      { id: 2001, title: 'Monsters, Inc.', original_title: 'Monsters, Inc.' },
+    ] } });
+    const lowRankedExact = await new TmdbClient('test-only').candidates(['Monsters, Inc.']);
+    assert.ok(lowRankedExact.some(candidate => candidate.id === 2001), 'A whole-title match below the top five must remain a candidate');
+    (axios as any).get = async () => { throw { response: { status: 503 } }; };
+    const unavailable = new TmdbClient('test-only');
+    assert.deepEqual(await unavailable.candidates(['Unreachable']), []);
+    assert.deepEqual(unavailable.retrievalErrors().map(error => error.status), [503, 503], 'Keep retrieval failures distinct from successful searches with no candidates');
+    console.log('tmdb-client evidence retrieval tests passed');
+  } finally { axios.get = original; }
 }
-
-async function testEnrichSearchesAltTitleBeforeAcceptingGermanFalsePositive() {
-  (axios as any).get = async (url: string, opts?: { params?: { query?: string } }) => {
-    if (url.includes('/search/movie')) {
-      const query = opts?.params?.query;
-      if (query === 'Die Odyssee') {
-        return {
-          data: {
-            results: [
-              {
-                id: 3000,
-                title: 'Die Odyssee der Kinder',
-                original_title: 'Die Odyssee der Kinder',
-                release_date: '2026-04-01',
-                poster_path: '/children.jpg',
-                overview: 'Wrong German-title match',
-                genre_ids: [],
-                original_language: 'de',
-                vote_average: 0,
-                vote_count: 1,
-                popularity: 8,
-              },
-            ],
-          },
-        };
-      }
-
-      if (query === 'The Odyssey') {
-        return {
-          data: {
-            results: [
-              {
-                id: 2026,
-                title: 'The Odyssey',
-                original_title: 'The Odyssey',
-                release_date: '2026-07-17',
-                poster_path: '/nolan.jpg',
-                overview: 'Nolan adaptation',
-                genre_ids: [],
-                original_language: 'en',
-                vote_average: 0,
-                vote_count: 1,
-                popularity: 6,
-              },
-            ],
-          },
-        };
-      }
-    }
-
-    if (url.includes('/movie/3000')) return { data: movieDetails(3000, 'Teresina Moscatiello') };
-    if (url.includes('/movie/2026')) return { data: movieDetails(2026, 'Christopher Nolan') };
-
-    throw new Error(`Unexpected URL: ${url}`);
-  };
-
-  try {
-    const client = new TmdbClient('test-key');
-    const result = await client.enrichMovie('Die Odyssee', 'The Odyssey', {
-      year: 2026,
-      director: 'Christopher Nolan',
-    });
-
-    assert.equal(result?.tmdbTitle, 'The Odyssey');
-    assert.equal(result?.director, 'Christopher Nolan');
-  } finally {
-    (axios as any).get = originalGet;
-  }
-}
-
-async function testEnrichSearchesLocalizedTitlesForGermanReleaseNames() {
-  (axios as any).get = async (url: string, opts?: { params?: { query?: string; language?: string } }) => {
-    if (url.includes('/search/movie')) {
-      const query = opts?.params?.query;
-      const language = opts?.params?.language;
-      if (query === '2001: Odyssee im Weltraum' && language === 'en-US') {
-        return {
-          data: {
-            results: [
-              {
-                id: 4000,
-                title: 'Von Shining bis 2001 – Odyssee im Weltraum',
-                original_title: 'Von Shining bis 2001 – Odyssee im Weltraum',
-                release_date: '2019-01-01',
-                poster_path: '/doc.jpg',
-                overview: 'Wrong documentary match',
-                genre_ids: [],
-                original_language: 'de',
-                vote_average: 0,
-                vote_count: 1,
-                popularity: 7,
-              },
-            ],
-          },
-        };
-      }
-
-      if (query === '2001: Odyssee im Weltraum' && language === 'de-DE') {
-        return {
-          data: {
-            results: [
-              {
-                id: 2001,
-                title: '2001: Odyssee im Weltraum',
-                original_title: '2001: A Space Odyssey',
-                release_date: '1968-04-02',
-                poster_path: '/space.jpg',
-                overview: 'Kubrick film',
-                genre_ids: [],
-                original_language: 'en',
-                vote_average: 8,
-                vote_count: 1000,
-                popularity: 20,
-              },
-            ],
-          },
-        };
-      }
-    }
-
-    if (url.includes('/movie/4000')) return { data: movieDetails(4000, 'Christian Leblé') };
-    if (url.includes('/movie/2001')) return { data: movieDetails(2001, 'Stanley Kubrick') };
-
-    throw new Error(`Unexpected URL: ${url}`);
-  };
-
-  try {
-    const client = new TmdbClient('test-key');
-    const result = await client.enrichMovie('2001: Odyssee im Weltraum');
-
-    assert.equal(result?.tmdbTitle, '2001: A Space Odyssey');
-    assert.equal(result?.director, 'Stanley Kubrick');
-  } finally {
-    (axios as any).get = originalGet;
-  }
-}
-
-Promise.resolve()
-  .then(testSearchUsesYearAndDirectorForAmbiguousExactTitles)
-  .then(testEnrichSearchesAltTitleBeforeAcceptingGermanFalsePositive)
-  .then(testEnrichSearchesLocalizedTitlesForGermanReleaseNames)
-  .then(() => console.log('tmdb-client tests passed'))
-  .catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
+main().catch(error => { console.error(error); process.exitCode = 1; });

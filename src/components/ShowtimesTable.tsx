@@ -85,6 +85,7 @@ const ShowtimesTable: React.FC<Props> = ({
             selectedCinemas={selectedCinemas}
             selectedVariants={selectedVariants}
             cinemaColors={cinemaColors}
+            includeUnknown={selectedVariants.length === availableVariants.length}
             onCinemaClick={onCinemaClick}
           />
         ) : (
@@ -94,6 +95,7 @@ const ShowtimesTable: React.FC<Props> = ({
             selectedCinemas={selectedCinemas}
             selectedVariants={selectedVariants}
             cinemaColors={cinemaColors}
+            includeUnknown={selectedVariants.length === availableVariants.length}
             onCinemaClick={onCinemaClick}
           />
         )}

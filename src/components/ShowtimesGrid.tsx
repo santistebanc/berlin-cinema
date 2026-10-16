@@ -8,6 +8,7 @@ interface Props {
   selectedDates: string[];
   selectedCinemas: string[];
   selectedVariants: string[];
+  includeUnknown?: boolean;
   cinemaColors: Record<string, string>;
   onCinemaClick: (name: string) => void;
 }
@@ -17,6 +18,7 @@ const ShowtimesGrid: React.FC<Props> = ({
   selectedDates,
   selectedCinemas,
   selectedVariants,
+  includeUnknown = true,
   cinemaColors,
   onCinemaClick,
 }) => {
@@ -36,7 +38,7 @@ const ShowtimesGrid: React.FC<Props> = ({
     .filter(date =>
       (selectedDates.length === 0 || selectedDates.includes(date)) &&
       Object.values(showings[date]).some(timeShowings =>
-        timeShowings.some(s => matchesFilters(s, selectedCinemas, selectedVariants))
+        timeShowings.some(s => matchesFilters(s, selectedCinemas, selectedVariants, includeUnknown))
       )
     )
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
@@ -48,7 +50,7 @@ const ShowtimesGrid: React.FC<Props> = ({
     .filter(time =>
       datesWithShowings.some(date => {
         const slots = showings[date][time];
-        return slots && slots.some(s => matchesFilters(s, selectedCinemas, selectedVariants));
+        return slots && slots.some(s => matchesFilters(s, selectedCinemas, selectedVariants, includeUnknown));
       })
     );
 
@@ -113,7 +115,7 @@ const ShowtimesGrid: React.FC<Props> = ({
                 </td>
                 {datesWithShowings.map(date => {
                   const filtered = (showings[date][time] || []).filter(s =>
-                    matchesFilters(s, selectedCinemas, selectedVariants)
+                    matchesFilters(s, selectedCinemas, selectedVariants, includeUnknown)
                   );
                   return (
                     <td key={date} className="border-l px-2 py-1.5 align-top" style={{ borderColor: 'rgb(var(--border) / .4)' }}>
@@ -124,6 +126,9 @@ const ShowtimesGrid: React.FC<Props> = ({
                               key={idx}
                               cinema={showing.cinema}
                               variants={showing.variants}
+                              uncertain={showing.uncertain}
+                              stale={showing.stale}
+                              edition={showing.edition}
                               colorClass={cinemaColors[showing.cinema] ?? ''}
                               label={showing.cinema}
                               onCinemaClick={onCinemaClick}

@@ -1,36 +1,56 @@
-import https from 'https';
-import fs from 'fs';
-import path from 'path';
-
-function normalize(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-function normalizeAddress(addr: string): string {
-  return addr.toLowerCase().replace(/\s+/g, ' ').trim();
-}
+﻿import https from 'https';
 
 function fetchJson(url: string): Promise<any> {
   return new Promise((resolve, reject) => {
+    let deadline: ReturnType<typeof setTimeout>;
+    const fail = (error: Error) => {
+      clearTimeout(deadline);
+      reject(error);
+    };
     const req = https.get(url, { headers: { 'User-Agent': 'berlin-cinema-app/1.0' } }, res => {
+      if (res.statusCode !== 200) {
+        res.resume();
+        fail(new Error(`OSM request failed: HTTP ${res.statusCode}`));
+        return;
+      }
       let data = '';
       res.on('data', chunk => { data += chunk; });
+      res.on('error', fail);
+      res.on('aborted', () => fail(new Error('OSM response was interrupted')));
       res.on('end', () => {
+        clearTimeout(deadline);
         try { resolve(JSON.parse(data)); }
-        catch (e) { reject(e); }
+        catch (e) { fail(e as Error); }
       });
     });
-    req.on('error', reject);
+    deadline = setTimeout(() => req.destroy(new Error('OSM request timed out after 30 seconds')), 30000);
+    req.on('error', fail);
   });
 }
 
-export interface OsmCinema {
+export interface OsmAddress {
+  id?: string;
+  address: string | null;
+  insideBerlin?: boolean;
+  latitude?: number;
+  longitude?: number;
+  street?: string; houseNumber?: string; postalCode?: string; city?: string; district?: string;
+  tags?: Record<string, string>;
+}
+export interface OsmCinema extends OsmAddress {
+  id?: string;
   name: string;
   address: string | null;
   website: string | null;
+  insideBerlin?: boolean;
+  latitude?: number;
+  longitude?: number;
+  aliases?: string[]; phone?: string; email?: string; openingHours?: string; wheelchair?: string;
+}
+
+function addressFields(tags: Record<string, string>) {
+  return { street: tags['addr:street'], houseNumber: tags['addr:housenumber'], postalCode: tags['addr:postcode'],
+    city: tags['addr:city'] || 'Berlin', district: tags['addr:suburb'] || tags['addr:district'], tags: { ...tags } };
 }
 
 let _osmCinemasCache: OsmCinema[] | null = null;
@@ -41,10 +61,13 @@ export async function fetchBerlinCinemas(): Promise<OsmCinema[]> {
   const query = `[out:json][timeout:25];
 area["name"="Berlin"]["admin_level"="4"]->.b;
 (node["amenity"="cinema"](area.b);way["amenity"="cinema"](area.b););
-out tags;`;
+out center tags;`;
 
   const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
   const data = await fetchJson(url);
+  if (!Array.isArray(data.elements) || data.remark) {
+    throw new Error('OSM returned an incomplete cinema response');
+  }
 
   const cinemas: OsmCinema[] = [];
   for (const el of (data.elements ?? [])) {
@@ -53,11 +76,19 @@ out tags;`;
     const website: string | undefined = el.tags?.website || el.tags?.['contact:website'];
     const street: string | undefined = el.tags?.['addr:street'];
     const housenumber: string | undefined = el.tags?.['addr:housenumber'];
-    const address = street && housenumber ? `${street} ${housenumber}` : (street ?? null);
+    const address = street && housenumber ? `${street} ${housenumber}${el.tags?.['addr:postcode'] ? `, ${el.tags['addr:postcode']} Berlin` : ''}` : (street ?? null);
     cinemas.push({
+      ...addressFields(el.tags ?? {}),
+      id: `${el.type}/${el.id}`,
       name,
       address: address ?? null,
       website: website ? (website.startsWith('http') ? website : `https://${website}`) : null,
+      insideBerlin: true,
+      latitude: el.lat ?? el.center?.lat,
+      longitude: el.lon ?? el.center?.lon,
+      aliases: [...new Set<string>(['alt_name', 'official_name', 'old_name', 'name:de', 'name:en'].flatMap(key => el.tags?.[key]?.split(';') ?? []).filter(Boolean))],
+      phone: el.tags?.['contact:phone'] || el.tags?.phone, email: el.tags?.['contact:email'] || el.tags?.email,
+      openingHours: el.tags?.opening_hours, wheelchair: el.tags?.wheelchair,
     });
   }
 
@@ -66,105 +97,17 @@ out tags;`;
   return cinemas;
 }
 
-export async function fetchBerlinCinemaWebsites(): Promise<Map<string, string>> {
-  const cinemas = await fetchBerlinCinemas();
-  const result = new Map<string, string>();
-  for (const c of cinemas) {
-    if (c.website) result.set(normalize(c.name), c.website);
-  }
-  return result;
-}
-
-export function matchCinemaWebsite(cinemaName: string, osmMap: Map<string, string>): string | null {
-  const key = normalize(cinemaName);
-  if (osmMap.has(key)) return osmMap.get(key)!;
-  for (const [osmKey, website] of osmMap) {
-    if (key.includes(osmKey) || osmKey.includes(key)) return website;
-  }
-  return null;
-}
-
-/**
- * Find the OSM cinema entry for a given scraped name (exact norm or substring).
- */
-export function findOsmCinema(cinemaName: string, osmCinemas: OsmCinema[]): OsmCinema | null {
-  const key = normalize(cinemaName);
-  let best: OsmCinema | null = null;
-  for (const c of osmCinemas) {
-    const osmKey = normalize(c.name);
-    if (osmKey === key) return c;
-    if (!best && (key.includes(osmKey) || osmKey.includes(key))) best = c;
-  }
-  return best;
-}
-
-/**
- * Given a list of unresolved cinema names (not in entities.json), attempt address-based
- * deduplication against known canonical cinema names. Returns a list of discovered aliases
- * { alias, canonical } and logs the ones that remain unresolved.
- *
- * Also auto-updates entities.json by appending the discovered aliases.
- */
-export async function resolveNewCinemasViaOsm(
-  newCinemaNames: string[],
-  knownCanonicalNames: string[],
-  entitiesPath: string,
-  autoUpdate = true,
-): Promise<{ alias: string; canonical: string }[]> {
-  if (newCinemaNames.length === 0) return [];
-
-  let osmCinemas: OsmCinema[];
-  try {
-    osmCinemas = await fetchBerlinCinemas();
-  } catch (e) {
-    console.warn('[osm] Cannot resolve new cinemas — OSM fetch failed:', (e as Error).message);
-    return [];
-  }
-
-  // Build address → canonical name map for known canonicals
-  const canonicalAddressMap = new Map<string, string>(); // normalizedAddr → canonicalName
-  for (const canonical of knownCanonicalNames) {
-    const osm = findOsmCinema(canonical, osmCinemas);
-    if (osm?.address) {
-      canonicalAddressMap.set(normalizeAddress(osm.address), canonical);
-    }
-  }
-
-  const discovered: { alias: string; canonical: string }[] = [];
-  const unresolved: string[] = [];
-
-  for (const alias of newCinemaNames) {
-    const osm = findOsmCinema(alias, osmCinemas);
-    if (osm?.address) {
-      const normAddr = normalizeAddress(osm.address);
-      const canonical = canonicalAddressMap.get(normAddr);
-      if (canonical) {
-        discovered.push({ alias, canonical });
-        console.log(`[osm] Resolved new cinema: "${alias}" → "${canonical}" (same address: ${osm.address})`);
-        continue;
-      }
-    }
-    unresolved.push(alias);
-  }
-
-  if (unresolved.length > 0) {
-    console.log(`[entities] ${unresolved.length} unresolved new cinema(s): ${unresolved.join(', ')}`);
-  }
-
-  if (discovered.length > 0 && autoUpdate) {
-    // Auto-update entities.json
-    const entities = JSON.parse(fs.readFileSync(entitiesPath, 'utf-8'));
-    for (const { alias, canonical } of discovered) {
-      const entry = entities.cinemas.find((e: any) => e.canonical === canonical);
-      if (entry) {
-        if (!entry.aliases.includes(alias)) entry.aliases.push(alias);
-      } else {
-        entities.cinemas.push({ canonical, aliases: [alias] });
-      }
-    }
-    fs.writeFileSync(entitiesPath, JSON.stringify(entities, null, 2));
-    console.log(`[entities] Auto-updated entities.json with ${discovered.length} new alias(es)`);
-  }
-
-  return discovered;
+export async function fetchBerlinAddresses(patterns: string[]): Promise<OsmAddress[]> {
+  if (!patterns.length) return [];
+  const pattern = patterns.map(value => `(${value})`).join('|');
+  const query = `[out:json][timeout:25];area["name"="Berlin"]["admin_level"="4"]->.b;
+nwr["addr:street"~${JSON.stringify(pattern)},i]["addr:housenumber"](area.b);out center tags;`;
+  const data = await fetchJson(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+  if (!Array.isArray(data.elements) || data.remark) throw new Error('OSM returned an incomplete address response');
+  return data.elements.filter((el: any) => el.tags?.['addr:street'] && el.tags?.['addr:housenumber']).map((el: any) => ({
+    ...addressFields(el.tags),
+    id: `${el.type}/${el.id}`, insideBerlin: true,
+    address: `${el.tags['addr:street']} ${el.tags['addr:housenumber']}${el.tags['addr:postcode'] ? `, ${el.tags['addr:postcode']} Berlin` : ''}`,
+    latitude: el.lat ?? el.center?.lat, longitude: el.lon ?? el.center?.lon,
+  }));
 }

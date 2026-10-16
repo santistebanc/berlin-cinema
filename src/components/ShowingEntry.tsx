@@ -7,20 +7,25 @@ interface Props {
   colorClass: string;
   label: string;
   onCinemaClick: (name: string) => void;
+  uncertain?: boolean;
+  stale?: boolean;
+  edition?: string | null;
 }
 
-const ShowingEntry: React.FC<Props> = ({ cinema, variants, colorClass, label, onCinemaClick }) => (
+const ShowingEntry: React.FC<Props> = ({ cinema, variants, colorClass, label, onCinemaClick, uncertain, stale, edition }) => (
   <button
     onClick={() => onCinemaClick(cinema)}
     className={cn(
       'flex max-w-full min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium leading-4 transition-opacity hover:opacity-80 sm:max-w-[240px]',
       colorClass
     )}
-    title={variants.length > 0 ? `${cinema} · ${variants.join(' ')}` : cinema}
+    title={[cinema, ...variants, edition, uncertain && 'Source descriptions disagree; verify with the cinema', stale && 'Source refresh unavailable; last observed within 24 hours'].filter(Boolean).join(' · ')}
   >
-    <span className="min-w-0 truncate">{label}</span>
+    <span className="min-w-0 whitespace-normal text-left [overflow-wrap:anywhere]">{label}</span>
+    {(uncertain || stale) && <span className="text-[10px] font-medium">{uncertain ? 'Check version' : 'Last known'}</span>}
+    {edition && <span className="text-[10px] opacity-70">{edition}</span>}
     {variants.length > 0 && (
-      <span className="shrink-0 truncate text-[11px] font-semibold opacity-70">
+      <span className="max-w-[40%] shrink-0 whitespace-normal text-left text-[11px] font-semibold opacity-70 [overflow-wrap:anywhere]">
         {variants.join(' ')}
       </span>
     )}
