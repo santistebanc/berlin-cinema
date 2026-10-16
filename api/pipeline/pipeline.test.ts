@@ -323,8 +323,10 @@ async function main() {
       const sequels = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Jailer', null, { director: null, cast: null })]),
         batch('b', [raw('Jailer 2', null, { director: null, cast: null, originalTitle: 'Jailer' })])]);
       assert.equal(sequels.total, 2, 'An alternate title cannot erase an explicit sequel number'); checks++;
-      const genericProgramme = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Festival', null, { director: null, cast: null, url: 'https://source-a.test/festival' })]),
-        batch('b', [raw('Festival', null, { director: null, cast: null, url: 'https://source-b.test/festival' })])]);
+      const genericProgramme = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Festival', null, { director: null, cast: null, url: 'https://source-a.test/festival',
+        showings: [{ cinema: 'Example Cinema', date: '2026-10-16', time: '18:00', url: 'https://example.test/cinema/a' }] })]),
+        batch('b', [raw('Festival', null, { director: null, cast: null, url: 'https://source-b.test/festival',
+          showings: [{ cinema: 'Example Cinema', date: '2026-10-16', time: '21:00', url: 'https://example.test/cinema/b' }] })])]);
       assert.equal(genericProgramme.total, 2, 'An unresolved generic programme label cannot use the film title-only fallback'); checks++;
       const providerPeer = new PipelineStore(':memory:');
       providerPeer.saveResource('tmdb-detail:9001', { details: { id: 9001, title: 'A Film', original_title: 'A Film', release_date: '2026-01-01',
@@ -545,6 +547,20 @@ async function main() {
       assert.ok(result.movies.every((movie: any) => movie.kind === 'programme'));
       assert.equal(result.movies.filter((movie: any) => movie.title === 'Sneak Preview').length, 2, 'Unidentified sneaks stay scoped to their own source records');
       assert.equal(result.review.open, 0);
+      const sneakSlot = { cinema: 'Example Cinema', date: '2026-10-21', time: '20:30', url: 'https://example.test/cinema/1' };
+      const sharedSchedule = await execute(new PipelineStore(':memory:'), [
+        batch('critic.de', [raw('Sneak Preview', null, { director: null, url: 'https://critic.test/sneak',
+          showings: [{ ...sneakSlot, url: 'https://critic.test/cinema' }] })]),
+        batch('berlin.de', [
+          raw('Sneak Preview (OmU)', null, { director: null, url: 'https://berlin.test/filmdetail/1',
+            showings: [{ ...sneakSlot, url: 'https://berlin.test/cinema' }] }),
+          raw('Sneak Preview  (OmU)', null, { director: null, url: 'https://berlin.test/filmdetail/2',
+            showings: [{ ...sneakSlot, url: 'https://berlin.test/cinema' }] }),
+        ]),
+      ], { model: noDecisions });
+      assert.equal(sharedSchedule.movies.filter((movie: any) => movie.title === 'Sneak Preview').length, 1,
+        'Same-title sneak programmes that share a cinema/date/time publish as one listing');
+      assert.equal(sharedSchedule.total, 1); checks += 2;
       const festival = await execute(new PipelineStore(':memory:'), [batch('a', [raw('Festival', null, { director: null, cast: null })])]);
       assert.equal(festival.review.open, 1, 'A bare Festival label still requires classification evidence');
       const festivalUrl = 'https://www.critic.de/ov-movies-berlin/movie/festival-354819/';

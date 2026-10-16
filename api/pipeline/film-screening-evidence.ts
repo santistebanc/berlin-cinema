@@ -36,8 +36,12 @@ export function filmScreeningMatches(groups: Map<string, Entity[]>, rows: FilmSc
   const values = [...profiles.values()]; const matches: FilmScreeningMatch[] = [];
   for (let i = 0; i < values.length; i++) for (let j = i + 1; j < values.length; j++) {
     const a = values[i]; const b = values[j];
-    if (a.source === b.source || groups.get(a.group)!.some(entity => entity.kind !== 'film')
-      || groups.get(b.group)!.some(entity => entity.kind !== 'film')) continue;
+    const left = groups.get(a.group)!; const right = groups.get(b.group)!;
+    const bothFilms = left.every(entity => entity.kind === 'film') && right.every(entity => entity.kind === 'film');
+    const bothProgrammes = left.every(entity => entity.kind === 'programme') && right.every(entity => entity.kind === 'programme');
+    // Films need independent sources. Programmes may also consolidate when one source
+    // republishes the same timetable under multiple listing URLs.
+    if ((!bothFilms && !bothProgrammes) || (a.source === b.source && !bothProgrammes)) continue;
     const shared = [...a.slots.keys()].filter(slot => b.slots.has(slot)); if (!shared.length) continue;
     const fullTitle = [...a.titles].some(title => b.titles.has(title));
     let conflict = false; const distinctiveSlots: string[] = [];
@@ -54,10 +58,26 @@ export function filmScreeningMatches(groups: Map<string, Entity[]>, rows: FilmSc
     const dates = new Set(distinctiveSlots.map(slot => JSON.parse(slot)[1]));
     const venues = new Set(distinctiveSlots.map(slot => JSON.parse(slot)[0]));
     const highMatch = distinctiveSlots.length >= 3 && coverage >= 0.9 && (dates.size >= 2 || venues.size >= 2);
-    if (!fullTitle && !highMatch) continue;
-    matches.push({ left: a.group, right: b.group, leftIds: groups.get(a.group)!.map(entity => entity.id),
-      rightIds: groups.get(b.group)!.map(entity => entity.id), sources: [a.source, b.source],
-      rule: highMatch ? 'distinctive-screening-pattern' : 'full-title-and-screening', coverage, distinctive: distinctiveSlots.length,
+    if (bothProgrammes) {
+      // Titles are not identity across sources. Exact shared cinema/date/time evidence is:
+      // the smaller timetable is essentially contained via exclusive slots, or one source
+      // republished the same parsed title under multiple listing URLs at shared slots.
+      const sameSourceRepublish = a.source === b.source && shared.length > 0 && fullTitle;
+      const scheduleProof = coverage >= 0.9 && (distinctiveSlots.length > 0 || sameSourceRepublish);
+      if (!scheduleProof) continue;
+      matches.push({ left: a.group, right: b.group, leftIds: left.map(entity => entity.id),
+        rightIds: right.map(entity => entity.id), sources: [a.source, b.source],
+        // Same-source republishes run in the early distinctive pass so a later cross-source
+        // pass can treat the consolidated slot as exclusive.
+        rule: !fullTitle || sameSourceRepublish || highMatch ? 'distinctive-screening-pattern' : 'full-title-and-screening',
+        coverage, distinctive: distinctiveSlots.length,
+        shared: shared.map(slot => { const [venueId, date, time] = JSON.parse(slot); return { venueId, date, time }; }) });
+      continue;
+    } else if (!fullTitle && !highMatch) continue;
+    matches.push({ left: a.group, right: b.group, leftIds: left.map(entity => entity.id),
+      rightIds: right.map(entity => entity.id), sources: [a.source, b.source],
+      rule: highMatch ? 'distinctive-screening-pattern' : 'full-title-and-screening',
+      coverage, distinctive: distinctiveSlots.length,
       shared: shared.map(slot => { const [venueId, date, time] = JSON.parse(slot); return { venueId, date, time }; }) });
   }
   return matches;

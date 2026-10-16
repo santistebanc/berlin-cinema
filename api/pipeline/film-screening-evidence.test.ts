@@ -86,6 +86,39 @@ async function main() {
   const programme = fixture(); programme.entities[1].kind = 'programme';
   assert.equal(filmDisplayGroups(programme.store, programme.entities, programme.rows).size, 2);
 
+  const sneaks = fixture(['Sneak Preview', 'Sneak Preview']);
+  for (const entity of sneaks.entities) { entity.kind = 'programme'; sneaks.store.saveEntity(entity); }
+  assert.equal(filmDisplayGroups(sneaks.store, sneaks.entities, sneaks.rows.filter(row => row.date === slots[0].date)).size, 1,
+    'Same-title sneak programmes that share a distinctive screening consolidate for publication');
+  const sameSourceSneaks = fixture(['Sneak Preview', 'Sneak Preview']);
+  for (const entity of sameSourceSneaks.entities) { entity.kind = 'programme'; sameSourceSneaks.store.saveEntity(entity); }
+  const republished = sameSourceSneaks.rows.filter(row => row.date === slots[0].date)
+    .map(row => ({ ...row, source: 'berlin.de' }));
+  assert.equal(filmDisplayGroups(sameSourceSneaks.store, sameSourceSneaks.entities, republished).size, 1,
+    'One source republishing the same sneak under multiple listing URLs consolidates those programmes');
+  const ageRestricted = fixture(['Sneak Preview', 'Sneak Preview ab 18']);
+  for (const entity of ageRestricted.entities) { entity.kind = 'programme'; ageRestricted.store.saveEntity(entity); }
+  assert.equal(filmDisplayGroups(ageRestricted.store, ageRestricted.entities, ageRestricted.rows).size, 1,
+    'Programme labels are ignored when one timetable is essentially the same exclusive screenings');
+  const met = fixture(['Met im Kino: Macbeth', 'Met Opera 2026/27: Giuseppe Verdi MACBETH']);
+  for (const entity of met.entities) { entity.kind = 'programme'; met.store.saveEntity(entity); }
+  assert.equal(filmDisplayGroups(met.store, met.entities, met.rows.filter(row => row.date === slots[0].date)).size, 1,
+    'Different Met labels consolidate when they share the same exclusive screening');
+  const festivals = fixture(['Ukrainian Film Festival Berlin 2026', 'Ukrainisches Film Festival']);
+  for (const entity of festivals.entities) { entity.kind = 'programme'; festivals.store.saveEntity(entity); }
+  assert.equal(filmDisplayGroups(festivals.store, festivals.entities, festivals.rows.filter(row => row.date === slots[0].date)).size, 1,
+    'Translated festival labels consolidate when they share the same exclusive screening');
+  const partial = fixture(['Shorts Attack! - The Kids are alright', 'Shorts Attack - Kurzfilm(e)']);
+  for (const entity of partial.entities) { entity.kind = 'programme'; partial.store.saveEntity(entity); }
+  const partialRows = [
+    ...partial.rows.filter(row => row.filmId === 'film-0'),
+    ...partial.rows.filter(row => row.filmId === 'film-1' && row.date === slots[0].date),
+    ...partial.rows.filter(row => row.filmId === 'film-1' && row.date === slots[1].date)
+      .map(row => ({ ...row, time: '11:11' })),
+  ];
+  assert.equal(filmDisplayGroups(partial.store, partial.entities, partialRows).size, 2,
+    'A single shared slot that does not cover either programme timetable stays separate');
+
   const { store, entities, listings } = repeated;
   const anchor = entities[0]; anchor.data.tmdbId = 123;
   anchor.data.metadataEvidence = fingerprint(filmMetadataInput(anchor));
