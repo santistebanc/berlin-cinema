@@ -6,13 +6,15 @@ import { flag, identityConflict, similarity } from './resolve';
 import { PipelineStore } from './store';
 import { parseLabel } from './labels';
 import { CachedFilmEvidence, creditNames, filmMetadataInput, sameFilmWithDifferentYear, sharedCast, sharedDirector, supportsFilmIdentity } from './identity-evidence';
+import type { FilmScreeningMatch } from './film-screening-evidence';
 
 const DAY = 86400000;
 const empty = (value: any) => value == null || value === '' || (Array.isArray(value) && !value.length);
 const stableFields = new Set(['director', 'directors', 'writers', 'cast', 'year', 'originalTitle', 'tmdbTitle', 'alternativeTitles', 'posterUrl', 'backdropUrl', 'plot', 'genres', 'keywords', 'country', 'productionCountries', 'productionCompanies', 'originalLanguage', 'spokenLanguages', 'trailerUrl', 'ageRating', 'certifications', 'tagline', 'imdbId', 'externalIds', 'releaseDate', 'germanReleaseDate', 'homepage', 'awards']);
 const sourceFields = ['director', 'cast', 'country', 'year', 'posterUrl', 'originalTitle', 'altTitle', 'runtime'];
 
-export interface EnrichmentOptions { tmdb?: TmdbClient | null; omdbKey?: string; force?: boolean; now: string; identityEvidence?: CachedFilmEvidence }
+export interface EnrichmentOptions { tmdb?: TmdbClient | null; omdbKey?: string; force?: boolean; now: string; identityEvidence?: CachedFilmEvidence;
+  screeningPeer?: { entityId: string; tmdbId: number; matches: FilmScreeningMatch[] } }
 
 export async function enrichEntity(store: PipelineStore, engine: DecisionEngine, entity: Entity, sources: Observation[], options: EnrichmentOptions): Promise<Record<string, any>> {
   const selected = new Map<string, FieldValue>();
@@ -50,6 +52,14 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     }
   }
   if (entity.data.metadataEvidence !== evidence && !override) acceptedId = undefined;
+  const peer = options.screeningPeer && store.entity(options.screeningPeer.entityId);
+  let peerSupported = !!(peer && options.screeningPeer!.matches.some(match => match.leftIds.includes(entity.id) && match.rightIds.includes(peer.id)
+      || match.rightIds.includes(entity.id) && match.leftIds.includes(peer.id)) && !override && !peer.data.metadataAnchorId
+    && peer.data.tmdbId === options.screeningPeer!.tmdbId
+    && peer.data.metadataEvidence === fingerprint(filmMetadataInput(peer))
+    && store.fields(peer.id).some(field => field.identityVerified && field.source === `TMDb:${peer.data.tmdbId}`)
+    && (!acceptedId || acceptedId === peer.data.tmdbId));
+  if (!acceptedId && peerSupported) acceptedId = peer!.data.tmdbId;
   const correctedOriginal = store.overrides(`entity:${entity.id}`).filter(correction => correction.action === 'patch'
     && Object.hasOwn(correction.patch?.fields ?? {}, 'originalTitle')).slice(-1)[0]?.patch?.fields.originalTitle;
   const explicitOriginalTitles = [correctedOriginal, ...rankedSources.map(source => source.data.originalTitle), entity.data.originalTitle].filter(Boolean);
@@ -68,6 +78,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
   }
   const searchEvidence = fingerprint({ identity: evidence, queries: searchTitles, retrieval: 'whole-title-v2' });
   const searchKey = 'tmdb-search:' + searchEvidence;
+  const previousPending = store.issues().find(issue => issue.subject === metadataSubject && issue.type === 'metadata-match' && issue.status === 'open');
   if (entity.kind === 'film' && (options.tmdb || store.resource(searchKey)) && !acceptedId && !(override?.patch && override.patch.tmdbId === null)) {
     const errorKey = 'tmdb-search-errors:' + searchEvidence;
     const errorsBefore = options.tmdb?.retrievalErrors?.().length ?? 0;
@@ -140,6 +151,12 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
             resolution: 'The API search succeeded without a candidate. Keep the source listing and its known fields; no external identity is inferred.' } : {}) }, noResults ? 'caution' : 'open', 55, evidence);
     }
   }
+  else if (entity.kind === 'film' && !acceptedId && !override && previousPending) {
+    flag(store, 'metadata-match', metadataSubject, `Metadata verification pending: ${entity.name}`,
+      { ...previousPending.details, entityId: entity.id, listing: input, evidence,
+        reason: 'The source film identity is retained. No current API query is available for its updated aliases; the unresolved metadata review remains open.' },
+      'open', previousPending.priority, evidence);
+  }
   let metadata: any = null;
   if (acceptedId) {
     const key = `tmdb-enrichment:${acceptedId}`;
@@ -164,14 +181,24 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     const completeCredits = store.resource(`tmdb-detail:${acceptedId}`)?.data.credits;
     const verification = { ...metadata, year: metadata?.releaseYear,
       ...(completeCredits ? { cast: completeCredits.cast ?? [], directors: (completeCredits.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)) } : {}) };
-    if (metadata && !override && !supportsFilmIdentity({ ...input, cast: identityCast }, verification)) {
+    if (metadata && peerSupported && !supportsFilmIdentity({ ...filmMetadataInput(peer!), cast: peer!.data.cast }, verification)
+      && !store.overrides(`metadata:${peer!.id}`).some(correction => correction.action === 'patch'
+        && correction.patch?.tmdbId === acceptedId && correction.evidenceFingerprint === peer!.data.metadataEvidence)) {
+      peerSupported = false;
+      flag(store, 'metadata-match', metadataSubject, `Verified peer metadata changed: ${entity.name}`,
+        { entityId: entity.id, anchorEntityId: peer!.id, listing: input, tmdbId: acceptedId,
+          reason: 'The provider bundle no longer corroborates the independent anchor. Shared source screenings do not validate an unrelated API record.' }, 'open', 90, evidence);
+      metadata = null; acceptedId = undefined;
+    }
+    const independentSupport = metadata && supportsFilmIdentity({ ...input, cast: identityCast }, verification);
+    if (metadata && !override && !peerSupported && !independentSupport) {
       flag(store, 'metadata-match', metadataSubject, `External identity lacks independent support: ${entity.name}`,
         { entityId: entity.id, listing: input, tmdbId: acceptedId, resolutionCode: 'independent-evidence-required',
           reason: 'A prior selection or name hit alone does not establish identity. Compatible source credits/year or an independently verified identifier are required.' }, 'open', 85, evidence);
       metadata = null; acceptedId = undefined;
     }
     const verifiedYearDifference = metadata && sameFilmWithDifferentYear({ ...input, cast: identityCast }, verification);
-    if (metadata && identityConflict(input, verification) && !verifiedYearDifference) {
+    if (metadata && identityConflict(input, verification) && !peerSupported && !verifiedYearDifference) {
       flag(store, 'metadata-conflict', metadataSubject, `Metadata contradicts source identity: ${entity.name}`,
         { entityId: entity.id, listing: input, tmdbId: acceptedId, metadata }, 'open', 100, evidence);
       metadata = null; acceptedId = undefined;
@@ -183,6 +210,12 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     if (metadata) {
       entity.data.tmdbId = acceptedId; entity.data.metadataEvidence = evidence;
       entity.data.verifiedImdbId = metadata.imdbId ?? null;
+      if (peerSupported && !independentSupport) entity.data.metadataAnchorId = peer!.id;
+      else delete entity.data.metadataAnchorId;
+      if (peerSupported) flag(store, 'metadata-match', metadataSubject, `Screenings corroborate verified metadata: ${entity.name}`,
+        { entityId: entity.id, listing: input, selectedId: acceptedId, anchorEntityId: peer!.id,
+          screeningMatches: options.screeningPeer!.matches, resolutionCode: 'screening-supported-verified-peer',
+          resolution: 'Original source screenings establish the same film as an independently verified peer. Source title/year/credit mistakes do not invalidate the established film identity; the original source values remain retained.' }, 'caution', 40, evidence);
       for (const [field, value] of Object.entries(metadata)) {
         const target = field === 'releaseYear' ? 'year' : field;
         // Runtime belongs to a known edition; never copy a generic TMDb runtime to an extended cut.
@@ -190,13 +223,15 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
         const fetchedAt = store.resource(key)?.fetchedAt ?? options.now;
         const maxAge = stableFields.has(target) ? 365 * DAY : target === 'runtime' ? 30 * DAY : 2 * DAY;
         if (!empty(value) && nowMs - Date.parse(fetchedAt) <= maxAge)
-          set(target, value, `TMDb:${acceptedId}`, null, fetchedAt, 'Metadata from the accepted external film identity');
+          set(target, value, `TMDb:${acceptedId}`, null, fetchedAt, peerSupported && !independentSupport
+            ? `Metadata from the independently verified peer ${peer!.id}, corroborated by original source screenings`
+            : 'Metadata from the accepted external film identity');
       }
       store.saveEntity(entity);
     }
   }
   if (!acceptedId && entity.data.tmdbId) {
-    delete entity.data.tmdbId; delete entity.data.verifiedImdbId; store.saveEntity(entity);
+    delete entity.data.tmdbId; delete entity.data.verifiedImdbId; delete entity.data.metadataAnchorId; store.saveEntity(entity);
   }
   const imdbId = selected.get('imdbId')?.value;
   let rejectedOmdb = false;

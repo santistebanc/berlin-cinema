@@ -50,6 +50,20 @@ hours; manual review runs only on your computer with `npm run admin`.
 6. **Reconcile screenings** — the same resolved film/programme, cinema, date and time identify one viewing. Source descriptions combine automatically without model calls or screening-identity reviews, including different session/auditorium labels. Known details fill unspecified fields: `OmU` plus `OmenglU` retains explicit English subtitles. Contradictory language, subtitle, format or edition details remain unspecified; original observations and alternative descriptions are retained.
 7. **Publish** — generate versioned static data, sitemap and public audit. A publication failure restores previous public files and the prior successful snapshot. Saved corrections remain available for retry.
 
+Film identity also compares original source screenings using resolved cinema IDs,
+before deduplicating viewings. The same cinema, date, time and complete normalized
+film title establish one viewing despite mistakes in source credits or version
+tags. Differently named listings can match when at least three distinctive shared
+slots span two dates or cinemas and at least 90% of the smaller schedule overlaps.
+Multiplex coincidences with other films do not count as distinctive without a
+common, unambiguous auditorium. Duplicate source rows count once. Strong repeated
+schedules take precedence over source title/year/director/cast claims, while
+manual separations and conflicting verified external identities remain protected.
+An independently verified peer can supply metadata to the matched source alias;
+inherited metadata cannot become independent evidence for another inference.
+Otherwise, matching source identities consolidate duplicate metadata reviews
+while retaining their combined source evidence and API candidates for review.
+
 Explicit Met broadcast, named film-festival, sneak-preview, shorts-programme and
 film-series labels establish programme classification without a model request.
 Unidentified programmes remain scoped to their source records; their films are

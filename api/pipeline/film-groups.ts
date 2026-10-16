@@ -3,9 +3,10 @@ import { supportsFilmIdentity } from './identity-evidence';
 import { identityConflict } from './resolve';
 import { PipelineStore } from './store';
 import { parseLabel } from './labels';
+import { FilmScreening, filmScreeningMatches } from './film-screening-evidence';
 
 /** Reconcile established source links for publication without destroying their separate evidence or corrections. */
-export function filmDisplayGroups(store: PipelineStore, entities: Entity[]): Map<string, Entity[]> {
+export function filmDisplayGroups(store: PipelineStore, entities: Entity[], screenings: FilmScreening[] = []): Map<string, Entity[]> {
   const separated = new Set(entities.filter(entity => store.linkedObservations(entity.id)
     .some(observation => store.overrides(observation.subject).some(correction => correction.action === 'separate'))).map(entity => entity.id));
   const base = new Map<string, Entity[]>();
@@ -39,10 +40,22 @@ export function filmDisplayGroups(store: PipelineStore, entities: Entity[]): Map
     && observations.get(a.id)!.some(x => observations.get(b.id)!.some(y => x.source !== y.source
       && sourceTitles.get(x.id)!.some(title => !/^(?:festival|film\s?festival|sonderprogramm)$/.test(title)
         && sourceTitles.get(y.id)!.includes(title))));
-  // Establish credit-supported identities before checking uniqueness for the
-  // weaker title fallback. Several corroborated aliases are one candidate film.
-  const proven = combineGroups(base, compatible, strong);
-  return combineGroups(proven, compatible, crossSourceTitle);
+  const confirmedIdsConflict = (a: Entity, b: Entity) => !!(a.data.tmdbId && b.data.tmdbId && a.data.tmdbId !== b.data.tmdbId
+    || a.data.verifiedImdbId && b.data.verifiedImdbId && a.data.verifiedImdbId !== b.data.verifiedImdbId);
+  const scheduleCompatible = (a: Entity, b: Entity) => a.kind === 'film' && b.kind === 'film'
+    && !separated.has(a.id) && !separated.has(b.id) && !confirmedIdsConflict(a, b);
+  const schedules = (groups: Map<string, Entity[]>, repeatedOnly: boolean) => {
+    const matches = filmScreeningMatches(groups, screenings).filter(match => !repeatedOnly || match.rule === 'distinctive-screening-pattern');
+    return combineGroups(groups, scheduleCompatible, (a, b) => matches.some(match => match.leftIds.includes(a.id) && match.rightIds.includes(b.id)
+      || match.rightIds.includes(a.id) && match.leftIds.includes(b.id)));
+  };
+  // Distinctive timetables take precedence over noisy source credits. Recheck
+  // after credit-supported aliases collapse, since duplicate aliases can make
+  // an otherwise distinctive multiplex slot appear ambiguous.
+  const timetableFirst = schedules(base, true);
+  const proven = combineGroups(timetableFirst, compatible, strong);
+  const scheduled = schedules(schedules(proven, true), false);
+  return combineGroups(scheduled, compatible, crossSourceTitle);
 }
 
 function combineGroups(groups: Map<string, Entity[]>, compatible: (a: Entity, b: Entity) => boolean,
