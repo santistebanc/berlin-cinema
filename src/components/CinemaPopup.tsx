@@ -8,6 +8,9 @@ export interface CinemaPopupInfo {
   postalCode: string;
   url: string;
   websiteUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  locationEvidence?: { source?: string };
 }
 
 interface Props {
@@ -58,6 +61,8 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
   const mapsQuery = encodeURIComponent(
     `${cinema.name} ${cinema.address || ''} ${cinema.postalCode || ''} ${cinema.city || ''} Berlin`.trim()
   );
+  const mapPosition = Number.isFinite(cinema.latitude) && Number.isFinite(cinema.longitude)
+    ? encodeURIComponent(`${cinema.latitude},${cinema.longitude}`) : mapsQuery;
 
   return (
     <div
@@ -88,7 +93,7 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
           </div>
           <iframe
             title={`Map of ${cinema.name}`}
-            src={`https://maps.google.com/maps?q=${encodeURIComponent(`${cinema.name} Berlin`)}&z=15&output=embed`}
+            src={`https://maps.google.com/maps?q=${mapPosition}&z=15&output=embed`}
             className="absolute inset-0 h-full w-full border-0"
             style={{ filter: 'invert(1) hue-rotate(180deg)' }}
             loading="lazy"
@@ -126,6 +131,10 @@ const CinemaPopup: React.FC<Props> = ({ cinema, onClose }) => {
               </a>
             </div>
           )}
+
+          {cinema.locationEvidence?.source === 'Geoapify' && <p className="mt-3 text-xs" style={{ color: 'rgb(var(--text-soft))' }}>
+            Location powered by <a href="https://www.geoapify.com/" target="_blank" rel="noreferrer" className="underline">Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">© OpenStreetMap contributors</a>
+          </p>}
 
           <div className="mt-5 flex flex-wrap gap-3">
             {cinema.websiteUrl && (

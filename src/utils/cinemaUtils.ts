@@ -44,9 +44,11 @@ export function buildCinemaColors(movie: Movie): Record<string, string> {
 export function matchesFilters(
   showing: ShowingInfo,
   selectedCinemas: string[],
-  selectedVariants: string[]
+  selectedVariants: string[],
+  includeUnknown = true
 ): boolean {
   const cinemaOk = selectedCinemas.includes(showing.cinema);
-  const variantOk = selectedVariants.length === 0 || showing.variants.length === 0 || showing.variants.some(v => selectedVariants.includes(v));
+  const variantOk = showing.variants.length === 0 ? includeUnknown
+    : showing.variants.some(v => selectedVariants.includes(v));
   return cinemaOk && variantOk;
 }
