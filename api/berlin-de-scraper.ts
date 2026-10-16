@@ -35,7 +35,9 @@ function parseGermanDate(s: string): string | null {
   const m = s.trim().match(/(\d{2})\.(\d{2})\.(\d{2,4})/);
   if (!m) return null;
   const year = m[3].length === 2 ? `20${m[3]}` : m[3];
-  return `${year}-${m[2]}-${m[1]}`;
+  const iso = `${year}-${m[2]}-${m[1]}`;
+  const parsed = new Date(`${iso}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === iso ? iso : null;
 }
 
 function germanDayToEn(day: string): string {
@@ -45,7 +47,7 @@ function germanDayToEn(day: string): string {
 
 function normalizeVariant(v: string): string | null {
   const vl = v.toLowerCase().replace(/\s/g, '');
-  if (vl === 'ov') return 'OV';
+  if (vl === 'ov' || vl === 'of') return 'OV'; // "OF" = "Originalfassung", same meaning as OV
   if (vl === 'omu' || vl === 'omü') return 'OmU';
   if (vl.startsWith('omenglu') || vl.startsWith('omüenglu') || vl.startsWith('dfmengl')) return 'OmeU';
   return v;
@@ -59,8 +61,10 @@ function parseTimeCell(cell: string): { time: string; variant: string | null }[]
     const timeMatch = part.match(/(\d{1,2}:\d{2})/);
     if (!timeMatch) continue;
     const variantMatch = part.match(/\(([^)]+)\)/);
+    const [hour, minute] = timeMatch[1].split(':').map(Number);
+    if (hour > 23 || minute > 59) continue;
     results.push({
-      time: timeMatch[1],
+      time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
       variant: variantMatch ? normalizeVariant(variantMatch[1]) : null,
     });
   }
@@ -70,6 +74,7 @@ function parseTimeCell(cell: string): { time: string; variant: string | null }[]
 interface RawCinema {
   name: string;
   address: string;
+  url?: string;
 }
 
 interface RawShowing {
@@ -86,6 +91,7 @@ interface RawShowing {
 }
 
 export interface BerlinDeRawMovie {
+  rawTitle?: string;
   title: string;
   criticTitle: string | null;
   altTitle: string | null;
@@ -119,6 +125,7 @@ class BerlinDeScraper {
       this.mergePageIntoMap(html, movieMap);
       const showingsAfter = Array.from(movieMap.values()).reduce((n, m) => n + m.showings.length, 0);
       if (showingsAfter === showingsBefore) break; // server wrapped around to repeated content
+      if (page === MAX_PAGES - 1) throw new Error('berlin.de pagination limit reached; source is incomplete');
     }
 
     const movies = Array.from(movieMap.values()).filter(m => m.showings.length > 0);
@@ -186,9 +193,11 @@ class BerlinDeScraper {
         : null;
 
       // Get or create movie entry
-      const key = baseTitle.toLowerCase();
+      // Preserve distinct source film IDs and editions until the central resolver evaluates them.
+      const key = `${filmUrl ?? baseTitle.toLowerCase()}|${rawTitle}`;
       if (!movieMap.has(key)) {
         movieMap.set(key, {
+          rawTitle,
           title: baseTitle,
           criticTitle: null,
           altTitle: null,
@@ -214,7 +223,7 @@ class BerlinDeScraper {
 
       // Track cinema
       if (!movie.cinemas.some(c => c.name === cinemaName)) {
-        movie.cinemas.push({ name: cinemaName, address: '' });
+        movie.cinemas.push({ name: cinemaName, address: '', url: cinemaUrl });
       }
 
       // Parse showings from the schedule table
@@ -233,6 +242,8 @@ class BerlinDeScraper {
         for (const { time, variant } of parseTimeCell(timeCell)) {
           const resolvedVariant = variant ?? (titleVariants.length === 1 ? titleVariants[0] : null);
           if (resolvedVariant && !movie.variants.includes(resolvedVariant)) movie.variants.push(resolvedVariant);
+          if (movie.showings.some(showing => showing.date === dateStr && showing.time === time
+            && showing.cinema === cinemaName && showing.variant === resolvedVariant)) continue;
           movie.showings.push({
             date: dateStr,
             originalDate: dateCell,

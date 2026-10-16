@@ -1,7 +1,6 @@
 import HttpClient from './http-client';
 import FormDataBuilder from './form-data-builder';
 import MovieParser from './movie-parser';
-import MovieMerger from './movie-merger';
 
 class BerlinCinemaScraper {
   private baseUrl = 'https://www.critic.de/ov-movies-berlin/';
@@ -19,21 +18,6 @@ class BerlinCinemaScraper {
     return this.movieParser.parseMovies(response.data);
   }
 
-  async scrapeMovies() {
-    try {
-      const rawMovies = await this.scrapeRawMovies();
-      const { movies: mergedMovies } = MovieMerger.mergeMovies(rawMovies as any);
-
-      return {
-        movies: mergedMovies,
-        total: mergedMovies.length,
-        scrapedAt: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('Error scraping movies:', error);
-      throw error;
-    }
-  }
 }
 
 export default BerlinCinemaScraper;

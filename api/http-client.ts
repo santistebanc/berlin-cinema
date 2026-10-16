@@ -49,7 +49,6 @@ class HttpClient {
       },
       timeout: 30000,
       httpsAgent: new https.Agent({
-        rejectUnauthorized: false,
         secureProtocol: 'TLSv1_2_method'
       }),
       maxRedirects: 5,

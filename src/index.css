@@ -68,6 +68,55 @@
 }
 
 @layer components {
+  .site-header {
+    border-bottom: 1px solid rgb(var(--border));
+    background-color: rgb(var(--bg));
+  }
+
+  .header-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 520px) minmax(0, 1fr);
+    align-items: center;
+    gap: 32px;
+    min-height: 88px;
+    padding-block: 16px;
+  }
+
+  .brand-link {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 12px;
+    border-radius: 4px;
+    justify-self: start;
+  }
+
+  .brand-mark { width: 48px; height: 48px; }
+  .brand-name { display: block; font-size: 28px; line-height: 1.15; }
+  .brand-caption { display: block; margin-top: 5px; color: rgb(var(--text-soft)); font-size: 12px; }
+  .header-search { position: relative; width: 100%; max-width: 520px; justify-self: center; }
+  .header-programme-summary { justify-self: end; text-align: right; font-size: 12px; line-height: 1.75; white-space: nowrap; }
+  .header-programme-summary time { color: rgb(var(--text-muted)); }
+  .header-programme-summary p { color: rgb(var(--text-soft)); }
+
+  @media (max-width: 1099px) {
+    .header-layout { grid-template-columns: auto minmax(0, 1fr); }
+    .header-search { justify-self: end; }
+    .header-programme-summary { display: none; }
+  }
+
+  @media (max-width: 899px) {
+    .header-layout { gap: 24px; }
+    .brand-caption { display: none; }
+    .brand-name { font-size: 24px; }
+  }
+
+  @media (max-width: 599px) {
+    .header-layout { min-height: 76px; gap: 16px; padding-block: 14px; }
+    .brand-mark { width: 44px; height: 44px; }
+    .brand-wordmark { display: none; }
+  }
+
   .page-shell {
     display: flex;
     flex-direction: column;
@@ -134,23 +183,23 @@
   .ui-card {
     background-color: rgb(var(--surface));
     border: 1px solid rgb(var(--border));
-    border-radius: 0.875rem;
+    border-radius: 8px;
     box-shadow: var(--shadow-sm);
   }
 
   .ui-muted-surface {
     background-color: rgb(var(--surface-muted));
     border-color: rgb(var(--border));
-    border-radius: 0.75rem;
+    border-radius: 8px;
   }
 
   .ui-input {
     width: 100%;
     border: 1px solid rgb(var(--border));
-    background-color: rgb(5 8 15);
+    background-color: rgb(var(--surface-muted));
     color: rgb(var(--text));
     padding: 0.5rem 0.75rem;
-    border-radius: 9999px;
+    border-radius: 8px;
     transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
   }
 
@@ -171,7 +220,7 @@
     gap: 0.5rem;
     font-weight: 500;
     line-height: 1.2;
-    border-radius: 0.625rem;
+    border-radius: 8px;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, opacity 150ms ease;
   }
 

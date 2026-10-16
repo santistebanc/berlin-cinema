@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 import SearchBar from './SearchBar';
 import { Movie } from '../types';
@@ -10,31 +10,39 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
+  const isHome = useLocation().pathname === '/';
+  const now = new Date();
+  const dateLabel = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Berlin',
+  }).format(now);
   return (
-    <header
-      className="w-full border-b"
-      style={{
-        backgroundColor: 'rgb(var(--surface-muted))',
-        borderColor: 'rgb(var(--border))',
-      }}
-    >
-      <div className="px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-5 h-20">
+    <header className="site-header">
+      <div className={isHome ? 'px-3 sm:px-6 lg:px-8' : 'px-4 sm:px-6 lg:px-9'}>
+        <div className="header-layout">
           <Link
             to="/"
             aria-label="OV Berlin — home"
             title={`Build: ${__BUILD_VERSION__}`}
-            className="flex shrink-0 items-center gap-3"
+            className="brand-link"
             style={{ color: 'rgb(var(--accent))' }}
           >
-            <Logo className="h-11 w-11" />
-            <span className="serif hidden text-2xl sm:block">
-              <span style={{ color: 'rgb(var(--accent))' }}>OV</span>{' '}
-              <span style={{ color: 'rgb(var(--text))' }}>Berlin</span>
-            </span>
+            <Logo className="brand-mark" />
+            <div className="brand-wordmark">
+              <span className="serif brand-name">
+                <span style={{ color: 'rgb(var(--accent))' }}>OV</span>{' '}
+                <span style={{ color: 'rgb(var(--text))' }}>Berlin</span>
+              </span>
+              <span className="brand-caption">Original version cinema</span>
+            </div>
           </Link>
 
           <SearchBar movies={movies} onSearch={onSearch} />
+          <div className="header-programme-summary">
+            <time dateTime={new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(now)}>
+              {dateLabel}
+            </time>
+            <p>{movies.length} films in the programme</p>
+          </div>
         </div>
       </div>
     </header>

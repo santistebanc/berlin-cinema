@@ -64,7 +64,22 @@ for (const movie of moviesData.movies) {
   const outDir = path.join(distDir, slug);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
+  for (const alias of movie.slugAliases ?? []) {
+    if (typeof alias !== 'string' || !/^[a-z0-9-]+$/.test(alias) || alias === slug) continue;
+    const aliasDir = path.join(distDir, alias); fs.mkdirSync(aliasDir, { recursive: true });
+    fs.writeFileSync(path.join(aliasDir, 'index.html'), html);
+  }
   count++;
 }
 
 console.log(`[og-pages] Generated ${count} movie pages`);
+
+// A real entry page makes /admin accessible directly on static hosting.
+const adminHtml = baseHtml
+  .replace(/<title>[\s\S]*?<\/title>/, '<title>Data audit — OV Berlin</title>')
+  .replace(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex, follow" />')
+  .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${BASE_URL}/admin/" />`);
+for (const route of ['admin', 'admin/cinemas', 'admin/movies', 'admin/records', 'admin/review']) {
+  fs.mkdirSync(path.join(distDir, route), { recursive: true });
+  fs.writeFileSync(path.join(distDir, route, 'index.html'), adminHtml.replace(`${BASE_URL}/admin/`, `${BASE_URL}/${route}/`));
+}

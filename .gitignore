@@ -74,3 +74,5 @@ debug-*.html
 # Package manager files
 yarn.lock
 .recovery/
+pipeline/*.lock
+pipeline/*.tmp
