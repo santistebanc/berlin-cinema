@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useLayoutEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
@@ -15,14 +15,22 @@ let suppressSave = false;
 const AppContent: React.FC = () => {
   const { movies, loading, error } = useMovies();
   const location = useLocation();
+  const scrollYRef = useRef(0);
 
-  // Save on scroll events — but not during our own programmatic scrollTo
+  // Save on scroll events — but not during our own programmatic scrollTo.
+  // Cleanup writes the last real position (ref), not window.scrollY after restore.
   useEffect(() => {
+    const path = location.pathname;
     const save = () => {
-      if (!suppressSave) sessionStorage.setItem(`scroll:${location.pathname}`, String(window.scrollY));
+      scrollYRef.current = window.scrollY;
+      if (!suppressSave) sessionStorage.setItem(`scroll:${path}`, String(window.scrollY));
     };
+    scrollYRef.current = window.scrollY;
     window.addEventListener('scroll', save, { passive: true });
-    return () => window.removeEventListener('scroll', save);
+    return () => {
+      window.removeEventListener('scroll', save);
+      if (!suppressSave) sessionStorage.setItem(`scroll:${path}`, String(scrollYRef.current));
+    };
   }, [location.pathname]);
 
   // Restore before paint; suppress save listener during the programmatic scroll so it

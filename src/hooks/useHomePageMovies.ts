@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Movie } from '../types';
 import { createMovieFuse } from '../utils/movieSearch';
+import { setHomeSearch } from '../utils/homeSearch';
 
 export const getMovieShowtimeCount = (movie: Movie | undefined): number => {
   if (!movie?.showings || typeof movie.showings !== 'object' || Array.isArray(movie.showings)) {
@@ -52,6 +53,7 @@ export const useHomePageMovies = (movies: Movie[]) => {
 
   const clearSearch = () => {
     setSearchQuery('');
+    setHomeSearch('');
     navigate('/', { replace: true });
   };
 
