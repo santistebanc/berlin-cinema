@@ -9,6 +9,7 @@ import ShowtimesTable from '../components/ShowtimesTable';
 import CinemaPopup, { CinemaPopupInfo } from '../components/CinemaPopup';
 import DetailPageState from '../components/detail/DetailPageState';
 import { homePathWithSearch } from '../utils/homeSearch';
+import { navigateHomeWithPosterTransition, useBackToHomePosterTransition } from '../utils/posterTransition';
 
 const MovieDetailPage: React.FC = () => {
   const { title } = useParams<{ title: string }>();
@@ -28,6 +29,7 @@ const MovieDetailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const filters = useShowtimeFilters(movie);
   const cinemaColors = useMemo(() => (movie ? buildCinemaColors(movie) : {}), [movie]);
+  useBackToHomePosterTransition(movie?.slug);
 
   const handleCinemaClick = (cinemaName: string) => {
     const cinema = movie?.cinemas.find(c => c.name === cinemaName);
@@ -142,7 +144,7 @@ const MovieDetailPage: React.FC = () => {
           <MovieHeader
             movie={movie}
             plot={movie.plot}
-            onBack={() => navigate(homePathWithSearch())}
+            onBack={() => navigateHomeWithPosterTransition(movie.slug, () => navigate(homePathWithSearch()))}
             onShare={handleShare}
             shared={copied}
           />

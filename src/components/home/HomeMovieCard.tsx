@@ -34,6 +34,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
     >
       <div
         ref={posterRef}
+        data-poster-slug={movie.slug}
         className="relative aspect-[2/3] overflow-hidden rounded-[8px]"
         style={{ backgroundColor: 'rgb(var(--surface-muted))', boxShadow: '0 16px 34px -18px rgba(0,0,0,.85)' }}
       >
