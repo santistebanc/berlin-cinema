@@ -21,7 +21,7 @@ const RatingBadge: React.FC<RatingBadgeProps> = ({
   const displayRating = imdbRating ?? tmdbRating;
   const displayVotes = imdbVotes ?? tmdbVotes;
 
-  if (displayRating == null) return null;
+  if (displayRating == null || displayRating <= 0) return null;
 
   const votesLabel = displayVotes != null
     ? displayVotes >= 1000

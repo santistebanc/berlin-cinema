@@ -93,7 +93,7 @@ const MovieHeader: React.FC<Props> = ({ movie, plot, onBack, onShare, shared }) 
                     <span>{movie.runtime} min</span>
                   </>
                 )}
-                {rating != null && (
+                {rating != null && rating > 0 && (
                   <>
                     <span className="opacity-40">·</span>
                     <span className="inline-flex items-center gap-1 font-bold" style={{ color: '#fbbf24' }}>
