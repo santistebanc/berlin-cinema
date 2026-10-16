@@ -1,9 +1,9 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 import SearchBar from './SearchBar';
 import { Movie } from '../types';
-import { homePathWithSearch } from '../utils/homeSearch';
+import { setHomeSearch } from '../utils/homeSearch';
 
 interface HeaderProps {
   movies: Movie[];
@@ -12,7 +12,6 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
   const isHome = useLocation().pathname === '/';
-  const navigate = useNavigate();
   const now = new Date();
   const dateLabel = new Intl.DateTimeFormat('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Berlin',
@@ -27,11 +26,10 @@ const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
             title={`Build: ${__BUILD_VERSION__}`}
             className="brand-link"
             style={{ color: 'rgb(var(--accent))' }}
-            onClick={(event) => {
-              const target = homePathWithSearch();
-              if (target === '/') return;
-              event.preventDefault();
-              navigate(target);
+            onClick={() => {
+              setHomeSearch('');
+              sessionStorage.removeItem('scroll:/');
+              if (isHome) window.scrollTo(0, 0);
             }}
           >
             <Logo className="brand-mark" />
