@@ -49,7 +49,7 @@
     "pipeline:shadow": "ts-node --project tsconfig.server.json scripts/merge.ts --shadow",
     "pipeline:eval": "ts-node --project tsconfig.server.json scripts/evaluate-pipeline.ts",
     "typecheck": "tsc --noEmit --project tsconfig.server.json && tsc --noEmit --project tsconfig.app.json",
-    "test:pipeline": "ts-node --project tsconfig.server.json api/pipeline/pipeline.test.ts && ts-node --project tsconfig.server.json api/pipeline/venue-websites.test.ts",
+    "test:pipeline": "ts-node --project tsconfig.server.json api/pipeline/pipeline.test.ts && ts-node --project tsconfig.server.json api/pipeline/venue-websites.test.ts && ts-node --project tsconfig.server.json api/pipeline/film-screening-evidence.test.ts",
     "test": "ts-node --project tsconfig.server.json api/tmdb-client.test.ts && ts-node --project tsconfig.server.json api/omdb-client.test.ts && ts-node --project tsconfig.server.json api/osm-client.test.ts && ts-node --project tsconfig.server.json api/berlin-de-scraper.test.ts && ts-node --project tsconfig.server.json api/audit-log.test.ts && ts-node --project tsconfig.server.json scripts/merge.test.ts && ts-node --project tsconfig.server.json scripts/sync-data.test.ts && ts-node --project tsconfig.server.json scripts/scrape.test.ts && npm run test:pipeline",
     "audit:seed": "ts-node --project tsconfig.server.json scripts/seed-audit.ts",
     "data:sync": "ts-node --project tsconfig.server.json scripts/sync-data.ts",

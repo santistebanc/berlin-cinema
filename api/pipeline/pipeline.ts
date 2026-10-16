@@ -10,8 +10,9 @@ import { DecisionModel, Entity, FieldValue, Observation, ParsedLabel, SourceBatc
 import { ingestBatches } from './observations';
 import { refreshVenueObservations } from './source-venues';
 import { refreshListingObservations } from './source-details';
-import { CachedFilmEvidence, creditNames } from './identity-evidence';
+import { CachedFilmEvidence, creditNames, filmMetadataInput } from './identity-evidence';
 import { filmDisplayGroups } from './film-groups';
+import { FilmScreening, filmScreeningMatches } from './film-screening-evidence';
 import { consolidateVenues } from './venue-groups';
 import { attachVenueWebsites } from './venue-websites';
 import { GeoapifyGeocoder, VenueGeocoder } from './geocoding';
@@ -111,8 +112,17 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     const identityEvidence = new CachedFilmEvidence(store, now);
     const tmdb = options.tmdb !== undefined ? options.tmdb : options.network !== false && process.env.TMDB_API_KEY ? new TmdbClient(process.env.TMDB_API_KEY) : null;
     const uniqueFilms = [...new Map([...films.values()].map(entity => [entity.id, entity])).values()];
+    const filmScreenings: FilmScreening[] = screenings.flatMap(observation => {
+      const film = films.get(observation.data.listingSubject); const venue = venues.get(observation.data.venueSubject);
+      const listing = store.head(observation.data.listingSubject);
+      if (!film || !venue || venue.data.insideBerlin !== true || !listing) return [];
+      return [{ filmId: film.id, source: observation.source, venueId: venue.id, date: observation.data.date,
+        time: observation.data.time, title: listing.data.rawTitle || listing.data.title, auditorium: observation.data.auditorium }];
+    });
     const sourceGroup = new Map<string, Entity[]>();
-    for (const group of filmDisplayGroups(store, uniqueFilms).values()) for (const entity of group) sourceGroup.set(entity.id, group);
+    const initialGroups = filmDisplayGroups(store, uniqueFilms, filmScreenings);
+    const screeningMatches = filmScreeningMatches(initialGroups, filmScreenings);
+    for (const group of initialGroups.values()) for (const entity of group) sourceGroup.set(entity.id, group);
     const strength = (entity: Entity) => Number(creditNames(entity.data.director).length > 0) * 2
       + Number(!!entity.data.year) + Math.min(creditNames(entity.data.cast).length, 2) + Number(!!entity.data.tmdbId);
     for (const entity of [...uniqueFilms].sort((a, b) => strength(b) - strength(a) || a.id.localeCompare(b.id))) {
@@ -121,13 +131,23 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       const verifiedPeer = sourceGroup.get(entity.id)?.some(peer => peer.id !== entity.id && fieldData.has(peer.id) && peer.data.tmdbId
         && store.fields(peer.id).some(field => field.identityVerified && field.source === `TMDb:${peer.data.tmdbId}`));
       const metadataCorrection = store.overrides(`metadata:${entity.id}`).some(correction => correction.action === 'patch');
+      const screeningPeer = sourceGroup.get(entity.id)?.find(peer => peer.id !== entity.id && peer.data.tmdbId && !peer.data.metadataAnchorId
+        && peer.data.metadataEvidence === fingerprint(filmMetadataInput(peer))
+        && (!options.force || fieldData.has(peer.id))
+        && (!store.overrides(`metadata:${peer.id}`).length || fieldData.has(peer.id))
+        && store.fields(peer.id).some(field => field.identityVerified && field.source === `TMDb:${peer.data.tmdbId}`)
+        && screeningMatches.some(match => match.leftIds.includes(entity.id) && match.rightIds.includes(peer.id)
+          || match.rightIds.includes(entity.id) && match.leftIds.includes(peer.id)));
       // Source aliases share their resolved peer's publication metadata; avoid
       // another title search for an incomplete record with an established match.
       const retrieve = options.force || metadataCorrection || !verifiedPeer;
       fieldData.set(entity.id, await enrichEntity(store, engine, entity, sources, { tmdb: retrieve ? tmdb : null, omdbKey: options.network === false ? undefined : options.omdbKey ?? process.env.OMDB_API_KEY,
-        now, force: options.force, identityEvidence }));
+        now, force: options.force, identityEvidence,
+        screeningPeer: screeningPeer ? { entityId: screeningPeer.id, tmdbId: screeningPeer.data.tmdbId,
+          matches: screeningMatches.filter(match => match.leftIds.includes(entity.id) && match.rightIds.includes(screeningPeer.id)
+            || match.rightIds.includes(entity.id) && match.leftIds.includes(screeningPeer.id)) } : undefined }));
     }
-    const resolvedGroups = filmDisplayGroups(store, uniqueFilms);
+    const resolvedGroups = filmDisplayGroups(store, uniqueFilms, filmScreenings);
     const previousMovies = store.snapshot()?.movies ?? [];
     const publicGroups = new Map<string, Entity[]>();
     for (const [key, group] of resolvedGroups) {
@@ -178,6 +198,22 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       const selectedFields = selectGroupFields(store, group, primary.id);
       const metadata = Object.fromEntries([...selectedFields].map(([field, selected]) => [field, selected.value]));
       const sourceRecords = active.filter(o => o.kind === 'listing' && group.some(e => films.get(o.subject)?.id === e.id));
+      const groupIds = new Set(group.map(entity => entity.id));
+      const scheduleEvidence = screeningMatches.filter(match => match.leftIds.some(id => groupIds.has(id)) && match.rightIds.some(id => groupIds.has(id)));
+      const pendingMetadata = store.issues().filter(issue => issue.type === 'metadata-match' && issue.status === 'open'
+        && groupIds.has(issue.details.entityId));
+      const canonicalReview = pendingMetadata.find(issue => issue.details.entityId === identityEntity.id);
+      if (canonicalReview && pendingMetadata.length > 1 && scheduleEvidence.length) {
+        const candidates = [...new Map(pendingMetadata.flatMap(issue => issue.details.candidates ?? []).map(candidate => [candidate.id, candidate])).values()];
+        flag(store, 'metadata-match', canonicalReview.subject, canonicalReview.title,
+          { ...canonicalReview.details, candidates, entityIds: [...groupIds], sourceSubjects: sourceRecords.map(record => record.subject),
+            screeningMatches: scheduleEvidence }, 'open', canonicalReview.priority, canonicalReview.fingerprint);
+        for (const issue of pendingMetadata.filter(issue => issue.id !== canonicalReview.id)) flag(store, 'metadata-match', issue.subject,
+          `Metadata review consolidated: ${identityEntity.name}`, { ...issue.details, entityIds: [...groupIds], canonicalReviewId: canonicalReview.id,
+            screeningMatches: scheduleEvidence, resolutionCode: 'same-film-metadata-review',
+            resolution: 'Matching original source screenings establish one film. Its unresolved API candidates and source evidence are retained together in the canonical metadata review.' },
+          'caution', 40, issue.fingerprint);
+      }
       const sourceTitles = [...new Set(sourceRecords.flatMap(observation => sourceAlias(observation).labels))];
       const title = primary.name;
       if (group.length > 1) for (const issue of store.issues().filter(issue => issue.type === 'film-match' && issue.status === 'open'
@@ -185,7 +221,8 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
         if (!issue.details.candidates?.length || !issue.details.candidates.every((candidate: Entity) => groupForEntity.get(candidate.id) === key)) continue;
         flag(store, 'film-match', issue.subject, `Film identity reconciled: ${title}`,
           { observation: store.head(issue.subject), candidates: issue.details.candidates, targetId: identityEntity.id, publicId: anchor, entityIds: group.map(entity => entity.id),
-            resolutionCode: 'compatible-source-film-group', resolution: 'The candidate records resolve to one compatible film group. Independent source identity evidence or a unique exact full-title match across sources resolves the listing; no contradictory or ambiguous candidate remains.' },
+            screeningMatches: scheduleEvidence, resolutionCode: 'compatible-source-film-group',
+            resolution: 'Independent provider evidence, corroborating credits, or original source screenings establish one film group. A complete title and shared viewing, or a distinctive repeated schedule, can outweigh mistakes in source titles/credits.' },
           'caution', 40, issue.fingerprint);
       }
       const slugResource = store.resource(`slug:${anchor}`);
@@ -245,10 +282,11 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
         sourceAliases: aliases,
       });
       if (group.length > 1) publicDecisions.push({ entity: 'movie', subject: title, provider: 'identity resolver', action: 'corroborated-film-identity',
-        details: { entityIds: group.map(e => e.id), tmdbId: group.find(entity => entity.data.tmdbId)?.data.tmdbId,
+        details: { entityIds: group.map(e => e.id), tmdbId: group.find(entity => entity.data.tmdbId)?.data.tmdbId, screeningMatches: scheduleEvidence,
           titles: group.map(e => e.name), evidence: group[0].data.tmdbId && group.every(entity => entity.data.tmdbId === group[0].data.tmdbId)
             ? 'Independently validated provider identity'
-            : 'Compatible source credits/year or a unique complete-title match across independent sources, with no contradictory identity evidence or ambiguous candidates' } });
+            : scheduleEvidence.length ? 'Original source schedules establish the same film despite noisy title/year/credit claims; manually separated and independently verified conflicting identities remain distinct.'
+              : 'Compatible source credits/year or a unique complete-title match across independent sources, with no contradictory identity evidence or ambiguous candidates' } });
     }
     const canonicalSlugs = new Set(movies.map(movie => movie.slug));
     const aliasCounts = new Map<string, number>();
