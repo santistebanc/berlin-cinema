@@ -15,7 +15,7 @@ let suppressSave = false;
 const HOME_SCROLL_KEY = 'scroll:/';
 
 const AppContent: React.FC = () => {
-  const { movies, loading, error } = useMovies();
+  const { movies, loading, error, dataState, refetch } = useMovies();
   const location = useLocation();
   const isHome = location.pathname === '/';
   const scrollYRef = useRef(0);
@@ -56,7 +56,7 @@ const AppContent: React.FC = () => {
           <Route path="/admin/*" element={<Suspense fallback={<p className="body-muted p-8">Loading data audit…</p>}><AdminPage /></Suspense>} />
           <Route path="/" element={
             <div className="px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
-              <HomePage movies={movies} loading={loading} error={error} />
+              <HomePage movies={movies} loading={loading} error={error} dataState={dataState} onRetry={refetch} />
             </div>
           } />
           <Route path="/:title" element={<MovieDetailPage />} />

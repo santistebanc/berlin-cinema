@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { movieApi } from '../services/api';
 import { Movie, ScrapingResult } from '../types';
-import { loadMovieData } from '../services/movie-data';
+import { loadMovieData, movieDataState, MovieDataState } from '../services/movie-data';
+import { currentSnapshot } from '../utils/liveSnapshot';
 
 interface MovieContextType {
   movies: Movie[];
   loading: boolean;
   error: string | null;
+  dataState: MovieDataState;
   refetch: () => Promise<void>;
 }
 
@@ -20,6 +22,7 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({ children }) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataState, setDataState] = useState<MovieDataState>('unavailable');
   const previous = useRef<ScrapingResult | null>(null);
 
   const loadMovies = async () => {
@@ -28,7 +31,9 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({ children }) => {
       const result = await loadMovieData(() => movieApi.getAllMovies(), previous.current);
       previous.current = result.snapshot;
       setMovies(result.snapshot?.movies ?? []);
-      setError(result.error);
+      setError(result.error ? result.loadState === 'schema-failed'
+        ? 'The listings file has an invalid format.' : 'The listings request failed. Please try again.' : null);
+      setDataState(result.dataState);
     } catch (err) {
       console.error('Error loading data:', err);
       setError(`Failed to load movies: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -39,6 +44,12 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({ children }) => {
 
   useEffect(() => {
     loadMovies();
+    const timer = setInterval(() => {
+      if (!previous.current) return;
+      const snapshot = currentSnapshot(previous.current);
+      previous.current = snapshot; setMovies(snapshot.movies); setDataState(movieDataState(snapshot));
+    }, 60000);
+    return () => clearInterval(timer);
   }, []);
 
   const refetch = async () => {
@@ -46,7 +57,7 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({ children }) => {
   };
 
   return (
-    <MovieContext.Provider value={{ movies, loading, error, refetch }}>
+    <MovieContext.Provider value={{ movies, loading, error, dataState, refetch }}>
       {children}
     </MovieContext.Provider>
   );

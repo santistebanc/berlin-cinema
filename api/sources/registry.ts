@@ -1,5 +1,7 @@
-import { CollectionEnvelopeSchema, type SourceCollection } from '../../shared/contracts';
+import { CollectionEnvelopeSchema, type Diagnostic, type SourceCollection } from '../../shared/contracts';
+import { sanitizeAudit } from '../audit-log';
 import { SourceInstanceSchema, SourcePersistenceError, type SourceAdapter, type SourceDependencies, type SourceInstance } from './types';
+import { retryableRequest, retryRequest, SourceDeadlineError, withinDeadline } from './requests';
 
 export interface CollectionOptions { selected?: string[]; disabled?: string[]; retained?: boolean }
 
@@ -29,20 +31,26 @@ export class SourceRegistry {
   }
   context(instance: SourceInstance, deps: SourceDependencies): SourceDependencies {
     let requests = 0;
+    const deadline = Date.now() + (instance.limits.collectionTimeoutMs ?? 120000);
+    const check = () => { if (deps.signal?.aborted || Date.now() >= deadline) throw new SourceDeadlineError(); };
     const adapter = this.adapter(instance);
     const key = (value: string) => this.cacheKey(instance, value);
     return { ...deps, cache: {
-      get: value => { try { return deps.cache.get(key(value)); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
-      set: (value, data, at) => { try { deps.cache.set(key(value), data, at); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
+      get: value => { check(); try { return deps.cache.get(key(value)); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
+      set: (value, data, at) => { check(); try { deps.cache.set(key(value), data, at); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
     },
-      diagnostic: diagnostic => deps.diagnostic({ ...diagnostic, sourceInstanceId: instance.id }),
+      diagnostic: diagnostic => { if (!deps.signal?.aborted) deps.diagnostic({ ...diagnostic, sourceInstanceId: instance.id }); },
       request: async request => {
         const url = new URL(request.url);
         if (!instance.enabled || deps.network === false) throw new Error('Source network is disabled');
         if (url.protocol !== 'https:' || url.username || url.password || !adapter.allows(url, request.purpose ?? 'listing', instance))
           throw new Error(`Source URL is not allowed: ${url.href}`);
-        if (++requests > instance.limits.requests) throw new Error('Source request limit reached');
-        return deps.request(request);
+        return retryRequest(request, instance, deps, async request => {
+          check();
+          if (++requests > instance.limits.requests) throw new Error('Source request limit reached');
+          const timeout = Math.min(request.timeout ?? 20000, instance.limits.requestTimeoutMs ?? 20000, deadline - Date.now());
+          return withinDeadline(signal => deps.request({ ...request, timeout, signal }), timeout, deps.signal);
+        });
       } };
   }
   async collect(deps: SourceDependencies, options: CollectionOptions = {}): Promise<SourceCollection[]> {
@@ -62,23 +70,24 @@ export class SourceRegistry {
         return cached ? { ...structuredClone(cached), status: 'cached', coverage: cached.coverage.map(scope => ({ ...scope, status: 'partial' })) } : empty('failed', 'No retained source collection is available');
       }
       let collection: SourceCollection;
+      const diagnostics: Diagnostic[] = [];
       try {
-        const diagnostics = [];
-        const context = this.context(instance, { ...deps, diagnostic: diagnostic => { diagnostics.push(diagnostic); deps.diagnostic(diagnostic); } });
-        const collected = await adapter.collect(instance, context);
+        const collected = await withinDeadline(signal => adapter.collect(instance, this.context(instance, { ...deps, signal,
+          diagnostic: diagnostic => { diagnostics.push(diagnostic); deps.diagnostic(diagnostic); } })), instance.limits.collectionTimeoutMs ?? 120000);
         CollectionEnvelopeSchema.parse(collected);
         if (collected.sourceInstanceId !== instance.id) throw new Error('Adapter returned a different source instance');
         collection = { ...collected, adapterId: adapter.id, extractionVersion: adapter.extractionVersion,
           diagnostics: [...collected.diagnostics, ...diagnostics] };
       } catch (error) {
         if (error instanceof SourcePersistenceError) throw error;
-        const collection = empty('failed', (error as Error).message);
-        const diagnostic = { schemaVersion: 1 as const, category: 'recovery' as const, stage: 'collection', code: 'source-failed',
-          sourceInstanceId: instance.id, reason: collection.message!, retryable: true };
-        deps.diagnostic(diagnostic); collection.diagnostics.push(diagnostic);
+        const collection = empty('failed', sanitizeAudit(error instanceof Error ? error.message : 'Source acquisition failed.'));
+        const diagnostic: Diagnostic = { schemaVersion: 1, category: 'recovery', stage: 'collection', code: 'source-failed',
+          sourceInstanceId: instance.id, reason: collection.message!, retryable: retryableRequest(error),
+          fallback: 'Retain eligible evidence and successful sibling sources within their original freshness limits.' };
+        deps.diagnostic(diagnostic); collection.diagnostics.push(...sanitizeAudit(diagnostics), diagnostic);
         const cached = retained();
         if (cached) return { ...structuredClone(cached), status: 'cached', message: collection.message,
-          coverage: cached.coverage.map(scope => ({ ...scope, status: 'partial' })), diagnostics: [...cached.diagnostics, diagnostic] };
+          coverage: cached.coverage.map(scope => ({ ...scope, status: 'partial' })), diagnostics: [...cached.diagnostics, ...collection.diagnostics] };
         return collection;
       }
       if (collection.status === 'fresh') deps.cache.set(cacheKey, collection, collection.observedAt);
