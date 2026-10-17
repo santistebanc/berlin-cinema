@@ -9,7 +9,6 @@ import { collectFilmDetails } from '../sources/details';
 import type { SourceRegistry } from '../sources/registry';
 import type { SourceDependencies } from '../sources/types';
 import type { FilmDetailIdentity } from '../../shared/contracts';
-import { filmDetailIdentity } from '../sources/detail-identity';
 export interface SourceDetails { url: string; fetchedAt: string; fields: Record<string, any>; listingIdentity?: FilmDetailIdentity;
   failed?: boolean; parserVersion?: number; creditsChecked?: boolean; reason?: string }
 import { detailKey } from '../sources/keys';
@@ -33,7 +32,8 @@ export async function fillSourceDetails(movies: any[], store: PipelineStore, max
   const registry = options.registry ?? configuredRegistry();
   const deps = options.dependencies ?? sourceDependencies(store, options);
   const local = new Map<string, any>();
-  const base = { ...deps, network: options.network === false ? false : deps.network,
+  const base = { ...deps, filmDetailIdentities: sourceDependencies(store, options).filmDetailIdentities,
+    network: options.network === false ? false : deps.network,
     cache: { get: (key: string) => local.get(key) ?? deps.cache.get(key),
       set: (key: string, data: any, fetchedAt: string) => { local.set(key, { data, fetchedAt }); } } };
   const contexts = new Map(registry.instances.map(instance => [instance.id, registry.context(instance,
@@ -48,9 +48,8 @@ export async function fillSourceDetails(movies: any[], store: PipelineStore, max
       && registry.adapter(item).film?.accepts(url));
     if (!instance) continue;
     const context = contexts.get(instance.id)!;
-    const resources = await collectFilmDetails([movie], registry.adapter(instance), context,
-      { maxLookups: Math.min(maxLookups - lookups, instance.limits.filmDetails - (instanceLookups.get(instance.id) ?? 0)), force: options.force,
-        cachedIdentities: details => details.listingIdentity ? [] : store.sourceDetailOrigins(instance.id, details).map(original => filmDetailIdentity(original.data)) });
+    const resources = await collectFilmDetails([movie], instance, registry.adapter(instance), context,
+      { maxLookups: Math.min(maxLookups - lookups, instance.limits.filmDetails - (instanceLookups.get(instance.id) ?? 0)), force: options.force });
     for (const [key, details] of resources) {
       context.cache.set(detailKey(key), details, details.fetchedAt);
       fetched.set(options.sourceFor ? registry.cacheKey(instance, detailKey(key)) : key, details); lookups++;
