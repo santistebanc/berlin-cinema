@@ -1,4 +1,4 @@
-import type { Diagnostic, SourceCollection } from '../../shared/contracts';
+import type { Diagnostic, FilmDetailIdentity, SourceCollection } from '../../shared/contracts';
 import { z } from 'zod';
 
 export type SourceCapability = 'screenings' | 'film-details' | 'venue-details';
@@ -23,6 +23,8 @@ export interface SourceCache {
 export interface SourceDependencies {
   request(request: SourceRequest): Promise<SourceResponse>;
   cache: SourceCache; now(): string; diagnostic(diagnostic: Diagnostic): void;
+  /** Non-mutating, exactly attributed original descriptions, scoped to the source instance. */
+  filmDetailIdentities?(source: string, details: { url: string; fetchedAt: string; fields: Record<string, any> }): FilmDetailIdentity[];
   wait?(milliseconds: number): Promise<void>;
   network?: boolean; force?: boolean; signal?: AbortSignal;
   /** Hand off usable acquisition progress before optional work or another page can fail. */

@@ -2,7 +2,7 @@ import { sanitizeAudit } from '../audit-log';
 import { Observation, SourceBatch, fingerprint, normalize } from './domain';
 import { PipelineStore } from './store';
 import { detailKey } from '../sources/keys';
-import { filmDetailIdentity } from '../sources/detail-identity';
+import { compatibleFilmDetails, detailIdentityConflict, filmDetailIdentity } from '../sources/detail-identity';
 import { CollectionEnvelopeSchema, CoverageSchema, DiagnosticSchema, EvidenceValue, IngestionResult, ListingDataSchema,
   ScreeningDataSchema, SourceCollection, SourceRecord, SourceRecordSchema, VenueDataSchema } from '../../shared/contracts';
 import { sourceDiagnostic, validateLegacyBatch } from './legacy-source';
@@ -169,7 +169,7 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
       } else keys.set(key, record);
     }
     for (const record of keys.values()) {
-      let data = { ...record.data };
+      let data: Record<string, any> = { ...record.data };
       if (record.kind === 'screening') {
         const listing = keys.get(`listing:${record.data.listingRecordId}`); const venue = keys.get(`venue:${record.data.venueRecordId}`);
         if (!listing || !venue) { unsafe.push(record); diagnostics.push(sourceDiagnostic(source, 'broken-reference', 'Screening requires valid listing and venue records', record)); continue; }
@@ -177,14 +177,43 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
         data = { ...rest, listingSubject: observation(source, 'listing', listingRecordId, {}, record.provenance.observedAt).subject,
           venueSubject: observation(source, 'venue', venueRecordId, {}, record.provenance.observedAt).subject } as any;
       }
+      const fields = { ...record.fields };
+      if (record.kind === 'listing' && data.sourceDetails) {
+        const details = data.sourceDetails;
+        const previous = store.resource(options.cacheKey?.(source, detailKey(details.url)) ?? detailKey(details.url));
+        const origins = store.sourceDetailOrigins(source, details).map(original => filmDetailIdentity(original.data));
+        if (previous?.data.url === details.url && previous.data.fetchedAt === details.fetchedAt
+          && fingerprint(previous.data.fields) === fingerprint(details.fields) && previous.data.listingIdentity)
+          origins.push(previous.data.listingIdentity);
+        if (!compatibleFilmDetails({ ...data, ...data.listingFields }, details, origins)) {
+          diagnostics.push({ ...detailIdentityConflict(source, details), recordId: record.recordId });
+          // Retained envelopes/progress can predate the acquisition guard. Recover
+          // their actual listing values before creating any new observation.
+          for (const [field, value] of Object.entries(details.fields)) {
+            if (Object.hasOwn(data.listingFields ?? {}, field)) {
+              const original = data.listingFields[field];
+              if (original == null) { delete data[field]; fields[field] = { state: 'unknown' }; }
+              else { data[field] = original; fields[field] = { state: 'known', value: original }; }
+            } else if (fingerprint(data[field] ?? null) === fingerprint(value)) {
+              delete data[field]; fields[field] = { state: 'unknown' };
+            }
+          }
+          delete data.sourceDetails;
+          fields.sourceDetails = { state: 'unknown' };
+        }
+      }
       const item = observation(source, record.kind, record.recordId, data, record.provenance.observedAt, record.provenance.fetchedAt);
-      item.provenance = record.provenance; item.fields = record.fields;
+      item.provenance = record.provenance; item.fields = fields;
       accepted.push(item);
-      if (record.kind === 'listing' && record.data.sourceDetails) {
-        const details = record.data.sourceDetails;
+      if (record.kind === 'listing' && data.sourceDetails) {
+        const details = data.sourceDetails;
         const key = detailKey(details.url);
-        store.saveResource(options.cacheKey?.(source, key) ?? key,
-          { ...details, listingIdentity: details.listingIdentity ?? filmDetailIdentity(record.data) }, details.fetchedAt);
+        const cacheKey = options.cacheKey?.(source, key) ?? key;
+        const previous = store.resource(cacheKey);
+        // Inherited evidence keeps its original binding (including unknown).
+        // Only the actual collector can describe the film at collection time.
+        if (!previous || previous.fetchedAt !== details.fetchedAt || fingerprint(previous.data) !== fingerprint(details))
+          store.saveResource(cacheKey, details, details.fetchedAt);
       }
     }
     const previousVenues = store.observations(source).filter(item => item.kind === 'venue');

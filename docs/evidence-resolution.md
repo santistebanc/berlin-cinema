@@ -51,13 +51,20 @@ than losing priority merely because current lower-authority evidence exists.
 URL-keyed optional detail caches are checked before filling listing gaps, ahead
 of identity resolution. Conflicting current director/year evidence withholds the
 cached details and emits `detail-identity-conflict`; usable screenings remain.
-Newly collected details and accepted embedded detail caches retain a typed
-`listingIdentity` description of the film they accompanied. Reused URLs must have
+Newly collected details retain a typed `listingIdentity` description of the film
+at collection time. Ingestion preserves embedded bindings and never manufactures
+one from the consuming listing. Reused URLs must have
 compatible titles or supporting film credits, without contradictory identity
 dimensions. Historical caches without that description remain readable under the
 available credit/year compatibility checks and any exactly attributed original
 listing descriptions (same source, URL, fetch time and detail fields). This is a
-read view over retained observations, not a rewrite of historical data. Fetch/observation times, upstream
+read view supplied by the shared source dependencies during normal acquisition
+and recalculation, scoped to the configured source instance. Ingestion checks
+embedded details by the same identity rules before creating observations, so
+retained replay and recovered progress cannot reintroduce inherited facts.
+Rejected details are withheld without replacing their cache or spending another
+optional lookup. Compatible inherited caches retain their existing bytes and
+binding, including an unknown binding. Fetch/observation times, upstream
 lineage and original historical observations are preserved; URL reuse never
 establishes independent corroboration.
 

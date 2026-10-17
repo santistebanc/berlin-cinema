@@ -1,10 +1,12 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import type { PipelineStore } from '../pipeline/store';
 import { SourcePersistenceError, type SourceDependencies } from './types';
+import { filmDetailIdentity } from './detail-identity';
 
 /** Transport never follows redirects implicitly. Adapters and detail mechanisms validate each hop. */
 export function sourceDependencies(store: PipelineStore, options: { network?: boolean; now?: string; force?: boolean } = {}): SourceDependencies {
   return { network: options.network, force: options.force, now: () => options.now ?? new Date().toISOString(), diagnostic: () => {},
+    filmDetailIdentities: (source, details) => store.sourceDetailOrigins(source, details).map(original => filmDetailIdentity(original.data)),
     wait: milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)),
     cache: { get: key => store.resource(key) ?? undefined, set: (key, data, at) => {
       try { store.saveResource(key, data, at); } catch (error) { throw new SourcePersistenceError((error as Error).message); }

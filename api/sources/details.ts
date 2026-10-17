@@ -1,15 +1,13 @@
 import { SourcePersistenceError, type SourceAdapter, type SourceDependencies, type SourceInstance } from './types';
-import { compatibleFilmDetails, filmDetailIdentity } from './detail-identity';
-import type { FilmDetailIdentity } from '../../shared/contracts';
+import { compatibleFilmDetails, detailIdentityConflict, filmDetailIdentity } from './detail-identity';
 
-export interface DetailOptions { maxLookups?: number; force?: boolean; onProgress?(): void;
-  cachedIdentities?(details: { url: string; fetchedAt: string; fields: Record<string, any>; listingIdentity?: FilmDetailIdentity }): FilmDetailIdentity[] }
+export interface DetailOptions { maxLookups?: number; force?: boolean; onProgress?(): void }
 const DAY = 86400000;
 const fresh = (deps: SourceDependencies, cached: any, ttl: number) => cached
   && Date.parse(deps.now()) - Date.parse(cached.fetchedAt) < ttl;
 
 /** Optional evidence uses independent caches and never changes a listing's observedAt. */
-export async function collectFilmDetails(movies: any[], adapter: SourceAdapter, deps: SourceDependencies,
+export async function collectFilmDetails(movies: any[], instance: SourceInstance, adapter: SourceAdapter, deps: SourceDependencies,
   options: DetailOptions = {}): Promise<Map<string, any>> {
   const fetched = new Map<string, any>(); let lookups = 0;
   if (!adapter.film) return fetched;
@@ -22,12 +20,11 @@ export async function collectFilmDetails(movies: any[], adapter: SourceAdapter, 
       && (!cached.data.failed || cached.data.parserVersion >= 5)
       && (cached.data.creditsChecked !== undefined || Object.keys(cached.data.fields ?? {}).length)
       && fresh(deps, cached, cached.data.failed ? 5 * 60000 : 7 * DAY) ? cached.data : null);
-    if (details && (!compatibleFilmDetails(movie, details) || options.cachedIdentities?.(details)
-      .some(listingIdentity => !compatibleFilmDetails(movie, { ...details, listingIdentity })))) {
-      deps.diagnostic({ schemaVersion: 1, category: 'data-quality', stage: 'film-details', code: 'detail-identity-conflict',
-        sourceInstanceId: '', reason: 'Cached detail identity is incompatible with the current listing; optional cached fields were withheld.',
-        retryable: false, evidence: { url: url.href, fetchedAt: details.fetchedAt } });
-      details = null;
+    if (details && !compatibleFilmDetails(movie, details, deps.filmDetailIdentities?.(instance.id, details))) {
+      deps.diagnostic(detailIdentityConflict(instance.id, details));
+      // Preserve incompatible original evidence. A URL now describing another work
+      // is not a reason to replace its cache or spend an optional lookup here.
+      continue;
     }
     if (!details && deps.network !== false && lookups < (options.maxLookups ?? 40)) {
       lookups++;

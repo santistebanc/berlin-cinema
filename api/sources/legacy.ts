@@ -18,7 +18,7 @@ export async function legacyCollection(movies: any[], complete: boolean, instanc
   progress();
   const venueResources = await collectVenueDetails(movies, instance, adapter, deps, { maxLookups: instance.limits.venueDetails, force: deps.force, onProgress: progress });
   for (const [key, detail] of venueResources) deps.cache.set(key, detail, detail.fetchedAt);
-  const filmResources = await collectFilmDetails(movies, adapter, deps, { maxLookups: instance.limits.filmDetails, force: deps.force, onProgress: progress });
+  const filmResources = await collectFilmDetails(movies, instance, adapter, deps, { maxLookups: instance.limits.filmDetails, force: deps.force, onProgress: progress });
   for (const [url, detail] of filmResources) deps.cache.set(`source-detail:${url}`, detail, detail.fetchedAt);
   return listingCollection(movies, complete, instance, adapter, observedAt, diagnostics);
 }
