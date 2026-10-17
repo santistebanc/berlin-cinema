@@ -1,6 +1,7 @@
 import assert from 'assert/strict';
 import { PipelineStore } from '../api/pipeline/store';
 import { runPipeline } from '../api/pipeline/pipeline';
+import { translateLegacyBatch } from '../api/pipeline/observations';
 
 async function main() {
   const store = new PipelineStore(':memory:');
@@ -11,7 +12,7 @@ async function main() {
   const legacy = { scrapedAt: '2026-10-15T09:00:00Z', movies: [{ ...raw, slug: 'cached-film', year: 2026,
     tmdbFetched: true, plot: 'Previously guessed plot', imdbId: 'tt1234567' }] };
   const result = await runPipeline({ store, legacy, now: '2026-10-15T10:00:00Z', network: false, model: null, tmdb: null, osm: [], publish: false,
-    batches: [{ source: 'critic.de', observedAt: '2026-10-15T10:00:00Z', status: 'fresh', complete: true, movies: [raw] }] });
+    collections: [translateLegacyBatch({ source: 'critic.de', observedAt: '2026-10-15T10:00:00Z', status: 'fresh', complete: true, movies: [raw] }) as any] });
   assert.equal(result.movies[0].slug, 'cached-film', 'Compatible source identity may retain its public URL');
   assert.equal(result.movies[0].plot, null, 'Legacy inferred metadata must not become verified evidence');
   assert.equal(result.movies[0].imdbId, null);

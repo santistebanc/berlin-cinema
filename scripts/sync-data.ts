@@ -2,18 +2,14 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { recordImportedAudit } from '../api/audit-log';
+import { parsePublicSnapshot } from '../shared/contracts';
 
 const MOVIES_URL = 'https://ovberlin.online/movies.json';
 export const MOVIES_PATH = path.join(__dirname, '../public/movies.json');
 
 export function validateMovieData(data: any): void {
-  if (!data || !Array.isArray(data.movies) || data.movies.length === 0
-      || !Number.isFinite(Date.parse(data.scrapedAt))
-      || data.movies.some((movie: any) => !movie || typeof movie.title !== 'string'
-        || typeof movie.slug !== 'string' || !movie.showings || Array.isArray(movie.showings)
-        || typeof movie.showings !== 'object' || !Array.isArray(movie.cinemas))) {
-    throw new Error('Movie data is missing or invalid');
-  }
+  try { parsePublicSnapshot(data); }
+  catch (error) { throw new Error(`Movie data is missing or invalid: ${(error as Error).message}`); }
 }
 
 export async function syncData(url = MOVIES_URL, output = MOVIES_PATH): Promise<void> {

@@ -1,8 +1,10 @@
-# Source ingestion contracts (expand step)
+# Source ingestion contracts
 
 `shared/contracts.ts` exports browser-safe Zod runtime schemas and inferred types.
 Source contract version 1 is separate from public snapshot version 2 and retained
-pipeline state version 1. No persisted identity migration is needed for this step.
+pipeline state version 2. Historical state v1 remains readable; writers require
+the explicit [migration and rollout](ingestion-rollout.md) first. IDs and hashes
+are retained, with attribution added as sidecars.
 
 `runPipeline({ collections, ...dependencies })` accepts `SourceCollection[]`.
 Configured collection and detail dispatch are documented in
@@ -50,8 +52,9 @@ Public snapshot validation runs before pipeline output/publication and browser
 freshness processing. Historical unversioned/v1 snapshots remain readable, as
 does current v2. A valid empty dataset succeeds. `loadMovieData` preserves eligible
 previous data after a failed reload and reapplies expiry using original timestamps.
-The React movie provider uses that boundary. This step does not change existing
-identity, location verification, enrichment or field-selection policy.
+The React movie provider uses that boundary. Historical snapshot compatibility
+remains; current identity, location and field-selection policies govern
+recalculation as described below.
 
 Resolution policy and review lifecycle are documented in
 [evidence-resolution.md](evidence-resolution.md). Snapshots now optionally expose

@@ -32,6 +32,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      SOURCE_DISABLED: ${{ vars.SOURCE_DISABLED || '' }}
+      SOURCE_INSTANCES_FILE: ${{ vars.SOURCE_INSTANCES_FILE || '' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -53,6 +56,25 @@ jobs:
 
       - name: Initialize audit baseline if needed
         run: npm run audit:seed
+
+      - name: Prepare versioned ingestion state in isolation
+        if: ${{ !inputs.skip_scrape }}
+        run: |
+          npm run pipeline:migrate -- --state pipeline/state.json --data data --output .recovery/scheduled-migration
+          echo "PIPELINE_STATE=$GITHUB_WORKSPACE/.recovery/scheduled-migration/state.json" >> "$GITHUB_ENV"
+          echo "PIPELINE_DATA_DIR=$GITHUB_WORKSPACE/.recovery/scheduled-migration/data" >> "$GITHUB_ENV"
+
+      - name: Retain pre-migration recovery evidence
+        if: ${{ !inputs.skip_scrape }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingestion-recovery-${{ github.run_id }}
+          path: |
+            .recovery/scheduled-migration/manifest.json
+            .recovery/scheduled-migration/original/
+          retention-days: 7
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Scrape movies
         id: scrape
@@ -82,6 +104,7 @@ jobs:
       - name: Commit scrape artifacts
         if: ${{ !inputs.skip_scrape }}
         run: |
+          cp "$PIPELINE_STATE" pipeline/state.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f public/movies.json public/sitemap.xml public/audit pipeline/state.json

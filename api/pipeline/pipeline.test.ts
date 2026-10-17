@@ -19,8 +19,11 @@ import { comparisonStatus, comparisonValue, screeningSubtitles } from '../../src
 import { resolveScreenings } from './screenings';
 import { createAdminServer } from '../../scripts/admin';
 import { labelFixtures } from '../../pipeline/evaluation-fixtures';
-import { fillSourceDetails, parseSourceDetails, refreshListingObservations } from './source-details';
-import { fillVenueDetails, parseVenueDetails } from './source-venues';
+import { fillSourceDetails, refreshListingObservations } from './source-details';
+import { fillVenueDetails } from './source-venues';
+import { parseFilmMetadata as parseSourceDetails } from '../sources/film-metadata';
+import { extractCriticFilm } from '../sources/critic';
+import { parseBerlinVenue as parseVenueDetails } from '../sources/berlin-venue';
 import { berlinBoundary, GeoapifyGeocoder, geoNameMatches } from './geocoding';
 import { currentSnapshot } from '../../src/utils/liveSnapshot';
 import { matchesFilters } from '../../src/utils/cinemaUtils';
@@ -188,12 +191,12 @@ async function main() {
       <dt class="hidden">Produktion:</dt><dd>USA 2026</dd><dt>D:</dt><dd>A Director</dd><dt>With:</dt><dd>Actor A,Actor B</dd></dl></div>
       <div class="itemContainer"><h2><a href="/ov-movies-berlin/movie/other-124/">Other Film</a></h2>
       <dl><dt>D:</dt><dd>Wrong Director</dd><dt>Produktion:</dt><dd>DE 1980</dd></dl></div>`;
-    assert.deepEqual(parseSourceDetails(criticHtml, url), { director: 'A Director', cast: ['Actor A', 'Actor B'], country: 'USA', year: 2026 });
-    assert.deepEqual(parseSourceDetails(criticHtml, url.replace('123', '999')), {}, 'Unrelated films cannot supply detail fields');
+    assert.deepEqual(extractCriticFilm(criticHtml, url).fields, { director: 'A Director', cast: ['Actor A', 'Actor B'], country: 'USA', year: 2026 });
+    assert.deepEqual(extractCriticFilm(criticHtml, url.replace('123', '999')).fields, {}, 'Unrelated films cannot supply detail fields');
     const repeated = criticHtml + criticHtml;
-    assert.deepEqual(parseSourceDetails(repeated, url), { director: 'A Director', cast: ['Actor A', 'Actor B'], country: 'USA', year: 2026 },
+    assert.deepEqual(extractCriticFilm(repeated, url).fields, { director: 'A Director', cast: ['Actor A', 'Actor B'], country: 'USA', year: 2026 },
       'Identical credit blocks for the same source URL can appear once per language version');
-    assert.deepEqual(parseSourceDetails(criticHtml + criticHtml.replace('A Director', 'Other Director'), url), {},
+    assert.deepEqual(extractCriticFilm(criticHtml + criticHtml.replace('A Director', 'Other Director'), url).fields, {},
       'Contradictory credit blocks at one URL cannot supply a film identity'); checks += 2;
     const originalGet = axios.get; const requests: string[] = [];
     try {

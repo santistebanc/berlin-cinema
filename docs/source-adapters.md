@@ -96,5 +96,7 @@ recovery and identity suites. No live collection or paid provider is required.
 
 Scoped support withdrawal, bounded acquisition recovery, structured run outcomes
 and operator diagnostics are documented in [source recovery](source-recovery.md).
-Field authority, lineage ranking and review policy remain ticket #6. This
-structural migration retains the current identity and website-evidence rules.
+Field authority, lineage ranking and review policy are documented in
+[evidence resolution](evidence-resolution.md). Explicit state/raw migrations,
+pinned-base shadow comparison and rollout recovery are documented in
+[ingestion rollout](ingestion-rollout.md).

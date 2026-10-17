@@ -8,7 +8,6 @@ import { sourceDependencies } from '../sources/dependencies';
 import { collectFilmDetails } from '../sources/details';
 import type { SourceRegistry } from '../sources/registry';
 import type { SourceDependencies } from '../sources/types';
-export { parseSourceDetails } from '../sources/compat';
 export interface SourceDetails { url: string; fetchedAt: string; fields: Record<string, any>; failed?: boolean; parserVersion?: number; creditsChecked?: boolean; reason?: string }
 import { detailKey } from '../sources/keys';
 export { detailKey } from '../sources/keys';

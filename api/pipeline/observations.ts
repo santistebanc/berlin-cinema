@@ -98,10 +98,6 @@ export function translateLegacyBatch(input: unknown): SourceCollection | unknown
       status: batch.complete ? 'complete' : 'partial', emptyProgrammeConfirmed: batch.complete && rawScreenings === 0 }] };
 }
 
-export function ingestBatches(store: PipelineStore, batches: SourceBatch[]): IngestionResult[] {
-  return ingestCollections(store, batches.map(translateLegacyBatch));
-}
-
 /** New public ingestion boundary. Record failures are isolated; programming/persistence errors propagate. */
 export function ingestCollections(store: PipelineStore, inputs: unknown[], options: { cacheKey?(source: string, key: string): string } = {}): IngestionResult[] {
   return store.transaction(() => inputs.map(input => {

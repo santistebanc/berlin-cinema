@@ -8,6 +8,7 @@ import { SourceCollectionSchema } from '../../shared/contracts';
 import { PipelineStore } from '../pipeline/store';
 import { runPipeline } from '../pipeline/pipeline';
 import { retainedDependencies } from './runtime';
+import { translateLegacyBatch } from '../pipeline/observations';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -85,7 +86,7 @@ async function main() {
     const oldTime = '2026-10-15T09:00:00Z';
     const execute = (input: any) => runPipeline({ store: new PipelineStore(':memory:'), now: NOW, network: false,
       sourceRegistry: registry, osm: [], model: null, tmdb: null, publish: false, audit: false, ...input });
-    const legacy = await execute({ batches: [{ source: 'critic.de', movies: [raw], status: 'cached', complete: false, observedAt: oldTime }] });
+    const legacy = await execute({ collections: [translateLegacyBatch({ source: 'critic.de', movies: [raw], status: 'cached', complete: false, observedAt: oldTime })] });
     fs.writeFileSync(path.join(root, 'critic-raw.json'), JSON.stringify({ movies: [raw], scrapedAt: oldTime, complete: true }));
     const retained = await registry.collect(retainedDependencies(new PipelineStore(':memory:'), registry,
       { dataDir: root, network: false, now: NOW }), { retained: true });

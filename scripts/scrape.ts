@@ -42,7 +42,7 @@ export async function scrape(options: ScrapeOptions = {}, services: { merge: (op
           'Previous publication remains available within its original freshness limits.', true)] });
     }
     store?.releaseLease(owner);
-    const result = await services.merge({ forceEnrich, skipBerlinDe, sources, publish, collections, registry, dependencies: options.dependencies, operation });
+    const result = await services.merge({ forceEnrich, publish, collections, registry, dependencies: options.dependencies, operation });
     return result || publicationResult(null, collections);
   } catch (error) {
     const result: PublicationResult = error instanceof PipelineRunFailure ? error.result : { schemaVersion: 1, outcome: 'fatal',
