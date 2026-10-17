@@ -35,7 +35,13 @@ export const criticAdapter: SourceAdapter = {
         'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
         accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' } });
-    const parser = new MovieParser({ ensureAbsoluteUrl: url => url && !url.startsWith('http') ? `https://www.critic.de${url}` : url }, deps.now);
-    return legacyCollection(parser.parseMovies(response.body), true, instance, criticAdapter, deps);
+    const rejected: string[] = [];
+    const parser = new MovieParser({ ensureAbsoluteUrl: url => url && !url.startsWith('http') ? `https://www.critic.de${url}` : url },
+      deps.now, reason => rejected.push(reason));
+    const movies = parser.parseMovies(response.body);
+    const diagnostics = rejected.length ? [{ schemaVersion: 1 as const, category: 'data-quality' as const, stage: 'collection',
+      code: 'extraction-incomplete', sourceInstanceId: instance.id,
+      reason: 'Some programme entries could not be extracted; coverage is incomplete.', retryable: false, evidence: { rejected } }] : [];
+    return legacyCollection(movies, !rejected.length, instance, criticAdapter, deps, undefined, diagnostics);
   },
 };

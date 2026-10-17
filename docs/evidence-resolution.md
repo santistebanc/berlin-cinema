@@ -19,6 +19,28 @@ Equal authority at the same instant with contradictory values abstains. Missing
 optional values do not contradict known values. Alternatives retain explicit
 absence and retrieval failure separately from unknown or manual clearing.
 
+Selected field evidence carries a typed `evidenceRole`: `listing`, `source-detail`,
+`tmdb`, `omdb`, `manual-correction`, `venue-website` or conservative `historical`.
+Authority reads this role, with the existing correction/verification guards;
+English `reason` strings are explanatory only. Wrapping a reason in historical
+fallback text or changing its wording never changes authority. Detail roles require
+the structured detail value to match the selected value and an explicitly missing
+listing field; failed details do not establish this role.
+
+Historical v1/v2 selected fields without roles remain readable. A non-mutating
+compatibility view derives a role from their original observation ID, structured
+detail/listing fields, verified provider identity or correction ID. Without enough
+structured evidence it retains ordinary historical authority; it never guesses
+from reason text or a source name alone. Copy migration preserves historical field
+objects and observation hashes verbatim; subsequently selected fields persist roles.
+After identity consolidation, retained unverified detail fields remain candidates
+only for their exact currently linked source listing subject. This carries source
+evidence across the entity reassociation without transferring another entity's
+verified provider identity or correction. Normal field expiry and explicit source
+absence still apply, and historical details retain their original observation time.
+They compete with current fields by the same authority/freshness policy rather
+than losing priority merely because current lower-authority evidence exists.
+
 Known overlapping upstream lineage prevents independent corroboration. Empty
 lineage means unknown origin, not independence. Provider-derived metadata cannot
 validate its own provider identity through another configured source. Compatible

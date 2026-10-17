@@ -28,7 +28,8 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
   const prior = store.fields(entity.id);
   const nowMs = Date.parse(options.now);
   const set = (field: string, value: any, source: string, observationId: string | null, observedAt: string, reason: string, verified = true) => {
-    selected.set(field, { field, value, source, observationId, observedAt, selectedAt: options.now, reason, identityVerified: verified });
+    selected.set(field, { field, value, source, observationId, observedAt, selectedAt: options.now, reason, identityVerified: verified,
+      evidenceRole: verified && source.startsWith('TMDb:') ? 'tmdb' : verified && source.startsWith('OMDb:') ? 'omdb' : 'listing' });
   };
   const rankedSources = [...sources].sort((a, b) => b.observedAt.localeCompare(a.observedAt) || a.subject.localeCompare(b.subject));
   const labelYear = rankedSources.find(source => parseLabel(source.data.rawTitle || source.data.title).year);
@@ -293,16 +294,30 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       }
     }
   }
-  for (const previous of prior) {
-    if (selected.has(previous.field) || (previous.source === 'manual' && previous.correctionId) || attributedCandidates.some(field => field.field === previous.field)) continue;
+  const retainedDetails: FieldValue[] = [];
+  for (const previous of [...prior, ...store.retainedSourceDetails(sources)]) {
+    const detail = previous.evidenceRole === 'source-detail';
+    if ((previous.source === 'manual' && previous.correctionId)
+      || !detail && (selected.has(previous.field) || attributedCandidates.some(field => field.field === previous.field))) continue;
     const fromExternal = previous.identityVerified && /^(TMDb|OMDb):/.test(previous.source);
     if (!fromExternal && sources.some(source => source.source === previous.source && source.fields?.[previous.field]?.state === 'absent')) continue;
     if (rejectedOmdb && previous.source.startsWith('OMDb:')) continue;
     if (fromExternal && (!acceptedId || (previous.source.startsWith('TMDb:') && previous.source !== `TMDb:${acceptedId}`)
       || (previous.source.startsWith('OMDb:') && previous.source !== `OMDb:${imdbId}`))) continue;
     const maxAge = stableFields.has(previous.field) ? 365 * DAY : previous.field === 'runtime' ? 30 * DAY : 2 * DAY;
-    if (nowMs - Date.parse(previous.observedAt) <= maxAge) selected.set(previous.field, { ...previous, selectedAt: options.now,
-      reason: `Historical fallback: ${previous.reason}`.replace(/(?:Historical fallback: )+/g, 'Historical fallback: ') });
+    if (nowMs - Date.parse(previous.observedAt) <= maxAge) {
+      const fallback = { ...previous, selectedAt: options.now,
+        reason: `Historical fallback: ${previous.reason}`.replace(/(?:Historical fallback: )+/g, 'Historical fallback: ') };
+      if (detail) retainedDetails.push(fallback);
+      else selected.set(previous.field, fallback);
+    }
+  }
+  if (retainedDetails.length) {
+    const detailFields = new Set(retainedDetails.map(field => field.field));
+    const ranked = selectEvidence([...selected.values(), ...retainedDetails,
+      ...attributedCandidates.filter(field => detailFields.has(field.field))]).selected;
+    selected.clear();
+    for (const [field, value] of ranked) selected.set(field, value);
   }
   // Field-level manual values may explicitly clear a field; missing values do not imply clearing.
   checkFieldCorrections(store, entity.id, options.now);
@@ -310,6 +325,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     for (const [field, value] of Object.entries(correction.patch?.fields ?? {})) {
       set(field, value, 'manual', null, correction.createdAt, correction.reason);
       selected.get(field)!.correctionId = correction.id;
+      selected.get(field)!.evidenceRole = 'manual-correction';
     }
   }
   store.saveFields(entity.id, [...selected.values()]);

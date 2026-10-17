@@ -61,6 +61,22 @@ async function main() {
   assert.equal(partial[1].coverage[0].status, 'partial');
   assert.equal(partial[1].records.filter(item => item.kind === 'screening').length, 1);
   assert.ok(partial[1].diagnostics.some(item => item.code === 'page-failed'));
+  const mixedRows = await registry.collect({ ...deps, request: async request => {
+    const response = await deps.request(request);
+    return { ...response, body: request.purpose || request.url.includes('startat') ? response.body
+      : response.body.replace('</tbody>', '<tr><td>Do, 15.10.26</td><td>25:00 (OV)</td></tr></tbody>') };
+  } }, { selected: ['berlin.de'] });
+  assert.equal(mixedRows[1].records.filter(record => record.kind === 'screening').length, 1,
+    'A malformed sibling does not discard the valid 20:00 Berlin row');
+  assert.equal(mixedRows[1].coverage[0].status, 'partial',
+    'A valid 20:00 row cannot conceal an unparsed 25:00 sibling and establish complete extraction');
+  assert.ok(mixedRows[1].diagnostics.some(item => item.code === 'extraction-incomplete'));
+  const mixedCritic = await registry.collect({ ...deps, request: async request => {
+    const response = await deps.request(request);
+    return { ...response, body: request.purpose ? response.body : critic + critic.replace('Today', 'Unknown day') };
+  } }, { selected: ['critic.de'] });
+  assert.equal(mixedCritic[0].coverage[0].status, 'partial',
+    'Critic extraction also reports a skipped malformed date beside a valid listing');
   const malformedPage = await registry.collect({ ...deps, request: async request => request.url.includes('startat')
     ? { status: 200, headers: {}, body: '<ul class="js-accordion"><li>Unsupported entry</li></ul>' } : deps.request(request)
   }, { selected: ['berlin.de'] });
