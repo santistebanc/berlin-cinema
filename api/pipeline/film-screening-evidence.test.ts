@@ -24,7 +24,7 @@ function fixture(titles = ['Original Film', 'An Incorrect Translation']) {
   entities.forEach((entity, i) => { store.saveEntity(entity); store.observe(listings[i]);
     store.saveLink(listings[i].subject, entity.id, linkEvidence(listings[i]), 'provisional'); });
   const rows: FilmScreening[] = entities.flatMap((entity, i) => slots.map(slot => ({ ...slot,
-    filmId: entity.id, source: i ? 'b' : 'a', title: entity.name })));
+    filmId: entity.id, source: i ? 'b' : 'a', title: entity.name, upstreamLineage: [i ? 'original-b' : 'original-a'] })));
   return { store, entities, listings, rows };
 }
 

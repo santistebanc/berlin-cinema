@@ -26,6 +26,7 @@ export class PipelineStore {
   private owner: string | null = null;
   private transactionDepth = 0;
   private reviewPass: Set<string> | null = null;
+  private reviewNow: string | undefined;
   private readonly filename: string;
   constructor(filename = process.env.PIPELINE_STATE || path.join(__dirname, '../../pipeline/state.json')) {
     this.filename = filename; this.state = this.load();
@@ -135,21 +136,32 @@ export class PipelineStore {
   }
   decision(key: string): any { return this.state.decisions[key] ?? null; }
   saveDecision(key: string, data: any) { this.state.decisions[key] = data; }
-  issue(input: Omit<ReviewIssue, 'id' | 'firstSeenAt' | 'lastSeenAt'>, now = new Date().toISOString()): ReviewIssue {
+  issue(input: Omit<ReviewIssue, 'id' | 'firstSeenAt' | 'lastSeenAt'>, now = this.reviewNow ?? new Date().toISOString()): ReviewIssue {
     const id = fingerprint([input.type, input.subject]).slice(0, 28); const old = this.state.issues[id];
+    // Raw venue checks precede consolidation. Compare the final group evidence
+    // before reopening a reviewed group, rather than its individual row hash.
+    const regrouping = old?.details.decisionKey?.startsWith('venue:') && !input.details.decisionKey;
+    if (regrouping) input = { ...input, details: { ...input.details,
+      reviewedFingerprint: old.status === 'resolved' ? old.fingerprint : old.details.reviewedFingerprint } };
+    const firstTouch = this.reviewPass && !this.reviewPass.has(id);
     this.reviewPass?.add(id);
-    const issue = { ...input, id, firstSeenAt: old?.firstSeenAt ?? now, lastSeenAt: now };
+    const issue = { ...input, id, firstSeenAt: old?.firstSeenAt ?? now, lastSeenAt: now,
+      occurrences: (old?.occurrences ?? (old ? 1 : 0)) + (firstTouch || !old ? 1 : 0), history: [...(old?.history ?? [])] };
     if (old?.status === 'resolved' && old.fingerprint === input.fingerprint) issue.status = 'resolved';
+    const last = issue.history[issue.history.length - 1];
+    if (!regrouping && (!last || last.status !== issue.status || last.fingerprint !== issue.fingerprint)) issue.history.push({ at: now, status: issue.status,
+      fingerprint: issue.fingerprint, reason: input.details.reason || input.details.resolution || (old?.status === 'resolved' ? 'Changed semantic evidence reopened a reviewed decision' : input.title) });
     this.state.issues[id] = issue; return issue;
   }
   issues(): ReviewIssue[] { return Object.values(this.state.issues).sort((a, b) => b.priority - a.priority || b.lastSeenAt.localeCompare(a.lastSeenAt)); }
-  beginReviewPass() { this.reviewPass = new Set(); }
+  beginReviewPass(now?: string) { this.reviewPass = new Set(); this.reviewNow = now; }
   endReviewPass(now: string) {
     if (!this.reviewPass) return;
     for (const issue of Object.values(this.state.issues)) {
       if (!this.reviewPass.has(issue.id) && issue.status === 'open' && issue.type !== 'field-review') {
         issue.status = 'caution'; issue.details = { ...issue.details, autoResolvedAt: now,
           resolution: 'This issue no longer blocks the current result: newer evidence resolved it, or its source record is no longer active. Original evidence is retained.' };
+        issue.history = [...(issue.history ?? []), { at: now, status: 'caution', fingerprint: issue.fingerprint, reason: issue.details.resolution }];
       }
     }
     this.reviewPass = null;
@@ -175,7 +187,9 @@ export class PipelineStore {
     });
   }
   resolveIssue(id: string) {
-    if (!this.state.issues[id]) throw new Error('Review issue not found'); this.state.issues[id].status = 'resolved';
+    const issue = this.state.issues[id];
+    if (!issue) throw new Error('Review issue not found'); issue.status = 'resolved';
+    issue.history = [...(issue.history ?? []), { at: this.reviewNow ?? new Date().toISOString(), status: 'resolved', fingerprint: issue.fingerprint, reason: 'Reviewed by local administrator' }];
   }
   reopenIssue(id: string) { if (this.state.issues[id]) this.state.issues[id].status = 'open'; }
   overrides(subject: string): Override[] { return this.state.overrides.filter(o => o.subject === subject && !o.revokedAt); }

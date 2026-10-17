@@ -1,6 +1,7 @@
 import { PipelineStore } from './store';
 import { emptyModality, Entity, fingerprint, identity } from './domain';
 import { linkEvidence } from './resolve';
+import { fieldBaseline, semanticEvidence } from './correction-evidence';
 
 export interface ReviewCommand {
   issueId: string; action: 'link' | 'separate' | 'parse' | 'metadata' | 'fields' | 'screening' | 'dismiss';
@@ -9,7 +10,7 @@ export interface ReviewCommand {
 export class ReviewConflict extends Error {}
 const isObject = (value: any) => !!value && typeof value === 'object' && !Array.isArray(value);
 export function fieldEvidence(store: PipelineStore, id: string): string {
-  return fingerprint({ entity: store.entity(id), fields: store.fields(id).map(({ field, value, source, observationId }) => ({ field, value, source, observationId })) });
+  return fingerprint(semanticEvidence({ entity: store.entity(id), fields: store.fields(id).map(({ field, value, source }) => ({ field, value, source })) }));
 }
 function modality(value: any) {
   if (!isObject(value) || !['original', 'dubbed', 'unknown'].includes(value.version)
@@ -71,19 +72,24 @@ export function previewReview(store: PipelineStore, command: ReviewCommand) {
     if (!entityId || !store.entity(entityId)) throw new Error('Choose a known entity to correct');
     if (issue.details.fieldEvidence && issue.details.fieldEvidence !== fieldEvidence(store, entityId))
       throw new ReviewConflict('Selected field evidence changed. Find and reopen this record before editing it.');
-    patch = { fields: fields(command.values) };
+    patch = { fields: fields(command.values), fieldBaseline: fieldBaseline(store, entityId, Object.keys(command.values)) };
   } else if (command.action === 'screening') {
     if (!issue.subject.startsWith('slot:') || command.values?.mode !== 'same') throw new Error('The same film, cinema, date and time identify one viewing');
     patch = { screening: { mode: command.values.mode, modality: modality(command.values.modality) } };
   } else if (command.action !== 'dismiss') throw new Error('Unknown review action');
   const subject = command.action === 'fields' ? `entity:${entityId}` : issue.subject;
+  // A consolidated venue question explicitly presents all of these source rows
+  // as the scope of the decision. Never broaden film or screening corrections.
+  const groupedVenues = issue.details.decisionKey?.startsWith('venue:')
+    ? (issue.details.observations ?? []).filter((item: any) => item.kind === 'venue') : [];
   const metadataCandidate = command.action === 'metadata' ? issue.details.candidates?.find((candidate: any) => candidate.id === patch.tmdbId) : null;
   const fieldDescription = command.action === 'fields' ? Object.entries(patch.fields).map(([key, value]) => key === 'insideBerlin'
     ? value === true ? 'confirm the venue is inside Berlin' : value === false ? 'exclude the venue as outside Berlin' : 'clear its Berlin location decision'
     : `set ${key.replace(/([A-Z])/g, ' $1').toLowerCase()} to ${value === null ? 'empty' : JSON.stringify(value).slice(0, 180)}`).join('; ') : '';
-  return { issue, observation, patch, target, subject,
+  return { issue, observation, patch, target, subject, groupedVenues,
     evidence: observation ? linkEvidence(observation) : issue.details.evidence ?? issue.fingerprint,
-    affected: observation ? [observation.subject, store.link(observation.subject)?.entityId, target?.id].filter(Boolean)
+    affected: groupedVenues.length ? [...new Set(groupedVenues.flatMap((item: any) => [item.subject, store.link(item.subject)?.entityId]).filter(Boolean))]
+      : observation ? [observation.subject, store.link(observation.subject)?.entityId, target?.id].filter(Boolean)
       : [subject, entityId].filter(Boolean),
     description: command.action === 'link' ? `Link this source record to ${target!.name}. Recalculate its metadata and screenings.`
       : command.action === 'separate' ? 'Give this source listing a separate identity. Re-evaluate its enrichment and screenings.'
@@ -121,7 +127,15 @@ export function applyReview(store: PipelineStore, command: ReviewCommand) {
       if (command.action === 'fields' && preview.observation?.kind === 'venue' && Object.hasOwn(preview.patch.fields, 'insideBerlin'))
         overrides.push(store.addOverride({ ...common, subject: preview.observation.subject, action: 'link', targetId: preview.subject.slice(7) }));
     }
+    if (preview.groupedVenues.length && (command.action === 'link' || command.action === 'fields'
+      && ['insideBerlin', 'address', 'name'].some(name => Object.hasOwn(preview.patch.fields, name)))) {
+      const targetId = preview.target?.id ?? preview.subject.slice(7);
+      for (const item of preview.groupedVenues) if (item.subject !== preview.observation?.subject || command.action === 'fields')
+        overrides.push(store.addOverride({ ...common, evidenceFingerprint: linkEvidence(item), subject: item.subject,
+          action: 'link', targetId }));
+    }
     store.resolveIssue(preview.issue.id);
+    for (const id of preview.issue.details.relatedIssueIds ?? []) store.resolveIssue(id);
     return { overrideIds: overrides.map(o => o.id), revision: store.revision, description: preview.description };
   });
 }

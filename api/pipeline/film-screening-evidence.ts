@@ -1,9 +1,10 @@
 import { Entity, normalize } from './domain';
 import { parseLabel } from './labels';
+import { independentLineage } from './lineage';
 
 export interface FilmScreening {
   filmId: string; source: string; venueId: string; date: string; time: string;
-  title: string; auditorium?: string | null;
+  title: string; auditorium?: string | null; upstreamLineage?: string[];
 }
 export interface FilmScreeningMatch {
   left: string; right: string; leftIds: string[]; rightIds: string[]; sources: string[];
@@ -15,7 +16,7 @@ export interface FilmScreeningMatch {
 /** Compare original source schedules using resolved venues, before viewing deduplication. */
 export function filmScreeningMatches(groups: Map<string, Entity[]>, rows: FilmScreening[]): FilmScreeningMatch[] {
   const groupFor = new Map([...groups].flatMap(([key, entities]) => entities.map(entity => [entity.id, key] as const)));
-  const profiles = new Map<string, { group: string; source: string; titles: Set<string>; slots: Map<string, Set<string>> }>();
+  const profiles = new Map<string, { group: string; source: string; titles: Set<string>; slots: Map<string, Set<string>>; lineage: string[]; lineageKnown: boolean }>();
   const occupancy = new Map<string, Set<string>>();
   const addOccupant = (key: string, group: string) => {
     const values = occupancy.get(key) ?? new Set<string>(); values.add(group); occupancy.set(key, values);
@@ -23,7 +24,9 @@ export function filmScreeningMatches(groups: Map<string, Entity[]>, rows: FilmSc
   for (const row of rows) {
     const group = groupFor.get(row.filmId); if (!group) continue;
     const key = JSON.stringify([group, row.source]);
-    const profile = profiles.get(key) ?? { group, source: row.source, titles: new Set<string>(), slots: new Map<string, Set<string>>() };
+    const profile = profiles.get(key) ?? { group, source: row.source, titles: new Set<string>(), slots: new Map<string, Set<string>>(), lineage: [], lineageKnown: true };
+    profile.lineageKnown = profile.lineageKnown && !!row.upstreamLineage?.some(value => value.trim());
+    profile.lineage = [...new Set([...profile.lineage, ...(row.upstreamLineage ?? [])])];
     const title = normalize(parseLabel(row.title).title); if (title) profile.titles.add(title);
     const slot = JSON.stringify([row.venueId, row.date, row.time]);
     const rooms = profile.slots.get(slot) ?? new Set<string>();
@@ -44,6 +47,9 @@ export function filmScreeningMatches(groups: Map<string, Entity[]>, rows: FilmSc
     if ((!bothFilms && !bothProgrammes) || (a.source === b.source && !bothProgrammes)) continue;
     const shared = [...a.slots.keys()].filter(slot => b.slots.has(slot)); if (!shared.length) continue;
     const fullTitle = [...a.titles].some(title => b.titles.has(title));
+    // Complete labels at an established viewing are compatible descriptions, not a claim
+    // of independent corroboration. Different labels need known independent origins.
+    if (!fullTitle && (!a.lineageKnown || !b.lineageKnown || !independentLineage(a.lineage, b.lineage))) continue;
     let conflict = false; const distinctiveSlots: string[] = [];
     for (const slot of shared) {
       const leftRooms = a.slots.get(slot)!; const rightRooms = b.slots.get(slot)!;
