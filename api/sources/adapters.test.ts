@@ -3,7 +3,7 @@ import { criticAdapter } from './critic';
 import { berlinAdapter } from './berlin';
 import { SourceRegistry } from './registry';
 import { defaultInstances } from './defaults';
-import type { SourceDependencies } from './types';
+import { SourcePersistenceError, type SourceDependencies } from './types';
 import { SourceCollectionSchema } from '../../shared/contracts';
 import { PipelineStore } from '../pipeline/store';
 import { runPipeline } from '../pipeline/pipeline';
@@ -64,6 +64,11 @@ async function main() {
     ? { status: 200, headers: {}, body: '<ul class="js-accordion"><li>Unsupported entry</li></ul>' } : deps.request(request)
   }, { selected: ['berlin.de'] });
   assert.equal(malformedPage[1].coverage[0].status, 'partial', 'An unparsed page is not equivalent to repeated valid pagination');
+  await assert.rejects(registry.collect({ ...deps, request: async request => {
+    if (request.url.includes('startat')) throw new SourcePersistenceError('Fixture storage failed');
+    return deps.request(request);
+  } }, { selected: ['berlin.de'] }), /Fixture storage failed/,
+    'A persistence error during pagination is fatal and cannot be converted into a usable partial acquisition');
   const later = '2026-10-15T11:00:00Z';
   const cachedDetails = await registry.collect({ ...deps, now: () => later });
   assert.equal(cachedDetails[0].records.find(item => item.kind === 'listing')!.data.sourceDetails.fetchedAt, NOW,

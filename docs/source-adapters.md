@@ -94,6 +94,7 @@ legacy raw replay, and adapter-dispatched local detail recovery. `npm test`
 includes these checks and existing migration, correction, review, publication
 recovery and identity suites. No live collection or paid provider is required.
 
-Scoped support withdrawal and structured run outcomes remain ticket #5.
+Scoped support withdrawal, bounded acquisition recovery, structured run outcomes
+and operator diagnostics are documented in [source recovery](source-recovery.md).
 Field authority, lineage ranking and review policy remain ticket #6. This
 structural migration retains the current identity and website-evidence rules.

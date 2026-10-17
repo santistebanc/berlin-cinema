@@ -10,6 +10,7 @@ import '../admin.css';
 type Issue = { id: string; subject: string; type: string; title: string; status: string; priority: number;
   fingerprint: string; details: any; firstSeenAt: string; lastSeenAt: string };
 type Workspace = { revision: number; issues: Issue[]; corrections: any[]; jobs: any[]; snapshot: any;
+  operations?: { latest: { outcome: string; operation?: string; diagnostics: any[] } | null; attempts: any[]; coverage: any[]; validation: any[] };
   geocoding?: { provider: string; configured: boolean; creditsReserved: number; dailyLimit: number };
   model: { provider: string; model: string } | null; spendUsd: number; limitUsd: number; threshold: number };
 async function request(url: string, body?: any) {
@@ -60,6 +61,17 @@ export default function ReviewPage() {
         {workspace.geocoding?.configured && <> · {workspace.geocoding.creditsReserved} credits reserved today / {workspace.geocoding.dailyLimit} application limit</>}
         <span>Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noreferrer">Geoapify</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a></span></p>
       {error && <p className="review-message" role="alert">{error}</p>}
+      {workspace.operations?.latest && <details className="review-corrections">
+        <summary>Refresh diagnostics: {workspace.operations.latest.outcome.replace(/-/g, ' ')}</summary>
+        <p className="audit-note">Operation: {workspace.operations.latest.operation ?? 'recalculate'}. Collection failures retain eligible evidence within its original freshness limits.</p>
+        {workspace.operations.latest.diagnostics.map((diagnostic, index) => <div className="review-correction" key={index}>
+          <div><strong>{diagnostic.stage}: {diagnostic.sourceInstanceId}</strong><p>{diagnostic.reason}</p>
+            <p>{diagnostic.fallback}</p><small>{diagnostic.retryable ? 'Retryable' : 'Requires a corrected input or configuration'}{diagnostic.recordId ? ` · ${diagnostic.recordId}` : ''}</small>
+            {diagnostic.scope && <pre className="text-sm whitespace-pre-wrap break-words">{pretty(diagnostic.scope)}</pre>}</div>
+        </div>)}
+        {!workspace.operations.latest.diagnostics.length && <p className="audit-note">No operational failures were recorded.</p>}
+        <details><summary>Source attempts and coverage</summary><pre className="text-sm whitespace-pre-wrap break-words">{pretty({ attempts: workspace.operations.attempts, coverage: workspace.operations.coverage })}</pre></details>
+      </details>}
       {workspace.jobs[0] && <div className="review-job" role="status"><span className="audit-status">{workspace.jobs[0].status}</span>
         <span>{workspace.jobs[0].status === 'published' ? `Listings regenerated ${date(workspace.jobs[0].data.publishedAt)}`
           : workspace.jobs[0].status === 'failed' ? workspace.jobs[0].data.message : 'Your saved corrections are being applied.'}</span>

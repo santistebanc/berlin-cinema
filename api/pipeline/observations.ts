@@ -5,6 +5,7 @@ import { detailKey } from '../sources/keys';
 import { CollectionEnvelopeSchema, CoverageSchema, DiagnosticSchema, EvidenceValue, IngestionResult, ListingDataSchema,
   ScreeningDataSchema, SourceCollection, SourceRecord, SourceRecordSchema, VenueDataSchema } from '../../shared/contracts';
 import { sourceDiagnostic, validateLegacyBatch } from './legacy-source';
+import { affectedCoverage, inCoverage, reconcileCoverage } from './coverage';
 
 export function observation(source: string, kind: Observation['kind'], sourceKey: string, data: Record<string, any>,
   observedAt: string, fetchedAt = observedAt): Observation {
@@ -107,7 +108,7 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
     const source = typeof (input as any)?.sourceInstanceId === 'string' ? (input as any).sourceInstanceId : 'unknown';
     const envelope = CollectionEnvelopeSchema.safeParse(input);
     const diagnostics = [];
-    const finish = (result: IngestionResult) => { store.saveResource(`source-validation:${source}`, result); return result; };
+    const finish = (result: IngestionResult) => { result = sanitizeAudit(result); store.saveResource(`source-validation:${source}`, result); return result; };
     if (!envelope.success) {
       diagnostics.push(sourceDiagnostic(source, 'invalid-envelope', envelope.error.message, input));
       store.saveResource(`source-status:${source}`, { source, status: 'failed', complete: false, message: 'Collection envelope rejected' });
@@ -115,16 +116,22 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
         safeForWithdrawal: false, coverage: [], diagnostics });
     }
     const collection = envelope.data;
-    let unsafe = false;
+    const unsafe: any[] = [];
     for (const diagnostic of collection.diagnostics) {
       const parsed = DiagnosticSchema.safeParse(diagnostic);
-      if (parsed.success) { diagnostics.push(parsed.data); if (['invalid-record', 'invalid-coverage'].includes(parsed.data.code)) unsafe = true; }
-      else { unsafe = true; diagnostics.push(sourceDiagnostic(source, 'invalid-diagnostic', parsed.error.message, diagnostic)); }
+      if (parsed.success) {
+        diagnostics.push(parsed.data);
+        if (['invalid-record', 'invalid-coverage', 'broken-reference'].includes(parsed.data.code)) unsafe.push(parsed.data.evidence);
+        if (['page-failed', 'source-failed', 'request-failed'].includes(parsed.data.code)
+          && !['film-details', 'venue-details'].includes(parsed.data.stage)
+          && !['film', 'venue'].includes((parsed.data.evidence as any)?.purpose)) unsafe.push(parsed.data.scope ?? null);
+      }
+      else { unsafe.push(null); diagnostics.push(sourceDiagnostic(source, 'invalid-diagnostic', parsed.error.message, diagnostic)); }
     }
     const coverage = collection.coverage.flatMap(raw => {
       const result = CoverageSchema.safeParse(raw);
       if (result.success && result.data.sourceInstanceId === source) return [result.data];
-      unsafe = true; diagnostics.push(sourceDiagnostic(source, 'invalid-coverage', 'Invalid coverage or source reference', raw)); return [];
+      unsafe.push(raw); diagnostics.push(sourceDiagnostic(source, 'invalid-coverage', 'Invalid coverage or source reference', raw)); return [];
     });
     const accepted: Observation[] = [];
     const records: SourceRecord[] = [];
@@ -151,7 +158,7 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
       }
       const parsed = SourceRecordSchema.safeParse(candidate);
       if (!parsed.success || parsed.data.provenance.sourceInstanceId !== source || parsed.data.provenance.recordId !== parsed.data.recordId) {
-        unsafe = true; diagnostics.push(sourceDiagnostic(source, 'invalid-record', parsed.success ? 'Provenance identity does not match record/source' : parsed.error.message, raw)); continue;
+        unsafe.push(raw); diagnostics.push(sourceDiagnostic(source, 'invalid-record', parsed.success ? 'Provenance identity does not match record/source' : parsed.error.message, raw)); continue;
       }
       records.push(parsed.data);
     }
@@ -161,14 +168,14 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
       if (conflictingKeys.has(key)) continue;
       const previous = keys.get(key);
       if (previous && fingerprint(previous.data) !== fingerprint(record.data)) {
-        unsafe = true; keys.delete(key); conflictingKeys.add(key); diagnostics.push(sourceDiagnostic(source, 'invalid-record', 'Conflicting duplicate record identity', record));
+        unsafe.push(record, previous); keys.delete(key); conflictingKeys.add(key); diagnostics.push(sourceDiagnostic(source, 'invalid-record', 'Conflicting duplicate record identity', record));
       } else keys.set(key, record);
     }
     for (const record of keys.values()) {
       let data = { ...record.data };
       if (record.kind === 'screening') {
         const listing = keys.get(`listing:${record.data.listingRecordId}`); const venue = keys.get(`venue:${record.data.venueRecordId}`);
-        if (!listing || !venue) { unsafe = true; diagnostics.push(sourceDiagnostic(source, 'broken-reference', 'Screening requires valid listing and venue records', record)); continue; }
+        if (!listing || !venue) { unsafe.push(record); diagnostics.push(sourceDiagnostic(source, 'broken-reference', 'Screening requires valid listing and venue records', record)); continue; }
         const { listingRecordId, venueRecordId, ...rest } = record.data;
         data = { ...rest, listingSubject: observation(source, 'listing', listingRecordId, {}, record.provenance.observedAt).subject,
           venueSubject: observation(source, 'venue', venueRecordId, {}, record.provenance.observedAt).subject } as any;
@@ -182,21 +189,25 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
         store.saveResource(options.cacheKey?.(source, key) ?? key, details, details.fetchedAt);
       }
     }
-    if (coverage.some(scope => scope.cinemaRecordIds.some(id => !keys.has(`venue:${id}`)))) {
-      unsafe = true; diagnostics.push(sourceDiagnostic(source, 'invalid-coverage', 'Coverage references an invalid venue', coverage));
-    }
-    if (!accepted.some(item => item.kind === 'screening') && coverage.some(scope => scope.status === 'complete' && !scope.emptyProgrammeConfirmed)) {
-      unsafe = true; diagnostics.push(sourceDiagnostic(source, 'unconfirmed-empty', 'Empty programme has not been confirmed', coverage));
-    }
-    const safeForWithdrawal = !unsafe && collection.status === 'fresh' && coverage.length > 0 && coverage.every(scope => scope.status === 'complete');
-    const effectiveCoverage = coverage.map(scope => unsafe && scope.status === 'complete' ? { ...scope, status: 'partial' as const } : scope);
-    for (const item of accepted) store.observe(item);
-    // Expand step: existing whole-source withdrawal remains; scoped reconciliation belongs to #5.
-    if (safeForWithdrawal && coverage.some(scope => scope.cinemaRecordIds.length === 0 && scope.dateRange === null && Object.keys(scope.filters).length === 0))
-      store.retireMissing(source, new Set(accepted.map(item => item.subject)));
+    const previousVenues = store.observations(source).filter(item => item.kind === 'venue');
+    const cinemaFor = (item: Observation) => accepted.find(venue => venue.subject === item.data.venueSubject)?.sourceKey
+      ?? store.head(item.data.venueSubject)?.sourceKey;
+    const effectiveCoverage = coverage.map(scope => {
+      if (scope.status !== 'complete') return scope;
+      const invalidVenue = scope.cinemaRecordIds.some(id => !keys.has(`venue:${id}`) && !previousVenues.some(venue => venue.sourceKey === id));
+      const unconfirmedEmpty = !scope.emptyProgrammeConfirmed && !accepted.some(item => item.kind === 'screening' && inCoverage(scope, item.data, cinemaFor(item)));
+      if (invalidVenue) diagnostics.push(sourceDiagnostic(source, 'invalid-coverage', 'Coverage references an invalid venue', scope));
+      if (unconfirmedEmpty) diagnostics.push(sourceDiagnostic(source, 'unconfirmed-empty', 'Empty programme has not been confirmed', scope));
+      return collection.status !== 'fresh' || invalidVenue || unconfirmedEmpty || unsafe.some(raw => affectedCoverage(scope, raw, collection.records))
+        ? { ...scope, status: 'partial' as const } : scope;
+    });
+    const safeForWithdrawal = effectiveCoverage.length > 0 && effectiveCoverage.every(scope => scope.status === 'complete');
+    for (const item of accepted) store.observe(item, collection.status === 'fresh');
+    reconcileCoverage(store, source, effectiveCoverage, accepted, collection.observedAt);
     store.saveResource(`source-status:${source}`, { source, status: collection.status, observedAt: collection.observedAt,
       complete: safeForWithdrawal, message: collection.message ?? null });
     return finish({ schemaVersion: 1, sourceInstanceId: source, status: diagnostics.length ? 'partial' : 'accepted',
-      acceptedRecords: accepted.length, safeForWithdrawal, coverage: effectiveCoverage, diagnostics });
+      acceptedRecords: accepted.length, acceptedScreenings: accepted.filter(item => item.kind === 'screening').length,
+      safeForWithdrawal, coverage: effectiveCoverage, diagnostics });
   }));
 }

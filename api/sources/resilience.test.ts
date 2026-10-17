@@ -1,0 +1,53 @@
+import assert from 'assert/strict';
+import { SourceRegistry } from './registry';
+import type { SourceAdapter, SourceDependencies, SourceInstance } from './types';
+import type { SourceCollection } from '../../shared/contracts';
+
+const NOW = '2026-10-15T10:00:00Z';
+const adapter: SourceAdapter = { id: 'resilience-fixture', extractionVersion: '1', capabilities: ['screenings'], allows: () => true,
+  async collect(instance, deps) {
+    await deps.request({ url: `https://fixture.test/${instance.id}` });
+    return { schemaVersion: 1, sourceInstanceId: instance.id, adapterId: 'resilience-fixture', extractionVersion: '1', observedAt: deps.now(),
+      status: 'fresh', records: [], diagnostics: [], coverage: [{ sourceInstanceId: instance.id, cinemaRecordIds: [], dateRange: null,
+        filters: {}, status: 'complete', emptyProgrammeConfirmed: true }] };
+  } };
+const instance = (id: string, limits: any = {}): SourceInstance => ({ id, adapterId: adapter.id, enabled: true, cacheIdentity: id, config: {},
+  limits: { requests: 4, filmDetails: 0, venueDetails: 0, ...limits } });
+const deps = (request: SourceDependencies['request']): SourceDependencies => ({ request, now: () => NOW, diagnostic: () => {},
+  wait: async () => {}, cache: { get: () => undefined, set: () => {} } });
+async function main() {
+  const registry = new SourceRegistry([adapter], [instance('recover')]);
+  let attempts = 0;
+  const result = await registry.collect(deps(async () => {
+    if (++attempts < 3) throw { response: { status: 503, headers: {} } };
+    return { status: 200, headers: {}, body: 'Programme confirmed empty' };
+  }));
+  assert.equal(result[0].status, 'fresh', 'Retryable acquisition recovers within the configured source budget');
+  assert.equal(attempts, 3);
+  assert.ok(result[0].diagnostics.some((diagnostic: any) => diagnostic.stage === 'request' && diagnostic.retryable));
+  const bounded = new SourceRegistry([adapter], [instance('hung', { requestTimeoutMs: 15, collectionTimeoutMs: 60, attempts: 2 }), instance('healthy')]);
+  let aborted = false;
+  const deadline = await Promise.race([bounded.collect(deps(async request => {
+    if (request.url.endsWith('/hung')) {
+      request.signal?.addEventListener('abort', () => { aborted = true; });
+      return new Promise(() => {});
+    }
+    return { status: 200, headers: {}, body: 'Confirmed empty' };
+  })), new Promise<SourceCollection[]>((_, reject) => setTimeout(() => reject(new Error('Source monopolized the run beyond its deadline')), 250))]);
+  assert.deepEqual(deadline.map(item => item.status), ['failed', 'fresh']);
+  assert.equal(aborted, true, 'Timed-out transport is aborted');
+  let exhaustedAttempts = 0;
+  const exhausted = await new SourceRegistry([adapter], [instance('exhausted', { requests: 2, attempts: 5 })]).collect(deps(async () => {
+    exhaustedAttempts++;
+    throw { response: { status: 503, headers: {} } };
+  }));
+  assert.equal(exhausted[0].status, 'failed');
+  assert.equal(exhaustedAttempts, 2, 'Retries spend the same configured request limit');
+  assert.ok(exhausted[0].diagnostics.some((diagnostic: any) => diagnostic.stage === 'request'), 'Exhausted requests retain their request-level diagnostics');
+  let permanentAttempts = 0;
+  const permanent = await registry.collect(deps(async () => { permanentAttempts++; throw { response: { status: 404 } }; }));
+  assert.equal(permanentAttempts, 1, 'Nonretryable failures are not retried');
+  assert.equal(permanent[0].diagnostics.find((diagnostic: any) => diagnostic.code === 'source-failed')?.retryable, false);
+  console.log('source acquisition resilience acceptance tests passed');
+}
+main().catch(error => { console.error(error); process.exitCode = 1; });

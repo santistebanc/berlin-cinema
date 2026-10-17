@@ -33,11 +33,13 @@ Records may omit optional metadata. Current validated scraper extensions are
 retained during this expansion.
 
 Coverage declares source instance, cinema record IDs, optional date range,
-filters, completeness, and explicit confirmation of empty programmes. Until
-ticket #5 implements scoped reconciliation, only validated complete whole-source
-coverage performs the existing whole-source retirement. Scoped coverage is
-retained without a source-wide retirement. Validation failures conservatively
-mark complete coverage partial. Omission never means cancellation.
+filters, completeness, and explicit confirmation of empty programmes. Successful
+validated partitions independently withdraw only omitted screening support
+within their scope; overlapping incomplete partitions veto unsafe withdrawal.
+Validation failures downgrade affected partitions. Shared listing/venue evidence
+remains while another active screening supports it. Omission never means
+cancellation. See [scoped recovery](source-recovery.md) for adapter obligations,
+request budgets, persisted coverage, run outcomes and operator recovery.
 
 Legacy source keys, source subjects, observation hashes, aliases and resolver
 inputs remain stable. Provenance and field-state sidecars do not enter legacy

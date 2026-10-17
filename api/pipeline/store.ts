@@ -7,7 +7,7 @@ import { Entity, FieldValue, Observation, Override, ReviewIssue, fingerprint } f
 interface State {
   schemaVersion: 1; revision: number;
   observations: Record<string, Observation>;
-  heads: Record<string, { id: string; observedAt: string; active: boolean }>;
+  heads: Record<string, { id: string; observedAt: string; active: boolean; withdrawnAt?: string }>;
   entities: Record<string, Entity>;
   links: Record<string, { entityId: string; evidence: string; method: string }>;
   decisions: Record<string, any>; issues: Record<string, ReviewIssue>; overrides: Override[];
@@ -94,25 +94,31 @@ export class PipelineStore {
     }
     this.owner = null;
   }
-  observe(observation: Observation) {
+  observe(observation: Observation, reactivate = true) {
     this.state.observations[observation.id] ??= observation;
     const head = this.state.heads[observation.subject];
-    if (!head || observation.observedAt >= head.observedAt) {
+    if (!head || Date.parse(observation.observedAt) >= Date.parse(head.observedAt)
+      && (!head.withdrawnAt || reactivate && Date.parse(observation.observedAt) >= Date.parse(head.withdrawnAt))) {
       // Expand legacy evidence with attribution without changing its data/hash or renewing cached timestamps.
       const retained = this.state.observations[observation.id];
       this.state.observations[observation.id] = { ...retained,
         ...(observation.provenance ? { provenance: observation.provenance } : {}),
         ...(observation.fields ? { fields: observation.fields } : {}) };
-      this.state.heads[observation.subject] = { id: observation.id, observedAt: observation.observedAt, active: true };
+      this.state.heads[observation.subject] = { id: observation.id, observedAt: observation.observedAt,
+        active: reactivate || head?.active !== false, ...(!reactivate && head?.withdrawnAt ? { withdrawnAt: head.withdrawnAt } : {}) };
     }
   }
   observations(source?: string, activeOnly = false): Observation[] {
     return Object.entries(this.state.heads).filter(([, head]) => !activeOnly || head.active)
       .map(([subject]) => this.head(subject)!).filter(o => !source || o.source === source).sort((a, b) => a.subject.localeCompare(b.subject));
   }
-  retireMissing(source: string, subjects: Set<string>) {
+  retireMissing(source: string, subjects: Set<string>, eligible: (observation: Observation) => boolean = () => true, at?: string) {
     for (const [subject, head] of Object.entries(this.state.heads)) {
-      if (this.state.observations[head.id].source === source && !subjects.has(subject)) head.active = false;
+      const item = { ...this.state.observations[head.id], observedAt: head.observedAt };
+      if (item.source === source && !subjects.has(subject) && eligible(item)) {
+        head.active = false;
+        if (at && (!head.withdrawnAt || Date.parse(at) > Date.parse(head.withdrawnAt))) head.withdrawnAt = at;
+      }
     }
   }
   head(subject: string): Observation | null {
