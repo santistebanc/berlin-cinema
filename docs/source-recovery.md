@@ -5,6 +5,11 @@ screening support only inside validated complete coverage for the same source
 instance, cinema record IDs, inclusive date range and conjunctive collection
 filters. Array filter values are alternatives. Unknown filter membership never
 proves that an observation is in a completed partition.
+Incomplete partitions use a separate conservative overlap check: missing, empty
+or invalid dimensions cannot prove exclusion. Variant alternatives must all be
+nonempty strings; arrays containing invalid elements and boolean variants remain
+unknown even on rejected rows. A failed filtered partition therefore protects
+retained support with unknown variant membership from an overlapping complete one.
 
 ## Adapter completeness and failures
 
@@ -23,6 +28,11 @@ are treated conservatively. A failed page/request diagnostic should supply
 and use code `page-failed` or `request-failed`. Unknown acquisition-failure scope
 blocks withdrawal across the collection; a successful retry (`request-retry`)
 does not. Optional film/venue detail failures do not imply listing incompleteness.
+
+The default website adapters report partially unparsed entries, dates and time
+cells as `extraction-incomplete`, retaining supported sibling screenings. Their
+coverage is unbounded, so extraction uncertainty makes that declaration partial;
+surviving rows alone cannot prove that the page was fully extracted.
 
 Valid sibling partitions remain independently usable. Omission is not a
 cancellation. Listing/venue heads can retire only when omitted and orphaned by
@@ -47,6 +57,17 @@ and 504; transient reset, DNS and timeout errors also retry. The existing film
 are not retried. Retry-After delays are capped at 60 seconds; the collection
 deadline still bounds the source. Transport is aborted on timeout and other
 sources continue independently. HTTPS/URL allowlists and redirect rules remain.
+
+Adapters can call injected `progress(collection)` after extracting usable pages
+and before optional work. The registry owns a copy of the latest fresh handoff.
+If subsequent acquisition reaches its deadline or fails, it returns that progress
+as fresh partial acquisition with `collection-incomplete` diagnostics, rather than
+substituting old cache or empty failure. Every coverage declaration becomes partial
+and loses confirmed-empty authority. The listing's original observation/fetch times
+and any already collected detail timestamps remain unchanged. Default adapters
+hand off before optional lookups, after individual detail results and between Berlin
+pages. Late work cannot mutate the returned snapshot or write through an aborted
+context. Persistence failures still propagate instead of recovering partial success.
 
 ## Structured outcomes and operator actions
 

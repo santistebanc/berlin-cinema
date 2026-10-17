@@ -17,7 +17,9 @@ async function main() {
     const rawDir = path.join(root, 'raw'); fs.mkdirSync(rawDir);
     fs.writeFileSync(path.join(rawDir, 'retired-provider.json'), '{"historical":"unconfigured original bytes"}\n');
     const raw = { scrapedAt: NOW, complete: true, movies: [{ title: 'Retained Film', director: 'A Director', year: '2026',
-      url: 'https://www.critic.de/movie/retained/', cinemas: [{ name: 'Example Cinema', address: 'Example Street 1, 10115 Berlin' }],
+      url: 'https://www.critic.de/movie/retained/', runtime: 120, listingFields: { runtime: null, year: null },
+      sourceDetails: { url: 'https://www.critic.de/movie/retained/', fetchedAt: NOW, fields: { runtime: 120, year: '2026' } },
+      cinemas: [{ name: 'Example Cinema', address: 'Example Street 1, 10115 Berlin' }],
       showings: [{ cinema: 'Example Cinema', date: '2026-10-16', time: '20:00' }] }] };
     const store = new PipelineStore(stateFile);
     const before = await runPipeline({ store, collections: [translateLegacyBatch({ source: 'critic.de', observedAt: NOW,
@@ -30,6 +32,9 @@ async function main() {
     }); store.close();
     const original: any = JSON.parse(fs.readFileSync(stateFile, 'utf8')); original.schemaVersion = 1;
     for (const value of Object.values(original.observations) as any[]) { delete value.provenance; delete value.fields; }
+    for (const fields of Object.values(original.fields) as any[][]) for (const field of fields) {
+      delete field.evidenceRole; field.reason = 'Historical explanation changed independently of authority';
+    }
     fs.writeFileSync(stateFile, JSON.stringify(original));
     fs.writeFileSync(path.join(rawDir, 'critic-raw.json'), JSON.stringify(raw));
     const stateBytes = fs.readFileSync(stateFile); const rawBytes = fs.readFileSync(path.join(rawDir, 'critic-raw.json'));
@@ -38,6 +43,12 @@ async function main() {
     assert.deepEqual(manifest.unconfiguredRetainedFiles, ['retired-provider.json']);
     assert.equal(fs.readFileSync(path.join(output, 'data/retired-provider.json'), 'utf8'), '{"historical":"unconfigured original bytes"}\n');
     const migrated = new PipelineStore(path.join(output, 'state.json'));
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'state.json'), 'utf8')).fields, original.fields,
+      'Adding typed evidence roles never rewrites historical selected fields during migration');
+    assert.equal(migrated.fields(before.movies[0].id).find(field => field.field === 'runtime')?.evidenceRole, 'source-detail',
+      'Historical detail authority is read from retained attribution, independent of reason wording');
+    assert.equal(migrated.fields(before.movies[0].id).find(field => field.field === 'year')?.evidenceRole, 'source-detail',
+      'Historical string years retain their detail role after the normal numeric year interpretation');
     assert.deepEqual(migrated.entities(), store.entities(), 'Migration preserves public IDs/slugs and established identities');
     assert.deepEqual(migrated.allOverrides(), store.allOverrides(), 'Corrections are retained verbatim');
     assert.deepEqual(migrated.resource('tmdb-detail:123'), store.resource('tmdb-detail:123'));

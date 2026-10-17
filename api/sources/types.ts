@@ -25,6 +25,8 @@ export interface SourceDependencies {
   cache: SourceCache; now(): string; diagnostic(diagnostic: Diagnostic): void;
   wait?(milliseconds: number): Promise<void>;
   network?: boolean; force?: boolean; signal?: AbortSignal;
+  /** Hand off usable acquisition progress before optional work or another page can fail. */
+  progress?(collection: SourceCollection): void;
 }
 export class SourcePersistenceError extends Error {}
 export interface FilmDetailExtractor {

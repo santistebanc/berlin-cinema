@@ -4,6 +4,7 @@ import os from 'os';
 import { randomUUID } from 'crypto';
 import { Entity, FieldValue, Observation, Override, ReviewIssue, fingerprint } from './domain';
 import { attributeHistoricalObservation, readState } from './state-format';
+import { fieldEvidenceRole } from './field-evidence';
 
 interface State {
   schemaVersion: 1 | 2; revision: number;
@@ -222,7 +223,20 @@ export class PipelineStore {
       if (issue.subject === override.subject || `entity:${issue.details.entityId}` === override.subject) issue.status = 'open';
     }
   }
-  fields(entityId: string): FieldValue[] { return this.state.fields[entityId] ?? []; }
+  fields(entityId: string): FieldValue[] {
+    return (this.state.fields[entityId] ?? []).map(field => ({ ...field,
+      evidenceRole: fieldEvidenceRole(field, field.observationId ? this.state.observations[field.observationId] : undefined) }));
+  }
+  retainedSourceDetails(sources: Observation[]): FieldValue[] {
+    const subjects = new Set(sources.map(source => source.subject));
+    return Object.values(this.state.fields).flat().flatMap(field => {
+      const original = field.observationId && this.state.observations[field.observationId];
+      if (!original || original.kind !== 'listing' || !subjects.has(original.subject)
+        || original.source !== field.source || field.identityVerified || field.correctionId) return [];
+      const evidenceRole = fieldEvidenceRole(field, original);
+      return evidenceRole === 'source-detail' ? [{ ...field, evidenceRole }] : [];
+    });
+  }
   saveFields(entityId: string, values: FieldValue[]) { this.state.fields[entityId] = values; }
   resource(key: string) { return this.state.resources[key] ?? null; }
   saveResource(key: string, data: any, now = new Date().toISOString()) { this.state.resources[key] = { fetchedAt: now, data }; }

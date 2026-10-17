@@ -77,6 +77,43 @@ async function main() {
     'A scoped failed request vetoes unsafe withdrawal while an independently complete sibling remains usable');
   pages.close();
 
+  const malformedFilter = new PipelineStore(':memory:');
+  await execute(malformedFilter, [collection([showing('Cinema A', '2026-10-16')])]);
+  const sibling = collection([{ ...showing('Cinema A', '2026-10-16'), time: '21:00' }], LATER);
+  const rejected: any = structuredClone(sibling.records.find(record => record.kind === 'screening'))!;
+  rejected.recordId = 'malformed-filter'; rejected.provenance.recordId = rejected.recordId;
+  rejected.data.time = 'invalid'; rejected.data.variant = [42];
+  sibling.records.push(rejected);
+  sibling.coverage = [scope('a', '2026-10-16', { variant: 'OV' })];
+  const invalidMembership = await execute(malformedFilter, [sibling], LATER);
+  assert.equal(entries(invalidMembership).length, 2,
+    'A rejected row with invalid filter alternatives cannot prove disjointness or withdraw earlier support');
+  assert.equal(invalidMembership.ingestion[0].coverage[0].status, 'partial');
+  malformedFilter.close();
+
+  const invalidBoolean = new PipelineStore(':memory:');
+  await execute(invalidBoolean, [collection([showing('Cinema A', '2026-10-16')])]);
+  const booleanRow = structuredClone(sibling);
+  (booleanRow.records.find(record => record.recordId === 'malformed-filter')!.data as any).variant = true;
+  const booleanMembership = await execute(invalidBoolean, [booleanRow], LATER);
+  assert.equal(entries(booleanMembership).length, 2, 'A boolean is invalid variant evidence and cannot prove exclusion');
+  invalidBoolean.close();
+
+  const unknownMembership = new PipelineStore(':memory:');
+  const unknown = collection([showing('Cinema A', '2026-10-16')]);
+  for (const record of unknown.records) {
+    if (record.kind === 'listing') record.data.variants = [];
+    if (record.kind === 'screening') { delete record.data.variant; record.data.movieVariants = []; }
+  }
+  await execute(unknownMembership, [unknown]);
+  const incomplete = collection([], LATER);
+  incomplete.coverage = [scope('a', '2026-10-16'),
+    { ...scope('a', '2026-10-16', { variant: 'OV' }), status: 'failed' }];
+  const protectedUnknown = await execute(unknownMembership, [incomplete], LATER);
+  assert.equal(entries(protectedUnknown).length, 1,
+    'A failed filtered partition preserves retained support whose filter membership is unknown');
+  unknownMembership.close();
+
   const filters = new PipelineStore(':memory:');
   await execute(filters, [collection([showing('Cinema A', '2026-10-16'), showing('Cinema A', '2026-10-16', 'OmU')])]);
   const invalidFilter = collection([], LATER);

@@ -1,6 +1,6 @@
 import { SourcePersistenceError, type SourceAdapter, type SourceDependencies, type SourceInstance } from './types';
 
-export interface DetailOptions { maxLookups?: number; force?: boolean }
+export interface DetailOptions { maxLookups?: number; force?: boolean; onProgress?(): void }
 const DAY = 86400000;
 const fresh = (deps: SourceDependencies, cached: any, ttl: number) => cached
   && Date.parse(deps.now()) - Date.parse(cached.fetchedAt) < ttl;
@@ -41,6 +41,7 @@ export async function collectFilmDetails(movies: any[], adapter: SourceAdapter, 
       if (!Object.hasOwn(movie.listingFields, field)) movie.listingFields[field] = movie[field] ?? null;
       if (movie[field] == null || movie[field] === '') movie[field] = value;
     }
+    options.onProgress?.();
   }
   return fetched;
 }
@@ -95,6 +96,7 @@ export async function collectVenueDetails(movies: any[], instance: SourceInstanc
     if (details.fields?.websiteUrl) cinema.websiteEvidence = { source: instance.id, sourceUrl: url.href,
       name: details.fields.websiteName, address: details.fields.address, fetchedAt: details.fetchedAt };
     for (const showing of movie.showings ?? []) if (showing.cinema === cinema.name && !showing.address) Object.assign(showing, details.fields);
+    options.onProgress?.();
   }
   return fetched;
 }

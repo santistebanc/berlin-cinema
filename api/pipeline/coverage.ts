@@ -3,6 +3,11 @@ import type { Observation } from './domain';
 import { fingerprint } from './domain';
 import type { PipelineStore } from './store';
 
+// Empty or malformed evidence is unknown, including arrays with even one invalid alternative.
+const usableFilter = (value: any, key: string): boolean => typeof value === 'boolean' && key !== 'variant' && key !== 'variants'
+  || typeof value === 'string' && !!value.trim()
+  || Array.isArray(value) && value.length > 0 && value.every(item => typeof item === 'string' && !!item.trim());
+
 /** Filters are conjunctive; array values are alternatives. Unknown values never prove membership. */
 export function inCoverage(scope: Coverage, data: Record<string, any>, cinemaRecordId?: string): boolean {
   if (scope.cinemaRecordIds.length && !scope.cinemaRecordIds.includes(cinemaRecordId ?? '')) return false;
@@ -18,13 +23,14 @@ export function inCoverage(scope: Coverage, data: Record<string, any>, cinemaRec
 export function affectedCoverage(scope: Coverage, raw: any, records: any[]): boolean {
   if (Array.isArray(raw?.cinemaRecordIds)) {
     if (scope.cinemaRecordIds.length && raw.cinemaRecordIds.length
+      && raw.cinemaRecordIds.every(id => typeof id === 'string' && !!id.trim())
       && !raw.cinemaRecordIds.some(id => scope.cinemaRecordIds.includes(id))) return false;
     if (scope.dateRange && DateSchema.safeParse(raw.dateRange?.from).success && DateSchema.safeParse(raw.dateRange?.to).success
       && raw.dateRange.from <= raw.dateRange.to && (raw.dateRange.to < scope.dateRange.from || raw.dateRange.from > scope.dateRange.to)) return false;
     for (const [key, expected] of Object.entries(scope.filters)) {
+      if (!usableFilter(expected, key)) continue;
       const other = key === 'variant' || key === 'variants' ? raw.filters?.variant ?? raw.filters?.variants : raw.filters?.[key];
-      if (typeof other !== 'string' && typeof other !== 'boolean'
-        && !(Array.isArray(other) && other.every(value => typeof value === 'string'))) continue;
+      if (!usableFilter(other, key)) continue;
       const alternatives = Array.isArray(expected) ? expected : [expected];
       if (!(Array.isArray(other) ? other : [other]).some(value => alternatives.includes(value))) return false;
     }
@@ -35,13 +41,14 @@ export function affectedCoverage(scope: Coverage, raw: any, records: any[]): boo
     return !dependents.length || dependents.some(record => affectedCoverage(scope, record, records));
   }
   const cinema = raw?.kind === 'venue' ? raw.recordId : raw?.data?.venueRecordId;
-  if (typeof cinema === 'string' && scope.cinemaRecordIds.length && !scope.cinemaRecordIds.includes(cinema)) return false;
+  if (typeof cinema === 'string' && cinema.trim() && scope.cinemaRecordIds.length && !scope.cinemaRecordIds.includes(cinema)) return false;
   const date = raw?.data?.date;
   if (DateSchema.safeParse(date).success && scope.dateRange && (date < scope.dateRange.from || date > scope.dateRange.to)) return false;
   // A known contradictory filter isolates a failure; unknown/invalid filter data cannot prove exclusion.
   for (const [key, expected] of Object.entries(scope.filters)) {
+    if (!usableFilter(expected, key)) continue;
     const value = key === 'variant' || key === 'variants' ? raw?.data?.variant ?? raw?.data?.movieVariants : raw?.data?.[key];
-    if (typeof value !== 'string' && typeof value !== 'boolean' && !Array.isArray(value)) continue;
+    if (!usableFilter(value, key)) continue;
     const alternatives = Array.isArray(expected) ? expected : [expected];
     if (!(Array.isArray(value) ? value : [value]).some(item => alternatives.includes(item))) return false;
   }
@@ -64,7 +71,8 @@ export function reconcileCoverage(store: PipelineStore, source: string, coverage
   const eligible = (item: Observation) => item.kind === 'screening'
     && Date.parse(item.observedAt) <= Date.parse(at)
     && coverage.some(scope => scope.status === 'complete' && inCoverage(scope, item.data, store.head(item.data.venueSubject)?.sourceKey))
-    && !coverage.some(scope => scope.status !== 'complete' && inCoverage(scope, item.data, store.head(item.data.venueSubject)?.sourceKey));
+    && !coverage.some(scope => scope.status !== 'complete' && affectedCoverage(scope,
+      { kind: 'screening', data: { ...item.data, venueRecordId: store.head(item.data.venueSubject)?.sourceKey } }, []));
   const parents = new Set(store.observations(source, true).filter(item => !retained.has(item.subject) && eligible(item))
     .flatMap(item => [item.data.listingSubject, item.data.venueSubject]));
   store.retireMissing(source, retained, eligible, at);

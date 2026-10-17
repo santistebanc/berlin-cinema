@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import type { EvidenceValue, Provenance } from '../../shared/contracts';
+import type { EvidenceValue, Provenance, FieldEvidenceRole } from '../../shared/contracts';
 export type { Modality } from '../../shared/contracts';
 import type { Modality } from '../../shared/contracts';
 
@@ -103,6 +103,8 @@ export interface Override {
   revokedAt?: string;
 }
 export interface FieldValue {
+  /** Optional only for retained state written before evidence roles were introduced. */
+  evidenceRole?: FieldEvidenceRole;
   correctionId?: string;
   field: string;
   value: any;

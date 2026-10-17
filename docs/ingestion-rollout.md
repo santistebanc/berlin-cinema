@@ -96,7 +96,9 @@ temporary copies with fixed clocks, retained provider/geocoder evidence, model
 disabled, network disabled, audit disabled and publication disabled. The actual
 old scraper facades and current default adapters also receive the same captured
 HTTP responses; the old parser's global clock is fixed while extracting them.
-The captured transport cannot fall through to live requests. A final two-day
+Both checkouts' Axios module instances receive the captured transport, including
+when their dependency installations differ. A process-local HTTP/HTTPS/fetch guard
+rejects accidental live requests throughout the comparison. A final two-day
 expiry scenario proves raw replay does not renew support.
 
 `comparison.json` and before/after snapshots retain every compared difference:

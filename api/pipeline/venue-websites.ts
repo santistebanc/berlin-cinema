@@ -41,7 +41,7 @@ export function attachVenueWebsites(store: PipelineStore, venues: Map<string, En
     if (!candidates.length) continue;
     const resolution = selectEvidence(candidates.map(candidate => ({ field: 'websiteUrl', value: candidate.url,
       source: candidate.evidence.source, observationId: candidate.observationId, observedAt: candidate.evidence.fetchedAt || '',
-      selectedAt: candidate.evidence.fetchedAt || '', identityVerified: false,
+      selectedAt: candidate.evidence.fetchedAt || '', identityVerified: false, evidenceRole: 'venue-website',
       reason: 'Exact linked venue name/address website evidence' } as FieldValue)));
     const chosen = resolution.selected.get('websiteUrl');
     const updated = { ...entity, data: { ...entity.data, websiteUrl: chosen?.value,

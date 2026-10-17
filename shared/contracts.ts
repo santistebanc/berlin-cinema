@@ -22,6 +22,8 @@ export const EvidenceValueSchema = z.discriminatedUnion('state', [
   z.object({ state: z.literal('cleared'), correctionId: label, reason: label }),
 ]);
 export type EvidenceValue = z.infer<typeof EvidenceValueSchema>;
+export const FieldEvidenceRoleSchema = z.enum(['listing', 'source-detail', 'tmdb', 'omdb', 'manual-correction', 'venue-website', 'historical']);
+export type FieldEvidenceRole = z.infer<typeof FieldEvidenceRoleSchema>;
 export const DiagnosticSchema = z.object({
   schemaVersion: z.literal(1), category: z.enum(['recovery', 'data-quality', 'actionable']),
   stage: label, code: label, sourceInstanceId: z.string(), recordId: z.string().optional(),

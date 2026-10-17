@@ -11,6 +11,10 @@ import { migrateIngestion } from './migrate-ingestion';
 import { retainedInventory } from './retained-inventory';
 import { capturedRequest, ROLLOUT_NOW } from '../pipeline/rollout-fixtures';
 import axios from 'axios';
+import { createRequire } from 'module';
+import http from 'http';
+import https from 'https';
+import net from 'net';
 import { fingerprint } from '../api/pipeline/domain';
 
 export const ORIGINAL_BASE = '1641dedd018422721b53d22e767598da0e1e60d2';
@@ -93,6 +97,11 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
   if (inputState.schemaVersion !== 1) throw new Error('Pinned baseline comparison requires original v1 state');
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'cinema-shadow-'));
   fs.mkdirSync(options.output, { recursive: true });
+  const savedHttp = http.request; const savedHttps = https.request; const savedFetch = globalThis.fetch;
+  const savedConnect = net.Socket.prototype.connect;
+  const networkForbidden = () => { throw new Error('Live network is forbidden during the offline shadow comparison'); };
+  http.request = networkForbidden; https.request = networkForbidden; globalThis.fetch = networkForbidden;
+  net.Socket.prototype.connect = networkForbidden;
   try {
     const bundle = path.join(scratch, 'migrated');
     const migration = migrateIngestion({ ...options, output: bundle, registry: defaultRegistry });
@@ -109,18 +118,27 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
     const cache = new Map<string, any>();
     const collections = await defaultRegistry.collect({ now: () => ROLLOUT_NOW, network: true, diagnostic: () => {},
       request: capturedRequest, wait: async () => {}, cache: { get: k => cache.get(k), set: (k, data, fetchedAt) => { cache.set(k, { data, fetchedAt }); } } });
-    const savedGet = axios.get; const savedPost = axios.post; const RealDate = Date;
+    // A pinned checkout may resolve its own node_modules; intercept both module instances.
+    const baselineAxios = createRequire(path.join(baselineRoot, 'package.json'))('axios');
+    const transports = [...new Set([axios, baselineAxios.default ?? baselineAxios])]
+      .map(client => ({ client, get: client.get, post: client.post }));
+    const RealDate = Date;
     let capturedBatches: any[];
     try {
       (global as any).Date = class extends RealDate { constructor(value?: any) { super(value === undefined ? ROLLOUT_NOW : value); } static now() { return RealDate.parse(ROLLOUT_NOW); } };
-      (axios as any).get = async (url: string) => ({ data: (await capturedRequest({ url })).body, headers: {}, status: 200 });
-      (axios as any).post = async (url: string) => ({ data: (await capturedRequest({ url })).body, headers: {}, status: 200 });
+      for (const { client } of transports) {
+        client.get = async (url: string) => ({ data: (await capturedRequest({ url })).body, headers: {}, status: 200 });
+        client.post = async (url: string) => ({ data: (await capturedRequest({ url })).body, headers: {}, status: 200 });
+      }
       capturedBatches = [];
       for (const [source, filename] of [['critic.de', 'berlin-cinema-scraper'], ['berlin.de', 'berlin-de-scraper']]) {
         const Scraper = require(path.join(baselineRoot, `api/${filename}`)).default;
         capturedBatches.push({ source, movies: await new Scraper().scrapeRawMovies(), observedAt: ROLLOUT_NOW, status: 'fresh', complete: true });
       }
-    } finally { axios.get = savedGet; axios.post = savedPost; (global as any).Date = RealDate; }
+    } finally {
+      for (const { client, get, post } of transports) { client.get = get; client.post = post; }
+      (global as any).Date = RealDate;
+    }
     const oldCapturedStore = new BaselineStore(':memory:'); const newCapturedStore = new PipelineStore(':memory:');
     // Old acquisition collected only listing rows; give its pipeline the same
     // captured detail evidence as the new adapter before comparing venue IDs.
@@ -191,7 +209,11 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
     fs.writeFileSync(path.join(options.output, 'comparison.json'), JSON.stringify(report, null, 2) + '\n');
     if (sha(fs.readFileSync(options.stateFile)) !== sha(inputBytes)) throw new Error('Input state changed during shadow verification');
     return report;
-  } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
+  } finally {
+    http.request = savedHttp; https.request = savedHttps; globalThis.fetch = savedFetch;
+    net.Socket.prototype.connect = savedConnect;
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
 }
 if (require.main === module) {
   const arg = (name: string) => process.argv[process.argv.indexOf(name) + 1];

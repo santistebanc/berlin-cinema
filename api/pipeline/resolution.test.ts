@@ -21,6 +21,35 @@ function execute(store: PipelineStore, collections: any[], extra: any = {}) {
     publish: false, audit: false, ...extra });
 }
 async function main() {
+  const detailHistory = new PipelineStore(':memory:');
+  await execute(detailHistory, [collection('detail', { runtime: 120, listingFields: { runtime: null },
+    sourceDetails: { url: 'https://detail.test/film', fetchedAt: NOW, fields: { runtime: 120 } } })]);
+  const historicalRuntime = await execute(detailHistory, [collection('detail', {}, '2026-10-17T11:00:00Z'),
+    collection('listing', { runtime: 90 }, '2026-10-17T11:00:00Z')], { now: '2026-10-17T11:00:00Z' });
+  assert.equal(historicalRuntime.movies[0].runtime, 120,
+    'Retained explicit detail keeps its evidence authority when its explanation gains a Historical fallback prefix');
+  const consolidatedHistory = await execute(detailHistory, [collection('detail', {}, '2026-10-17T12:00:00Z'),
+    collection('listing', { runtime: 90 }, '2026-10-17T12:00:00Z')], { now: '2026-10-17T12:00:00Z' });
+  assert.equal(consolidatedHistory.movies[0].runtime, 120,
+    'Repeated refresh preserves the original source subject detail after established identities consolidate');
+  for (const historical of [false, true]) {
+    const retained = new PipelineStore(':memory:');
+    await execute(retained, [collection('detail', { runtime: 120, listingFields: { runtime: null },
+      sourceDetails: { url: 'https://detail.test/film', fetchedAt: NOW, fields: { runtime: 120 } } })]);
+    for (const entity of retained.entities()) {
+      retained.saveFields(entity.id, retained.fields(entity.id).map(field => {
+        const changed = { ...field, reason: 'Reworded explanation' };
+        if (historical) delete changed.evidenceRole;
+        return changed;
+      }));
+    }
+    const stableAuthority = await execute(retained, [collection('detail', {}, '2026-10-17T12:00:00Z'),
+      collection('listing', { runtime: 90 }, '2026-10-17T12:00:00Z')], { now: '2026-10-17T12:00:00Z' });
+    assert.equal(stableAuthority.movies[0].runtime, 120,
+      'Reason wording cannot remove detail authority, including roleless historical state');
+    assert.ok(retained.entities().flatMap(entity => retained.fields(entity.id))
+      .some(field => field.field === 'runtime' && field.value === 120 && field.evidenceRole === 'source-detail'));
+  }
   const store = new PipelineStore(':memory:');
   const snapshot = await execute(store, [collection('alpha', { runtime: 90, country: 'Germany' }),
     collection('beta', { runtime: 110 }), collection('gamma', { posterUrl: 'https://poster.test/a' })]);
