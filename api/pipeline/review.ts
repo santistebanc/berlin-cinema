@@ -130,7 +130,7 @@ export function applyReview(store: PipelineStore, command: ReviewCommand) {
     if (preview.groupedVenues.length && (command.action === 'link' || command.action === 'fields'
       && ['insideBerlin', 'address', 'name'].some(name => Object.hasOwn(preview.patch.fields, name)))) {
       const targetId = preview.target?.id ?? preview.subject.slice(7);
-      for (const item of preview.groupedVenues) if (item.subject !== preview.observation?.subject || command.action === 'fields')
+      for (const item of preview.groupedVenues) if (!overrides.some(o => o.subject === item.subject && o.action === 'link' && o.targetId === targetId))
         overrides.push(store.addOverride({ ...common, evidenceFingerprint: linkEvidence(item), subject: item.subject,
           action: 'link', targetId }));
     }

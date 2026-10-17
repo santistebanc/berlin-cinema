@@ -39,6 +39,10 @@ Live at **[ovberlin.online](https://ovberlin.online)**
 
 ## How the data pipeline works
 
+Source configuration: [adapters](docs/source-adapters.md),
+[contracts](docs/source-contracts.md), [failure recovery](docs/source-recovery.md),
+[migration and offline shadow rollout](docs/ingestion-rollout.md).
+
 The public site remains static. GitHub Actions refreshes observations every six
 hours; manual review runs only on your computer with `npm run admin`.
 

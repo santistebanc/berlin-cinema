@@ -6,7 +6,6 @@ import { configuredRegistry } from '../sources/defaults';
 import { sourceDependencies } from '../sources/dependencies';
 import { collectVenueDetails } from '../sources/details';
 import type { SourceRefreshOptions } from './source-details';
-export { parseVenueDetails } from '../sources/compat';
 
 export async function fillVenueDetails(movies: any[], store: PipelineStore, maxLookups = 100,
   options: SourceRefreshOptions & { persist?: boolean; sourceFor?: (cinema: any) => string } = {}): Promise<Map<string, any>> {

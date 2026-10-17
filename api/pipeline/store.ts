@@ -3,9 +3,10 @@ import path from 'path';
 import os from 'os';
 import { randomUUID } from 'crypto';
 import { Entity, FieldValue, Observation, Override, ReviewIssue, fingerprint } from './domain';
+import { attributeHistoricalObservation, readState } from './state-format';
 
 interface State {
-  schemaVersion: 1; revision: number;
+  schemaVersion: 1 | 2; revision: number;
   observations: Record<string, Observation>;
   heads: Record<string, { id: string; observedAt: string; active: boolean; withdrawnAt?: string }>;
   entities: Record<string, Entity>;
@@ -17,7 +18,7 @@ interface State {
   snapshots: { id: number; revision: number; createdAt: string; data: any }[];
   runs: any[]; jobs: any[];
 }
-const blank = (): State => ({ schemaVersion: 1, revision: 0, observations: {}, heads: {}, entities: {}, links: {},
+const blank = (): State => ({ schemaVersion: 2, revision: 0, observations: {}, heads: {}, entities: {}, links: {},
   decisions: {}, issues: {}, overrides: [], fields: {}, resources: {}, spend: {}, snapshots: [], runs: [], jobs: [] });
 
 /** Git-versioned evidence store. Writers hold a process lock; saves atomically replace one complete file. */
@@ -33,10 +34,7 @@ export class PipelineStore {
   }
   private load(): State {
     if (this.filename === ':memory:' || !fs.existsSync(this.filename)) return blank();
-    const state = JSON.parse(fs.readFileSync(this.filename, 'utf8'));
-    if (state.schemaVersion !== 1 || !Number.isInteger(state.revision)
-      || !state.observations || !state.heads || !Array.isArray(state.overrides)) throw new Error('Unsupported or invalid pipeline state; refusing to overwrite it');
-    return { ...blank(), ...state };
+    return readState(JSON.parse(fs.readFileSync(this.filename, 'utf8')));
   }
   refresh() { if (!this.owner && this.filename !== ':memory:') this.state = this.load(); }
   flush() {
@@ -62,6 +60,8 @@ export class PipelineStore {
   bumpRevision() { this.state.revision++; }
   acquireLease(owner: string, _ttl = 120000): boolean {
     if (this.owner) return this.owner === owner;
+    this.refresh();
+    if (this.state.schemaVersion === 1) throw new Error('Pipeline state v1 is read-only; run pipeline:migrate into a new directory before writing');
     if (this.filename === ':memory:') { this.owner = owner; return true; }
     fs.mkdirSync(path.dirname(this.filename), { recursive: true });
     const lockfile = `${this.filename}.lock`;
@@ -71,7 +71,12 @@ export class PipelineStore {
         try { fs.writeFileSync(descriptor, JSON.stringify({ owner, pid: process.pid, host: os.hostname() })); }
         catch (error) { fs.unlinkSync(lockfile); throw error; }
         finally { fs.closeSync(descriptor); }
-        this.owner = owner; this.state = this.load(); return true;
+        this.owner = owner;
+        try {
+          this.state = this.load();
+          if (this.state.schemaVersion === 1) throw new Error('Pipeline state changed to v1; migrate before writing');
+          return true;
+        } catch (error) { this.releaseLease(owner); throw error; }
       } catch (error: any) {
         if (error.code !== 'EEXIST') throw error;
         try {
@@ -96,6 +101,7 @@ export class PipelineStore {
     this.owner = null;
   }
   observe(observation: Observation, reactivate = true) {
+    observation = attributeHistoricalObservation({ ...observation });
     this.state.observations[observation.id] ??= observation;
     const head = this.state.heads[observation.subject];
     if (!head || Date.parse(observation.observedAt) >= Date.parse(head.observedAt)

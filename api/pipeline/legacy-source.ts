@@ -69,7 +69,7 @@ export function validateLegacyBatch(input: unknown): { batch: SourceBatch | null
     }
     batch.movies.push(clean);
   }
-  // Conservative until scoped refresh (#5): malformed relationships/records cannot withdraw any source support.
+  // A malformed legacy row has unknown affected scope; it cannot justify withdrawal.
   if (diagnostics.some(item => item.code === 'invalid-record')) batch.complete = false;
   return { batch, source, diagnostics };
 }

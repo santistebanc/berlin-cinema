@@ -42,14 +42,14 @@ async function main() {
   await scrape({ registry, dependencies: deps, publish: false, forceEnrich: true, skipBerlinDe: true }, services);
   assert.equal(merged?.publish, false);
   assert.equal(merged?.forceEnrich, true);
-  assert.deepEqual(merged?.sources?.map(source => source.status), ['fresh', 'skipped', 'fresh']);
+  assert.deepEqual(merged?.collections?.map(source => source.status), ['fresh', 'skipped', 'fresh']);
   assert.equal(published.movies[0].id, id);
   const degraded = await scrape({ registry, dependencies: { ...deps, request: async request => {
     if (request.url.endsWith('critic.de')) throw new Error('Source unavailable');
     return deps.request(request);
   } } }, services);
   assert.equal(degraded.outcome, 'degraded');
-  assert.deepEqual(merged?.sources?.map(source => source.status), ['cached', 'fresh', 'fresh']);
+  assert.deepEqual(merged?.collections?.map(source => source.status), ['cached', 'fresh', 'fresh']);
   merged = undefined;
   await assert.rejects(scrape({ registry, dependencies: { ...deps, request: async () => { throw new Error('Outage'); } } }, services),
     (error: any) => error.result?.outcome === 'preserved-acquisition-failure' && /No source returned fresh/.test(error.message));

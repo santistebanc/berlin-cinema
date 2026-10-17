@@ -28,6 +28,13 @@ async function main() {
       assert.deepEqual(JSON.parse(fs.readFileSync(output, 'utf-8')), valid,
         'A bad response must never replace usable local movie data');
     }
+    payload = { schemaVersion: 2, movies: [], total: 0, scrapedAt: valid.scrapedAt, programmeStatus: 'empty' };
+    await syncData(url, output);
+    assert.deepEqual(JSON.parse(fs.readFileSync(output, 'utf8')), payload, 'Static sync accepts a validated empty programme');
+    const empty = payload;
+    payload = { ...empty, schemaVersion: 99 };
+    await assert.rejects(syncData(url, output), /invalid/i);
+    assert.deepEqual(JSON.parse(fs.readFileSync(output, 'utf8')), empty);
     assert.deepEqual(fs.readdirSync(directory), ['movies.json'], 'No partial downloads should remain');
     console.log('sync-data tests passed');
   } finally {
