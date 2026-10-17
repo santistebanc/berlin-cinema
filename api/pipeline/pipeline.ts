@@ -7,7 +7,9 @@ import TmdbClient from '../tmdb-client';
 import { recordAudit, sanitizeAudit } from '../audit-log';
 import { DecisionEngine, configuredModel } from './decision-model';
 import { DecisionModel, Entity, FieldValue, Observation, ParsedLabel, SourceBatch, fingerprint, identity, normalize } from './domain';
-import { ingestBatches } from './observations';
+import { ingestCollections, translateLegacyBatch } from './observations';
+import type { SourceCollection } from '../../shared/contracts';
+import { parsePublicSnapshot } from '../../shared/contracts';
 import { refreshVenueObservations } from './source-venues';
 import { refreshListingObservations } from './source-details';
 import { CachedFilmEvidence, creditNames, filmMetadataInput } from './identity-evidence';
@@ -24,7 +26,7 @@ import { PipelineStore } from './store';
 const DAY = 86400000;
 const ROOT = path.join(__dirname, '../..');
 export interface PipelineOptions {
-  store: PipelineStore; batches?: SourceBatch[]; model?: DecisionModel | null;
+  store: PipelineStore; batches?: SourceBatch[]; collections?: SourceCollection[]; model?: DecisionModel | null;
   tmdb?: TmdbClient | null; omdbKey?: string; osm?: OsmCinema[]; osmAddresses?: OsmAddress[]; geocoder?: VenueGeocoder | null; network?: boolean;
   force?: boolean; now?: string; publish?: boolean; audit?: boolean; legacy?: any;
 }
@@ -35,7 +37,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
   const runId = randomUUID(); const revision = store.revision;
   try {
     store.beginReviewPass();
-    store.run(runId, 'running', { sources: options.batches?.map(({ movies, ...source }) => source) ?? [], revision });
+    store.run(runId, 'running', { sources: options.batches?.map(batch => batch && { source: batch.source, observedAt: batch.observedAt, status: batch.status }) ?? [], revision });
     const engine = new DecisionEngine(store, options.model === undefined ? options.network === false ? null : configuredModel() : options.model, { now: () => now });
     if (!engine.model) flag(store, 'provider-configuration', 'pipeline:decision-model', 'Decision model is not configured',
       { reason: 'Rules and previous accepted decisions remain available. Ambiguous records require local review. Configure a model key to enable decisions.' }, 'caution', 30);
@@ -44,12 +46,10 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       flag(store, 'legacy-evidence', 'pipeline:legacy', 'Previous enriched data retained as unverified legacy evidence',
         { count: options.legacy.movies?.length ?? 0, reason: 'Existing inferred identities are not promoted to verified facts. Source URLs/titles can retain compatible slugs.' }, 'caution', 20);
     }
-    if (options.batches) {
-      ingestBatches(store, options.batches);
-      for (const batch of options.batches) store.saveResource(`source-status:${batch.source}`, {
-        source: batch.source, status: batch.status, observedAt: batch.observedAt, complete: batch.complete, message: batch.message ?? null,
-      }, now);
-      for (const batch of options.batches.filter(b => b.status === 'failed' || b.status === 'cached')) {
+    const ingestion = ingestCollections(store, [...(options.batches ?? []).map(translateLegacyBatch), ...(options.collections ?? [])]);
+    for (const result of ingestion) {
+      const batch = store.resource(`source-status:${result.sourceInstanceId}`)?.data;
+      if (batch?.status === 'failed' || batch?.status === 'cached') {
         flag(store, 'source-unavailable', `pipeline:source:${batch.source}`, `${batch.source}: fresh extraction unavailable`,
           { reason: batch.message || 'Using prior observations within the 24-hour freshness limit.', status: batch.status, observedAt: batch.observedAt }, 'open', 70);
       }
@@ -293,9 +293,10 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     for (const movie of movies) for (const alias of movie.slugAliases) aliasCounts.set(alias, (aliasCounts.get(alias) ?? 0) + 1);
     for (const movie of movies) movie.slugAliases = movie.slugAliases.filter((alias: string) => !canonicalSlugs.has(alias) && aliasCounts.get(alias) === 1);
     store.endReviewPass(now);
-    const data = { schemaVersion: 2, movies, total: movies.length, scrapedAt: now,
+    const data = { schemaVersion: 2, movies, total: movies.length, scrapedAt: now, ingestion,
       sources: [...new Set(active.map(o => o.source))].map(source => store.resource(`source-status:${source}`)?.data).filter(Boolean),
       review: { open: store.issues().filter(i => i.status === 'open').length, caution: store.issues().filter(i => i.status === 'caution').length } };
+    parsePublicSnapshot(data);
     store.saveResource('slug-registry', reservedSlugs, now);
     store.run(runId, 'success', { revision, movies: movies.length, review: data.review, sources: data.sources }, true);
     if (options.publish !== false) {
@@ -316,6 +317,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
 }
 
 export function publishWithRollback(store: PipelineStore, data: any, revision: number, audit: () => void, root = ROOT) {
+  parsePublicSnapshot(data);
   const files = ['public/movies.json', 'public/sitemap.xml', 'public/audit/index.json'].map(file => path.join(root, file));
   const previous = files.map(file => fs.existsSync(file) ? fs.readFileSync(file) : null);
   try {
@@ -351,7 +353,7 @@ function sourceAlias(observation: Observation, entityId?: string) {
   const labels = observation.kind === 'venue' ? [data.name]
     : [data.rawTitle, data.title, data.displayTitle, data.originalTitle, data.altTitle];
   return { source: observation.source, subject: observation.subject, url: data.url ?? null, recordId: data.sourceId ?? null,
-    entityId, evidenceFingerprint: linkEvidence(observation),
+    entityId, evidenceFingerprint: linkEvidence(observation), ...(observation.provenance ? { provenance: observation.provenance } : {}),
     labels: [...new Set<string>(labels.filter((label): label is string => typeof label === 'string' && !!label.trim()))] };
 }
 function emptyMovie(): any { return { director: null, cast: null, country: null, year: null, posterUrl: null, altTitle: null,
@@ -372,6 +374,7 @@ function batchesForAudit(store: PipelineStore): any[] {
 }
 
 export function writePublicDataset(data: any, root = ROOT) {
+  parsePublicSnapshot(data);
   const filename = path.join(root, 'public/movies.json'); const temporary = `${filename}.${process.pid}.tmp`;
   fs.mkdirSync(path.dirname(filename), { recursive: true });
   try { fs.writeFileSync(temporary, JSON.stringify(sanitizeAudit(data))); fs.renameSync(temporary, filename); }
