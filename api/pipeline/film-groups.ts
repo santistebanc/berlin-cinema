@@ -4,6 +4,7 @@ import { identityConflict } from './resolve';
 import { PipelineStore } from './store';
 import { parseLabel } from './labels';
 import { FilmScreening, filmScreeningMatches } from './film-screening-evidence';
+import { independentObservations } from './lineage';
 
 /** Reconcile established source links for publication without destroying their separate evidence or corrections. */
 export function filmDisplayGroups(store: PipelineStore, entities: Entity[], screenings: FilmScreening[] = []): Map<string, Entity[]> {
@@ -31,7 +32,7 @@ export function filmDisplayGroups(store: PipelineStore, entities: Entity[], scre
     return [b.name, ...(b.data.titles ?? [])].some(title => titles.has(normalize(title)));
   };
   const strong = (a: Entity, b: Entity) => fullTitle(a, b)
-    && profiles.get(a.id)!.some(x => profiles.get(b.id)!.some(y => supportsFilmIdentity(x, y)));
+    && observations.get(a.id)!.some(x => observations.get(b.id)!.some(y => independentObservations(x, y) && supportsFilmIdentity(x.data, y.data)));
   const distinguishingTitle = (entity: Entity) => {
     const title = normalize(parseLabel(entity.name).title);
     return JSON.stringify({ numbers: [...new Set(title.match(/\b\d+\b/g) ?? [])].sort(), liveAction: /\blive action\b/.test(title) });

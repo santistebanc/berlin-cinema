@@ -6,6 +6,7 @@ import { OsmAddress, OsmCinema } from '../osm-client';
 import { parseVenueAddress, venueAddressesMatch, venueAddressTypoCompatible } from './addresses';
 import { GeoCandidate, GeoLookup, VenueGeocoder } from './geocoding';
 import { CachedFilmEvidence, creditNames, filmMetadataInput, supportsFilmIdentity } from './identity-evidence';
+import { providerDerived, independentObservations } from './lineage';
 
 export function linkEvidence(observation: Observation): string {
   const d = observation.data;
@@ -254,7 +255,7 @@ export class IdentityResolver {
         extended.data.metadataEvidence = fingerprint(filmMetadataInput(extended));
       return this.bind(observation, extended, 'source-alias');
     }
-    const apiIdentity = this.apiEvidence.match(evidence);
+    const apiIdentity = observation.provenance?.upstreamLineage.length && !providerDerived(observation, 'tmdb') ? this.apiEvidence.match(evidence) : null;
     const old = this.store.link(observation.subject);
     const excluded = this.excluded(observation);
     let existing = old && !excluded.has(old.entityId) ? this.store.entity(old.entityId) : null;
@@ -306,8 +307,11 @@ export class IdentityResolver {
       .map(({ entity, score }) => {
         const sources = this.store.linkedObservations(entity.id).filter(item => item.kind === 'listing');
         const profile = { ...entity.data, title: entity.name, cast: [...(entity.data.cast ?? []), ...sources.flatMap(item => item.data.cast ?? [])] };
-        const apiIdentity = this.apiEvidence.match(profile);
-        return { entity, profile, apiIdentity, score };
+        const candidateApi = sources.some(item => item.provenance?.upstreamLineage.length && !providerDerived(item, 'tmdb'))
+          ? this.apiEvidence.match(profile) : null;
+        const independentlySupported = sources.some(other => independentObservations(observation, other)
+          && supportsFilmIdentity(evidence, other.data));
+        return { entity, profile, apiIdentity: candidateApi, independentlySupported, score };
       })
       .filter(item => !(apiIdentity && item.apiIdentity && apiIdentity.id !== item.apiIdentity.id))
       .filter(item => item.score === 1 || supportsFilmIdentity(evidence, item.profile)
@@ -333,10 +337,10 @@ export class IdentityResolver {
             resolutionCode: 'source-record-continuity', resolution: 'The source URL, compatible identity evidence and bounded title variants establish continuity with the historical source record.' }, 'caution', 40, linkEvidence(observation));
       return this.bind(observation, this.extend(target, observation, parsed), 'source-continuity');
     }
-    const exact = candidates.filter(({ entity, profile, apiIdentity: candidateApi }) => [entity.name, ...(entity.data.titles ?? [])].some(t => normalize(t) === normalize(parsed.title))
+    const exact = candidates.filter(({ entity, independentlySupported, apiIdentity: candidateApi }) => [entity.name, ...(entity.data.titles ?? [])].some(t => normalize(t) === normalize(parsed.title))
       && this.groupCompatible(entity, evidence)
       && ((observation.data.url && entity.data.sourceUrls?.includes(observation.data.url))
-        || supportsFilmIdentity(evidence, profile) || apiIdentity && candidateApi?.id === apiIdentity.id));
+        || independentlySupported || apiIdentity && candidateApi?.id === apiIdentity.id));
     if (!manual && exact.length === 1) {
       if (this.store.issues().some(issue => issue.type === 'film-match' && issue.subject === observation.subject))
         flag(this.store, 'film-match', observation.subject, `Film identity corroborated: ${parsed.title}`,
@@ -354,7 +358,7 @@ export class IdentityResolver {
         different: 'A distinct film/programme; none of the candidates is the same work', insufficient: 'Evidence cannot establish identity' } } } });
       const chosen = candidates.find(c => c.entity.id === result.response?.answers.identity.choice)?.entity;
       if (result.accepted && chosen && this.groupCompatible(chosen, evidence)
-        && supportsFilmIdentity(evidence, candidates.find(item => item.entity.id === chosen.id)!.profile)) {
+        && candidates.find(item => item.entity.id === chosen.id)!.independentlySupported) {
         flag(this.store, 'film-match', observation.subject, `Model resolved film identity: ${parsed.title}`,
           { observation, parsed, candidates: candidates.map(c => c.entity), decision: result, targetId: chosen.id }, 'caution', 55, linkEvidence(observation));
         return this.bind(observation, this.extend(chosen, observation, parsed), 'decision');
@@ -395,7 +399,7 @@ export class IdentityResolver {
     const previous = this.store.link(observation.subject); const known = previous && !excluded.has(previous.entityId) ? this.store.entity(previous.entityId) : null;
     const { name, address } = observation.data;
     const addressEvidence = this.store.observations(undefined, true).filter(other => other.kind === 'venue'
-      && other.source !== observation.source && normalize(other.data.name) === normalize(name)
+      && independentObservations(observation, other) && normalize(other.data.name) === normalize(name)
       && Math.abs(Date.parse(other.observedAt) - Date.parse(observation.observedAt)) <= 86400000
       && venueAddressTypoCompatible(address, other.data.address))
       .map(other => ({ subject: other.subject, source: other.source, address: other.data.address }));
