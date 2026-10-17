@@ -1,5 +1,6 @@
 import { ChoiceAnswer, DecisionModel, DecisionRequest, DecisionResponse, DecisionResult, POLICY_VERSION, fingerprint } from './domain';
 import { PipelineStore } from './store';
+import { SourcePersistenceError } from '../sources/types';
 
 export type Provider = 'cloudflare' | 'typesafe' | 'openai';
 export interface ModelConfig { provider: Provider; model: string; apiKey: string; accountId?: string; inputUsdPerMillion: number }
@@ -109,6 +110,7 @@ export class DecisionEngine {
         reason: accepted ? 'Bounded decision passed the configured confidence and probability thresholds' : 'Decision below acceptance threshold' };
       this.store.saveDecision(key, { at: now, policy: POLICY_VERSION, request, result: outcome }); this.store.flush(); return outcome;
     } catch (error) {
+      if (error instanceof SourcePersistenceError) throw error;
       // An interrupted request may still have been billed. Preserve its reservation; a retry is a new reservation.
       return result((error as Error).message, (error as Error).message.startsWith('Decision returned') ? 'invalid-response' : 'provider-error');
     }

@@ -28,6 +28,10 @@ import type { SourceDependencies } from '../sources/types';
 import { selectEvidence, sourceCandidates } from './evidence-policy';
 import { finalizeResolutionReview, resolutionOutcomes } from './resolution-review';
 import { checkFieldCorrections } from './correction-evidence';
+import { sourceDependencies as defaultSourceDependencies } from '../sources/dependencies';
+import { collectionDiagnostics, failureDiagnostic, PipelineRunFailure, publicationResult, runDiagnostics } from './outcomes';
+import type { Diagnostic, PublicationResult } from '../../shared/contracts';
+import { OptionalProviderFailure, recoverableGeocoder, recoverableMetadata, recoverableModel } from './provider-recovery';
 
 const DAY = 86400000;
 const ROOT = path.join(__dirname, '../..');
@@ -36,6 +40,16 @@ export interface PipelineOptions {
   store: PipelineStore; batches?: SourceBatch[]; collections?: SourceCollection[]; model?: DecisionModel | null;
   tmdb?: TmdbClient | null; omdbKey?: string; osm?: OsmCinema[]; osmAddresses?: OsmAddress[]; geocoder?: VenueGeocoder | null; network?: boolean;
   force?: boolean; now?: string; publish?: boolean; audit?: boolean; legacy?: any;
+  operation?: 'acquisition' | 'replay' | 'recalculate'; publicationRoot?: string;
+}
+
+/** Structured operation boundary; runPipeline remains the compatible snapshot/recalculation interface. */
+export async function runPipelineResult(options: PipelineOptions): Promise<PublicationResult> {
+  try { return publicationResult(await runPipeline(options), options.collections ?? [], options.store.resource('pipeline:last-outcome')?.data.diagnostics ?? []); }
+  catch (error) {
+    return error instanceof PipelineRunFailure ? error.result : { schemaVersion: 1, outcome: 'fatal', snapshot: options.store.snapshot(),
+      diagnostics: [failureDiagnostic('processing', 'processing-failed', (error as Error).message, 'Previous publication is preserved; repair the operation and retry.')] };
+  }
 }
 
 export async function runPipeline(options: PipelineOptions): Promise<any> {
@@ -43,10 +57,13 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
   const registry = options.sourceRegistry ?? configuredRegistry(); const now = options.now ?? new Date().toISOString(); const owner = randomUUID();
   if (!store.acquireLease(owner)) throw new Error('Another pipeline/admin writer is running. Retry after it finishes.');
   const runId = randomUUID(); const revision = store.revision;
+  const diagnostics = collectionDiagnostics(options.collections ?? []);
+  const dependencies: SourceDependencies = { ...(options.sourceDependencies ?? defaultSourceDependencies(store, { network: options.network, now, force: options.force })),
+    diagnostic: value => { diagnostics.push(value); options.sourceDependencies?.diagnostic(value); } };
   try {
     store.beginReviewPass(now);
     store.run(runId, 'running', { sources: options.batches?.map(batch => batch && { source: batch.source, observedAt: batch.observedAt, status: batch.status }) ?? [], revision });
-    const engine = new DecisionEngine(store, options.model === undefined ? options.network === false ? null : configuredModel() : options.model, { now: () => now });
+    const engine = new DecisionEngine(store, recoverableModel(options.model === undefined ? options.network === false ? null : configuredModel() : options.model, value => diagnostics.push(value)), { now: () => now });
     if (!engine.model) flag(store, 'provider-configuration', 'pipeline:decision-model', 'Decision model is not configured',
       { reason: 'Rules and previous accepted decisions remain available. Ambiguous records require local review. Configure a model key to enable decisions.' }, 'caution', 30);
     if (options.legacy && !store.resource('legacy-import')) {
@@ -57,12 +74,13 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     const ingestion = ingestCollections(store, [...(options.batches ?? []).map(translateLegacyBatch), ...(options.collections ?? [])], {
       cacheKey: (source, key) => { const instance = registry.instance(source); return instance ? registry.cacheKey(instance, key) : key; },
     });
-    for (const result of ingestion) {
-      const batch = store.resource(`source-status:${result.sourceInstanceId}`)?.data;
-      if (batch?.status === 'failed' || batch?.status === 'cached') {
-        flag(store, 'source-unavailable', `pipeline:source:${batch.source}`, `${batch.source}: fresh extraction unavailable`,
-          { reason: batch.message || 'Using prior observations within the 24-hour freshness limit.', status: batch.status, observedAt: batch.observedAt }, 'open', 70);
-      }
+    diagnostics.push(...ingestion.flatMap(item => item.diagnostics));
+    if (options.operation === 'acquisition' && !ingestion.some(item => store.resource(`source-status:${item.sourceInstanceId}`)?.data.status === 'fresh'
+      && ((item.acceptedScreenings ?? 0) > 0 || item.coverage.some(scope => scope.status === 'complete' && scope.emptyProgrammeConfirmed)))) {
+      const message = 'No source returned fresh usable listings or validated confirmed empty coverage; keeping the published dataset unchanged.';
+      throw new PipelineRunFailure(message, { schemaVersion: 1, outcome: 'preserved-acquisition-failure', snapshot: store.snapshot(), diagnostics: [
+        ...diagnostics, failureDiagnostic('collection', 'total-acquisition-failure', message,
+          'Previous publication remains available within its original freshness limits.', true)] });
     }
     let osm = options.osm;
     if (!osm) {
@@ -70,7 +88,9 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       osm = cached?.data ?? [];
       if (options.network !== false && (!cached || Date.parse(now) - Date.parse(cached.fetchedAt) > 30 * DAY || options.force)) {
         try { osm = await fetchBerlinCinemas(); store.saveResource('osm:berlin', osm, now); }
-        catch { flag(store, 'source-unavailable', 'pipeline:osm', 'Berlin venue lookup unavailable',
+        catch { diagnostics.push(failureDiagnostic('geocoding', 'osm-unavailable', 'Berlin venue lookup is unavailable.',
+          'Retain eligible location evidence; exclude locations which still lack verification.', true));
+          flag(store, 'source-unavailable', 'pipeline:osm', 'Berlin venue lookup unavailable',
           { reason: 'OpenStreetMap request failed. Retain previous venue evidence; individual unverified locations enter review.' }, 'caution', 65); }
       }
     }
@@ -80,11 +100,11 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     const listingSubjects = new Set(screenings.map(o => o.data.listingSubject));
     const venueSubjects = new Set(screenings.map(o => o.data.venueSubject));
     await refreshListingObservations(store, active.filter(item => item.kind === 'listing' && listingSubjects.has(item.subject)), {
-      network: options.network, now, registry, dependencies: options.sourceDependencies });
+      network: options.network, now, registry, dependencies });
     active = store.observations(undefined, true);
     const addresses = [...(options.osmAddresses ?? [])];
     const venueObservations = await refreshVenueObservations(store, active.filter(o => o.kind === 'venue' && venueSubjects.has(o.subject)), {
-      network: options.network, force: options.force, now, registry, dependencies: options.sourceDependencies });
+      network: options.network, force: options.force, now, registry, dependencies });
     const streets = new Map<string, string[]>();
     for (const item of venueObservations) {
       if (osm.some(cinema => venueAddressesMatch(item.data.address, cinema.address || ''))) continue;
@@ -105,10 +125,12 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
         const found = await fetchBerlinAddresses(patterns); addresses.push(...found);
         for (const pattern of patterns) store.saveResource(`osm:street:${fingerprint(pattern)}`,
           found.filter(item => streets.get(pattern)!.some(address => parseVenueAddress(address)?.street === parseVenueAddress(item.address || '')?.street)), now);
-      } catch { flag(store, 'source-unavailable', 'pipeline:osm-addresses', 'OSM address verification unavailable',
+      } catch { diagnostics.push(failureDiagnostic('geocoding', 'osm-addresses-unavailable', 'OSM address verification is unavailable.',
+        'Retain eligible location evidence; exclude locations which still lack verification.', true));
+        flag(store, 'source-unavailable', 'pipeline:osm-addresses', 'OSM address verification unavailable',
         { reason: 'Address lookup failed. Retaining previous evidence; individual unverified locations remain in review.' }, 'caution', 65); break; }
     }
-    const geocoder = options.geocoder === null ? undefined : options.geocoder ?? new GeoapifyGeocoder(store, process.env.GEOAPIFY_API_KEY, { network: options.network, now, force: options.force });
+    const geocoder = recoverableGeocoder(options.geocoder === null ? undefined : options.geocoder ?? new GeoapifyGeocoder(store, process.env.GEOAPIFY_API_KEY, { network: options.network, now, force: options.force }), value => diagnostics.push(value));
     const resolver = new IdentityResolver(store, engine, osm, addresses, geocoder, now);
     let venues = new Map<string, Entity>(); const films = new Map<string, Entity>(); const parsed = new Map<string, ParsedLabel>();
     for (const observation of venueObservations) venues.set(observation.subject, await resolver.venue(observation));
@@ -120,7 +142,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     }
     const fieldData = new Map<string, any>();
     const identityEvidence = new CachedFilmEvidence(store, now);
-    const tmdb = options.tmdb !== undefined ? options.tmdb : options.network !== false && process.env.TMDB_API_KEY ? new TmdbClient(process.env.TMDB_API_KEY) : null;
+    const tmdb = recoverableMetadata(options.tmdb !== undefined ? options.tmdb : options.network !== false && process.env.TMDB_API_KEY ? new TmdbClient(process.env.TMDB_API_KEY) : null);
     const uniqueFilms = [...new Map([...films.values()].map(entity => [entity.id, entity])).values()];
     const filmScreenings: FilmScreening[] = screenings.flatMap(observation => {
       const film = films.get(observation.data.listingSubject); const venue = venues.get(observation.data.venueSubject);
@@ -152,11 +174,18 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       // Source aliases share their resolved peer's publication metadata; avoid
       // another title search for an incomplete record with an established match.
       const retrieve = options.force || metadataCorrection || !verifiedPeer;
-      fieldData.set(entity.id, await enrichEntity(store, engine, entity, sources, { tmdb: retrieve ? tmdb : null, omdbKey: options.network === false ? undefined : options.omdbKey ?? process.env.OMDB_API_KEY,
-        now, force: options.force, identityEvidence,
+      const enrichmentOptions = { tmdb: retrieve ? tmdb : null, omdbKey: options.network === false ? undefined : options.omdbKey ?? process.env.OMDB_API_KEY,
+        now, force: options.force, identityEvidence, diagnostic: (value: Diagnostic) => diagnostics.push(value),
         screeningPeer: screeningPeer ? { entityId: screeningPeer.id, tmdbId: screeningPeer.data.tmdbId,
           matches: screeningMatches.filter(match => match.leftIds.includes(entity.id) && match.rightIds.includes(screeningPeer.id)
-            || match.rightIds.includes(entity.id) && match.leftIds.includes(screeningPeer.id)) } : undefined }));
+            || match.rightIds.includes(entity.id) && match.leftIds.includes(screeningPeer.id)) } : undefined };
+      try { fieldData.set(entity.id, await enrichEntity(store, engine, entity, sources, enrichmentOptions)); }
+      catch (error) {
+        if (!(error instanceof OptionalProviderFailure)) throw error;
+        diagnostics.push({ ...failureDiagnostic('metadata', 'optional-provider-unavailable', error.message,
+          'Use eligible retained metadata or source-only fields under the existing identity safeguards.', true), recordId: entity.id });
+        fieldData.set(entity.id, await enrichEntity(store, engine, entity, sources, { ...enrichmentOptions, tmdb: null, providerUnavailable: true }));
+      }
     }
     const resolvedGroups = filmDisplayGroups(store, uniqueFilms, filmScreenings);
     const previousMovies = store.snapshot()?.movies ?? [];
@@ -314,11 +343,15 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     finalizeResolutionReview(store, now);
     const resolution = resolutionOutcomes(store, [...films.values(), ...venues.values()], movies, now);
     const data = { schemaVersion: 2, movies, total: movies.length, scrapedAt: now, ingestion, ...resolution,
+      programmeStatus: movies.length ? 'available' : ingestion.some(item => item.coverage.some(scope => scope.status === 'complete' && scope.emptyProgrammeConfirmed)) ? 'empty' : 'no-current-support',
       sources: [...new Set(active.map(o => o.source))].map(source => store.resource(`source-status:${source}`)?.data).filter(Boolean),
       review: { open: store.issues().filter(i => i.status === 'open').length, caution: store.issues().filter(i => i.status === 'caution').length } };
     parsePublicSnapshot(data);
     store.saveResource('slug-registry', reservedSlugs, now);
-    store.run(runId, 'success', { revision, movies: movies.length, review: data.review, sources: data.sources }, true);
+    const result = publicationResult(data, options.collections ?? [], diagnostics);
+    store.saveResource('pipeline:last-outcome', { outcome: result.outcome, diagnostics: result.diagnostics, operation: options.operation ?? 'recalculate' }, now);
+    store.run(runId, 'success', { revision, movies: movies.length, review: data.review, sources: data.sources,
+      outcome: result.outcome, diagnostics: result.diagnostics }, true);
     if (options.publish !== false) {
       for (const issue of store.issues().filter(issue => issue.details.decision)) {
         const observation = issue.details.observation;
@@ -328,11 +361,17 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       }
       publishWithRollback(store, data, revision, () => { if (options.audit !== false) recordAudit({ movies: data.movies as any, snapshotAt: now, mode: 'scrape',
         inputs: batchesForAudit(store), decisions: publicDecisions,
-        cinemaAliases: Object.fromEntries([...venues.entries()].map(([subject, e]) => [store.head(subject)!.data.name, e.name])) }); });
+        cinemaAliases: Object.fromEntries([...venues.entries()].map(([subject, e]) => [store.head(subject)!.data.name, e.name])) }); }, options.publicationRoot);
     } else store.flush();
     return data;
   } catch (error) {
-    store.run(runId, 'failed', { message: (error as Error).message, revision }, true); store.flush(); throw error;
+    const result: PublicationResult = error instanceof PipelineRunFailure ? error.result : { schemaVersion: 1, outcome: 'fatal', snapshot: store.snapshot(),
+      diagnostics: [...diagnostics, failureDiagnostic('processing', 'processing-failed', (error as Error).message,
+        'Previous publication is preserved; repair the operation and retry.')] };
+    result.diagnostics = runDiagnostics(result.diagnostics);
+    store.saveResource('pipeline:last-outcome', { outcome: result.outcome, diagnostics: result.diagnostics, operation: options.operation ?? 'recalculate' }, now);
+    store.run(runId, 'failed', { message: sanitizeAudit((error as Error).message), revision, outcome: result.outcome, diagnostics: result.diagnostics }, true);
+    store.flush(); throw new PipelineRunFailure((error as Error).message, result);
   } finally { store.releaseLease(owner); }
 }
 
