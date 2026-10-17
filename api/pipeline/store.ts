@@ -97,9 +97,14 @@ export class PipelineStore {
   observe(observation: Observation) {
     this.state.observations[observation.id] ??= observation;
     const head = this.state.heads[observation.subject];
-    if (!head || observation.observedAt >= head.observedAt) this.state.heads[observation.subject] = {
-      id: observation.id, observedAt: observation.observedAt, active: true,
-    };
+    if (!head || observation.observedAt >= head.observedAt) {
+      // Expand legacy evidence with attribution without changing its data/hash or renewing cached timestamps.
+      const retained = this.state.observations[observation.id];
+      this.state.observations[observation.id] = { ...retained,
+        ...(observation.provenance ? { provenance: observation.provenance } : {}),
+        ...(observation.fields ? { fields: observation.fields } : {}) };
+      this.state.heads[observation.subject] = { id: observation.id, observedAt: observation.observedAt, active: true };
+    }
   }
   observations(source?: string, activeOnly = false): Observation[] {
     return Object.entries(this.state.heads).filter(([, head]) => !activeOnly || head.active)

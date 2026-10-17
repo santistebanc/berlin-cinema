@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { movieApi } from '../services/api';
-import { Movie } from '../types';
+import { Movie, ScrapingResult } from '../types';
+import { loadMovieData } from '../services/movie-data';
 
 interface MovieContextType {
   movies: Movie[];
@@ -19,20 +20,15 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({ children }) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const previous = useRef<ScrapingResult | null>(null);
 
   const loadMovies = async () => {
     try {
       setLoading(true);
-      const moviesResult = await movieApi.getAllMovies();
-      
-      if (!moviesResult.movies || moviesResult.movies.length === 0) {
-        console.error('No movies found in API response');
-        setError('No movies data received from API');
-        return;
-      }
-      
-      setMovies(moviesResult.movies);
-      setError(null);
+      const result = await loadMovieData(() => movieApi.getAllMovies(), previous.current);
+      previous.current = result.snapshot;
+      setMovies(result.snapshot?.movies ?? []);
+      setError(result.error);
     } catch (err) {
       console.error('Error loading data:', err);
       setError(`Failed to load movies: ${err instanceof Error ? err.message : 'Unknown error'}`);

@@ -1,6 +1,7 @@
-import type { Modality } from '../../api/pipeline/domain';
+import type { Modality, Provenance } from '../../shared/contracts';
 
 export interface SourceAlias {
+  provenance?: Provenance;
   source: string;
   subject: string;
   url: string | null;

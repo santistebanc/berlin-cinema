@@ -1,18 +1,11 @@
 import { createHash } from 'crypto';
+import type { EvidenceValue, Provenance } from '../../shared/contracts';
+export type { Modality } from '../../shared/contracts';
+import type { Modality } from '../../shared/contracts';
 
 export const POLICY_VERSION = 'cinema-identity-v1';
 export type EntityKind = 'film' | 'programme' | 'venue';
 export type SourceName = 'critic.de' | 'berlin.de' | string;
-export interface Modality {
-  version: 'original' | 'dubbed' | 'unknown';
-  spokenLanguage: string | null;
-  subtitleLanguage: string | null;
-  subtitled: boolean | null;
-  projection: string[];
-  edition: string | null;
-  context: string[];
-  unknown: string[];
-}
 export interface ParsedLabel {
   title: string;
   alternateTitles: string[];
@@ -30,6 +23,8 @@ export interface SourceBatch {
   message?: string;
 }
 export interface Observation {
+  provenance?: Provenance;
+  fields?: Record<string, EvidenceValue>;
   id: string;
   subject: string;
   source: string;

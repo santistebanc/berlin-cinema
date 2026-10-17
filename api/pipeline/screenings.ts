@@ -3,6 +3,7 @@ import { Modality, Observation, emptyModality, fingerprint, identity } from './d
 import { combineModality, modalityConflict, modalityTags, parseMarkers } from './labels';
 import { flag } from './resolve';
 import { PipelineStore } from './store';
+import type { Provenance } from '../../shared/contracts';
 
 export interface ScreeningInput {
   observation: Observation; filmId: string; venueId: string; cinema: string; modality: Modality; stale: boolean;
@@ -12,6 +13,7 @@ export interface PublishedScreening {
   uncertain: boolean; stale: boolean; sourceUrls: string[]; observationIds: string[];
   date: string; time: string; alternatives?: Modality[];
   lastObservedAt: string;
+  provenance?: Provenance[];
 }
 export function screeningModality(observation: Observation, filmModality: Modality): Modality {
   const raw = observation.data;
@@ -80,6 +82,7 @@ export async function resolveScreenings(store: PipelineStore, _engine: DecisionE
       modality: chosen, edition: chosen.edition, uncertain: false, stale: group.every(r => r.stale),
       sourceUrls: [...new Set(group.map(r => r.observation.data.url).filter(Boolean))], observationIds: group.map(r => r.observation.id),
       lastObservedAt: group.map(r => r.observation.observedAt).sort().slice(-1)[0],
+      provenance: group.flatMap(r => r.observation.provenance ? [r.observation.provenance] : []),
       ...(conflicting ? { alternatives } : {}),
     });
   }
