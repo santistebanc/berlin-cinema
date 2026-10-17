@@ -92,6 +92,8 @@ export const ResolutionResultSchema = z.object({ schemaVersion: z.literal(1),
 });
 export type ResolvedField = z.infer<typeof ResolvedFieldSchema>;
 export type ResolutionResult = z.infer<typeof ResolutionResultSchema>;
+export const ResolutionMetricsSchema = z.object({ automaticResolution: z.number().int().nonnegative(), abstention: z.number().int().nonnegative(),
+  actionableReview: z.number().int().nonnegative(), recurringIssues: z.number().int().nonnegative(), reviewedReversals: z.number().int().nonnegative() });
 
 export const ModalitySchema = z.object({ version: z.enum(['original', 'dubbed', 'unknown']),
   spokenLanguage: z.string().nullable(), subtitleLanguage: z.string().nullable(), subtitled: z.boolean().nullable(),
@@ -108,13 +110,14 @@ export const PublishedScreeningSchema = z.object({ cinema: label, variants: stri
 }).passthrough();
 export const PublishedVenueSchema = z.object({ id: label, name: label,
   address: z.string().optional(), city: z.string().optional(), postalCode: z.string().optional(), url: url.nullable().optional(),
-  websiteUrl: url.optional(), latitude: z.number().finite().optional(), longitude: z.number().finite().optional(),
+  websiteUrl: url.nullable().optional(), latitude: z.number().finite().optional(), longitude: z.number().finite().optional(),
   sourceAliases: z.array(SourceAliasSchema).optional(),
   showtimes: z.array(z.object({ date: DateSchema, times: z.array(TimeSchema), dayOfWeek: z.string().optional() }).passthrough()).optional(),
 }).passthrough();
 const optionalText = z.string().nullable().optional();
 const optionalNumber = z.number().finite().nullable().optional();
 export const PublishedMovieSchema = z.object({ title: label, slug: label, id: z.string().optional(),
+  resolution: ResolutionResultSchema.optional(),
   kind: z.enum(['film', 'programme']).optional(), identityGroupKey: z.string().optional(),
   identityStatus: z.enum(['verified', 'source-only']).optional(), sourceAliases: z.array(SourceAliasSchema).optional(),
   slugAliases: strings.optional(), sourceTitles: strings.optional(),
@@ -137,6 +140,8 @@ export const PublishedMovieSchema = z.object({ title: label, slug: label, id: z.
   isSpecial: z.boolean().optional(), tmdbFetched: z.boolean().optional(), omdbFetchedAt: TimestampSchema.optional(),
 }).passthrough();
 export const PublicSnapshotSchema = z.object({ schemaVersion: z.union([z.literal(1), z.literal(2)]).optional(),
+  resolutions: z.array(ResolutionResultSchema).optional(), resolutionMetrics: ResolutionMetricsSchema.optional(),
+  resolutionDiagnostics: z.array(DiagnosticSchema).optional(),
   movies: z.array(PublishedMovieSchema), scrapedAt: TimestampSchema,
   total: z.number().int().nonnegative().optional(), totalMovies: z.number().int().nonnegative().optional(),
 }).passthrough().refine(snapshot => (snapshot.total === undefined || snapshot.total === snapshot.movies.length)

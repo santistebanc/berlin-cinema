@@ -7,42 +7,45 @@ import { PipelineStore } from './store';
 import { parseLabel } from './labels';
 import { CachedFilmEvidence, creditNames, filmMetadataInput, sameFilmWithDifferentYear, sharedCast, sharedDirector, supportsFilmIdentity } from './identity-evidence';
 import type { FilmScreeningMatch } from './film-screening-evidence';
+import { sourceCandidates, selectEvidence } from './evidence-policy';
+import { providerDerived } from './lineage';
+import { checkFieldCorrections } from './correction-evidence';
 
 const DAY = 86400000;
 const empty = (value: any) => value == null || value === '' || (Array.isArray(value) && !value.length);
 const stableFields = new Set(['director', 'directors', 'writers', 'cast', 'year', 'originalTitle', 'tmdbTitle', 'alternativeTitles', 'posterUrl', 'backdropUrl', 'plot', 'genres', 'keywords', 'country', 'productionCountries', 'productionCompanies', 'originalLanguage', 'spokenLanguages', 'trailerUrl', 'ageRating', 'certifications', 'tagline', 'imdbId', 'externalIds', 'releaseDate', 'germanReleaseDate', 'homepage', 'awards']);
-const sourceFields = ['director', 'cast', 'country', 'year', 'posterUrl', 'originalTitle', 'altTitle', 'runtime'];
 
 export interface EnrichmentOptions { tmdb?: TmdbClient | null; omdbKey?: string; force?: boolean; now: string; identityEvidence?: CachedFilmEvidence;
   screeningPeer?: { entityId: string; tmdbId: number; matches: FilmScreeningMatch[] } }
 
 export async function enrichEntity(store: PipelineStore, engine: DecisionEngine, entity: Entity, sources: Observation[], options: EnrichmentOptions): Promise<Record<string, any>> {
-  const selected = new Map<string, FieldValue>();
+  const attributedCandidates = sourceCandidates(sources, options.now);
+  const selected = selectEvidence(attributedCandidates).selected;
   const prior = store.fields(entity.id);
   const nowMs = Date.parse(options.now);
   const set = (field: string, value: any, source: string, observationId: string | null, observedAt: string, reason: string, verified = true) => {
     selected.set(field, { field, value, source, observationId, observedAt, selectedAt: options.now, reason, identityVerified: verified });
   };
-  const rankedSources = [...sources].sort((a, b) => b.observedAt.localeCompare(a.observedAt)
-    || Number(b.source === 'critic.de') - Number(a.source === 'critic.de') || a.subject.localeCompare(b.subject));
-  for (const observation of rankedSources) for (const field of sourceFields) {
-    if (field === 'runtime' && parseLabel(observation.data.rawTitle || observation.data.title).modality.edition) continue;
-    const value = field === 'year' ? Number(observation.data.year) || null : observation.data[field];
-    const fromDetail = observation.data.sourceDetails && Object.hasOwn(observation.data.listingFields ?? {}, field)
-      && observation.data.listingFields[field] == null;
-    if (!selected.has(field) && !empty(value)) set(field, value, observation.source, observation.id,
-      fromDetail ? observation.data.sourceDetails.fetchedAt : observation.observedAt,
-      fromDetail ? `Explicit source detail-page value (${observation.data.sourceDetails.url})` : 'Latest nonempty source value on this identity link');
-  }
+  const rankedSources = [...sources].sort((a, b) => b.observedAt.localeCompare(a.observedAt) || a.subject.localeCompare(b.subject));
   const labelYear = rankedSources.find(source => parseLabel(source.data.rawTitle || source.data.title).year);
   if (!selected.has('year') && labelYear) set('year', parseLabel(labelYear.data.rawTitle || labelYear.data.title).year, labelYear.source,
-    labelYear.id, labelYear.observedAt, 'Explicit year interpreted from the source label');
+    labelYear.id, labelYear.observedAt, 'Explicit year interpreted from the source label', false);
   let acceptedId = entity.data.tmdbId as number | undefined;
   const metadataSubject = `metadata:${entity.id}`;
-  const input = filmMetadataInput(entity);
-  const evidence = fingerprint(input);
+  const originalInput = filmMetadataInput(entity);
+  const retainedVerification = entity.data.tmdbId && entity.data.metadataEvidence === fingerprint(originalInput)
+    && prior.some(field => field.identityVerified && field.source === `TMDb:${entity.data.tmdbId}`)
+    && !sources.some(source => providerDerived(source, 'tmdb'));
+  const identitySources = sources.filter(source => source.provenance?.upstreamLineage.length && !providerDerived(source, 'tmdb'));
+  const independentFields = selectEvidence(sourceCandidates(identitySources, options.now)).selected;
+  const input = sources.length && identitySources.length !== sources.length && !retainedVerification
+    ? { ...originalInput, year: independentFields.get('year')?.value ?? null, director: independentFields.get('director')?.value ?? null }
+    : originalInput;
+  const evidence = fingerprint(originalInput);
   const established = entity.data.tmdbId && entity.data.metadataEvidence === evidence;
-  const identityCast = [...new Set([...(established ? entity.data.cast ?? [] : []), ...sources.flatMap(source => source.data.cast ?? [])])];
+  const retainedIdentitySources = retainedVerification
+    ? store.linkedObservations(entity.id).filter(source => source.kind === 'listing' && !providerDerived(source, 'tmdb')) : [];
+  const identityCast = [...new Set([...identitySources, ...retainedIdentitySources].flatMap(source => source.data.cast ?? []))];
   const override = store.overrides(metadataSubject).filter(o => o.action === 'patch').slice(-1)[0];
   if (override?.patch && Object.hasOwn(override.patch, 'tmdbId')) {
     if (override.evidenceFingerprint === evidence) acceptedId = override.patch.tmdbId || undefined;
@@ -285,8 +288,9 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     }
   }
   for (const previous of prior) {
-    if (selected.has(previous.field) || !previous.identityVerified || previous.source === 'manual') continue;
-    const fromExternal = /^(TMDb|OMDb):/.test(previous.source);
+    if (selected.has(previous.field) || (previous.source === 'manual' && previous.correctionId) || attributedCandidates.some(field => field.field === previous.field)) continue;
+    const fromExternal = previous.identityVerified && /^(TMDb|OMDb):/.test(previous.source);
+    if (!fromExternal && sources.some(source => source.source === previous.source && source.fields?.[previous.field]?.state === 'absent')) continue;
     if (rejectedOmdb && previous.source.startsWith('OMDb:')) continue;
     if (fromExternal && (!acceptedId || (previous.source.startsWith('TMDb:') && previous.source !== `TMDb:${acceptedId}`)
       || (previous.source.startsWith('OMDb:') && previous.source !== `OMDb:${imdbId}`))) continue;
@@ -295,8 +299,12 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       reason: `Historical fallback: ${previous.reason}`.replace(/(?:Historical fallback: )+/g, 'Historical fallback: ') });
   }
   // Field-level manual values may explicitly clear a field; missing values do not imply clearing.
+  checkFieldCorrections(store, entity.id, options.now);
   for (const correction of store.overrides(`entity:${entity.id}`).filter(o => o.action === 'patch')) {
-    for (const [field, value] of Object.entries(correction.patch?.fields ?? {})) set(field, value, 'manual', null, correction.createdAt, correction.reason);
+    for (const [field, value] of Object.entries(correction.patch?.fields ?? {})) {
+      set(field, value, 'manual', null, correction.createdAt, correction.reason);
+      selected.get(field)!.correctionId = correction.id;
+    }
   }
   store.saveFields(entity.id, [...selected.values()]);
   return Object.fromEntries([...selected.values()].map(field => [field.field, field.value]));

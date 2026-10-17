@@ -77,6 +77,8 @@ export interface DecisionResult {
   threshold?: number;
 }
 export interface ReviewIssue {
+  occurrences?: number;
+  history?: { at: string; status: 'open' | 'caution' | 'resolved'; fingerprint: string; reason: string }[];
   id: string;
   type: string;
   subject: string;
@@ -101,6 +103,7 @@ export interface Override {
   revokedAt?: string;
 }
 export interface FieldValue {
+  correctionId?: string;
   field: string;
   value: any;
   source: string;

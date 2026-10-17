@@ -51,6 +51,12 @@ previous data after a failed reload and reapplies expiry using original timestam
 The React movie provider uses that boundary. This step does not change existing
 identity, location verification, enrichment or field-selection policy.
 
+Resolution policy and review lifecycle are documented in
+[evidence-resolution.md](evidence-resolution.md). Snapshots now optionally expose
+versioned identity/field resolutions, categorized resolution diagnostics and
+resolution metrics. Published venue websites may be null after an intentional
+manual clear. Historical snapshots without these additions remain readable.
+
 Run `npm run test:contracts`, `npm run test:pipeline`, `npm test` and
 `npm run typecheck`. Tests use the approved pipeline, compatibility/collection,
 publication and public-consumption boundaries with fixed clocks, fixtures and

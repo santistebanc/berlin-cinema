@@ -97,7 +97,7 @@ export interface Cinema {
   city: string;
   postalCode: string;
   url: string;
-  websiteUrl?: string;
+  websiteUrl?: string | null;
   latitude?: number;
   longitude?: number;
   locationEvidence?: { source?: string; [key: string]: any };

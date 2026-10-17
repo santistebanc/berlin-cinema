@@ -6,7 +6,7 @@ import { osmStreetPattern, parseVenueAddress, venueAddressesMatch } from './addr
 import TmdbClient from '../tmdb-client';
 import { recordAudit, sanitizeAudit } from '../audit-log';
 import { DecisionEngine, configuredModel } from './decision-model';
-import { DecisionModel, Entity, FieldValue, Observation, ParsedLabel, SourceBatch, fingerprint, identity, normalize } from './domain';
+import { DecisionModel, Entity, Observation, ParsedLabel, SourceBatch, fingerprint, identity, normalize } from './domain';
 import { ingestCollections, translateLegacyBatch } from './observations';
 import type { SourceCollection } from '../../shared/contracts';
 import { parsePublicSnapshot } from '../../shared/contracts';
@@ -25,6 +25,9 @@ import { PipelineStore } from './store';
 import { configuredRegistry } from '../sources/defaults';
 import type { SourceRegistry } from '../sources/registry';
 import type { SourceDependencies } from '../sources/types';
+import { selectEvidence, sourceCandidates } from './evidence-policy';
+import { finalizeResolutionReview, resolutionOutcomes } from './resolution-review';
+import { checkFieldCorrections } from './correction-evidence';
 
 const DAY = 86400000;
 const ROOT = path.join(__dirname, '../..');
@@ -41,7 +44,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
   if (!store.acquireLease(owner)) throw new Error('Another pipeline/admin writer is running. Retry after it finishes.');
   const runId = randomUUID(); const revision = store.revision;
   try {
-    store.beginReviewPass();
+    store.beginReviewPass(now);
     store.run(runId, 'running', { sources: options.batches?.map(batch => batch && { source: batch.source, observedAt: batch.observedAt, status: batch.status }) ?? [], revision });
     const engine = new DecisionEngine(store, options.model === undefined ? options.network === false ? null : configuredModel() : options.model, { now: () => now });
     if (!engine.model) flag(store, 'provider-configuration', 'pipeline:decision-model', 'Decision model is not configured',
@@ -124,7 +127,8 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       const listing = store.head(observation.data.listingSubject);
       if (!film || !venue || venue.data.insideBerlin !== true || !listing) return [];
       return [{ filmId: film.id, source: observation.source, venueId: venue.id, date: observation.data.date,
-        time: observation.data.time, title: listing.data.rawTitle || listing.data.title, auditorium: observation.data.auditorium }];
+        time: observation.data.time, title: listing.data.rawTitle || listing.data.title, auditorium: observation.data.auditorium,
+        upstreamLineage: observation.provenance?.upstreamLineage }];
     });
     const sourceGroup = new Map<string, Entity[]>();
     const initialGroups = filmDisplayGroups(store, uniqueFilms, filmScreenings);
@@ -202,7 +206,9 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       const primary = group.find(e => e.id === anchor) ?? group[0];
       const identityEntity = [...group].sort((a, b) => Number(!!b.data.tmdbId) - Number(!!a.data.tmdbId)
         || strength(b) - strength(a) || a.id.localeCompare(b.id))[0];
-      const selectedFields = selectGroupFields(store, group, primary.id);
+      const groupSources = active.filter(o => o.kind === 'listing' && group.some(e => films.get(o.subject)?.id === e.id));
+      const fieldResolution = selectEvidence([...group.flatMap(entity => store.fields(entity.id)), ...sourceCandidates(groupSources, now, true)], store, groupSources);
+      const selectedFields = fieldResolution.selected;
       const metadata = Object.fromEntries([...selectedFields].map(([field, selected]) => [field, selected.value]));
       const sourceRecords = active.filter(o => o.kind === 'listing' && group.some(e => films.get(o.subject)?.id === e.id));
       const groupIds = new Set(group.map(entity => entity.id));
@@ -253,6 +259,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       const cinemaIds = new Set(input.map(s => s.venueId));
       const cinemas = [...cinemaIds].map(id => {
         const venue = store.entity(id)!;
+        checkFieldCorrections(store, id, now);
         const corrections = store.overrides(`entity:${id}`).filter(c => c.action === 'patch');
         return { id, name: venue.name, ...venue.data, ...Object.assign({}, ...corrections.map(c => c.patch?.fields ?? {})),
           sourceAliases: venueObservations.filter(observation => venues.get(observation.subject)?.id === id).map(observation => sourceAlias(observation, id)) };
@@ -281,10 +288,14 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
           ...previousMovies.filter((old: any) => old.id === anchor || group.some(entity => entity.id === old.id)).flatMap((old: any) => [old.slug, ...(old.slugAliases ?? [])]),
         ].filter((old: string) => old && old !== slug))],
         criticTitle: metadata.tmdbTitle && metadata.tmdbTitle !== title ? title : null,
-        url: sourceRecords.find(o => o.source === 'critic.de')?.data.url ?? sourceRecords[0]?.data.url ?? null,
+        url: metadata.url ?? null,
         kind: primary.kind, isSpecial: primary.kind === 'programme', sourceTitles, variants: [...new Set(presentations.flatMap(s => s.variants))],
         cinemas, showings, identityStatus: group.some(entity => entity.data.tmdbId) ? 'verified' : 'source-only',
         provenance: Object.fromEntries(selectedFields),
+        resolution: { schemaVersion: 1, outcome: 'selected', entity: { id: anchor, kind: primary.kind, name: title },
+          reason: group.some(entity => entity.data.tmdbId) ? 'Verified external identity with protected source links' : 'Established source identity; external metadata remains unverified',
+          supportingObservationIds: sourceRecords.map(record => record.id), conflictingEntityIds: [],
+          fields: fieldResolution.fields, unresolvedQuestions: [] },
         sourceSubjects: sourceRecords.map(o => o.subject),
         sourceAliases: aliases,
       });
@@ -293,14 +304,16 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
           titles: group.map(e => e.name), evidence: group[0].data.tmdbId && group.every(entity => entity.data.tmdbId === group[0].data.tmdbId)
             ? 'Independently validated provider identity'
             : scheduleEvidence.length ? 'Original source schedules establish the same film despite noisy title/year/credit claims; manually separated and independently verified conflicting identities remain distinct.'
-              : 'Compatible source credits/year or a unique complete-title match across independent sources, with no contradictory identity evidence or ambiguous candidates' } });
+              : 'Compatible complete source labels with no contradictory identity evidence or ambiguous candidates; unknown/shared lineage is not independent corroboration' } });
     }
     const canonicalSlugs = new Set(movies.map(movie => movie.slug));
     const aliasCounts = new Map<string, number>();
     for (const movie of movies) for (const alias of movie.slugAliases) aliasCounts.set(alias, (aliasCounts.get(alias) ?? 0) + 1);
     for (const movie of movies) movie.slugAliases = movie.slugAliases.filter((alias: string) => !canonicalSlugs.has(alias) && aliasCounts.get(alias) === 1);
     store.endReviewPass(now);
-    const data = { schemaVersion: 2, movies, total: movies.length, scrapedAt: now, ingestion,
+    finalizeResolutionReview(store, now);
+    const resolution = resolutionOutcomes(store, [...films.values(), ...venues.values()], movies, now);
+    const data = { schemaVersion: 2, movies, total: movies.length, scrapedAt: now, ingestion, ...resolution,
       sources: [...new Set(active.map(o => o.source))].map(source => store.resource(`source-status:${source}`)?.data).filter(Boolean),
       review: { open: store.issues().filter(i => i.status === 'open').length, caution: store.issues().filter(i => i.status === 'caution').length } };
     parsePublicSnapshot(data);
@@ -344,17 +357,6 @@ export function berlinClock(iso: string): string {
   return parts.replace(' ', 'T');
 }
 export function slugify(title: string): string { return normalize(title).replace(/\s+/g, '-'); }
-function selectGroupFields(store: PipelineStore, group: Entity[], primaryId: string): Map<string, FieldValue> {
-  const priority = (field: FieldValue) => field.source === 'manual' ? 3
-    : field.identityVerified && field.source.startsWith('TMDb:') ? 2
-    : field.identityVerified && field.source.startsWith('OMDb:') ? 1 : 0;
-  const candidates = group.flatMap(entity => store.fields(entity.id).map(field => ({ field, primary: entity.id === primaryId })));
-  candidates.sort((a, b) => priority(b.field) - priority(a.field) || b.field.observedAt.localeCompare(a.field.observedAt)
-    || Number(b.primary) - Number(a.primary) || a.field.source.localeCompare(b.field.source));
-  const selected = new Map<string, FieldValue>();
-  for (const { field } of candidates) if (!selected.has(field.field)) selected.set(field.field, field);
-  return selected;
-}
 function sourceAlias(observation: Observation, entityId?: string) {
   const data = observation.data;
   const labels = observation.kind === 'venue' ? [data.name]

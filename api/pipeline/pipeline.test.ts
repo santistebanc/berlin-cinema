@@ -9,7 +9,7 @@ import { PipelineStore } from './store';
 import { DecisionEngine, HttpDecisionModel, validateAnswers } from './decision-model';
 import { DecisionModel, DecisionRequest, DecisionResponse, SourceBatch, emptyModality, fingerprint, identity } from './domain';
 import { parseLabel, parseMarkers, modalityTags, programmeRule } from './labels';
-import { adaptBatch, observation } from './observations';
+import { adaptBatch as originalAdaptBatch, observation as originalObservation, translateLegacyBatch } from './observations';
 import { runPipeline, berlinClock, publishWithRollback } from './pipeline';
 import { flag, identityConflict, IdentityResolver, interpret, linkEvidence, venueAddressConflict } from './resolve';
 import { venueAddressesMatch, osmStreetPattern } from './addresses';
@@ -29,6 +29,14 @@ import { filmDisplayGroups } from './film-groups';
 import { consolidateVenues } from './venue-groups';
 
 const NOW = '2026-10-15T10:00:00Z';
+// These captured evidence scenarios model original, independent publishers. Unknown
+// and copied origins have separate acceptance cases in resolution.test.ts.
+function attributed<T extends ReturnType<typeof originalObservation>>(item: T): T {
+  return { ...item, provenance: { sourceInstanceId: item.source, recordId: item.sourceKey, originalLabel: item.data.rawTitle || item.data.name || '',
+    sourceUrl: item.data.url ?? null, observedAt: item.observedAt, fetchedAt: item.fetchedAt, extractionVersion: 'fixture', upstreamLineage: [`fixture-original:${item.source}`] } };
+}
+const observation: typeof originalObservation = (...args) => attributed(originalObservation(...args));
+const adaptBatch: typeof originalAdaptBatch = batch => originalAdaptBatch(batch).map(attributed);
 function raw(title = 'A Film', year: string | null = '2026', extras: any = {}) {
   return { rawTitle: title, title, year, director: 'Director A', cast: ['Actor A'], country: 'DE',
     url: `https://example.test/movie/${title}`, variants: ['OV'],
@@ -48,7 +56,9 @@ function answer(request: DecisionRequest, choice: string, confidence = 0.99): De
 function model(pick: (request: DecisionRequest) => string): DecisionModel {
   return { provider: 'fixture', model: 'fixture', inputUsdPerMillion: 0.038, decide: async request => answer(request, pick(request)) };
 }
-const execute = (store: PipelineStore, batches?: SourceBatch[], extra: any = {}) => runPipeline({ store, batches, now: NOW, network: false,
+const execute = (store: PipelineStore, batches?: SourceBatch[], extra: any = {}) => runPipeline({ store,
+  collections: batches?.map(batch => { const collection = translateLegacyBatch(batch) as any;
+    for (const record of collection.records ?? []) record.provenance.upstreamLineage = [`fixture-original:${batch.source}`]; return collection; }), now: NOW, network: false,
   model: null, tmdb: null, osm, publish: false, audit: false, ...extra });
 
 async function main() {
@@ -857,6 +867,8 @@ async function main() {
       geoMode = 'gropius';
       const gropiusSource = observation('berlin.de', 'venue', 'gropius', { name: 'UCI Kinowelt Gropius Passagen', address: 'Johannesthaler Chaussee 295, 12351 Berlin - Neukölln', explicitCity: 'Berlin', addressEvidence: { status: 'resolved', reason: 'Source page address' } }, NOW);
       const gropiusPeer = observation('critic.de', 'venue', 'gropius', { name: 'UCI KINOWELT Gropius Passagen', address: 'Johannisthaler Chaussee 295, 12351 Berlin' }, NOW);
+      for (const item of [gropiusSource, gropiusPeer]) item.provenance = { sourceInstanceId: item.source, recordId: item.sourceKey,
+        originalLabel: item.data.name, sourceUrl: null, observedAt: NOW, fetchedAt: NOW, extractionVersion: 'fixture', upstreamLineage: [`original:${item.source}`] };
       geoStore.observe(gropiusSource); geoStore.observe(gropiusPeer);
       const gropiusQuery = { ...gropiusSource.data, search: 'name' as const } as any;
       assert.equal((await lookup.lookup(gropiusQuery)).status, 'low-confidence', 'A source street typo by itself is not independent corroboration');
@@ -1198,7 +1210,7 @@ async function main() {
         apiStore.saveResource('omdb:tt1234567', cachedOmdb, NOW);
         const directorDifference = await execute(apiStore, undefined, { network: false, tmdb: null });
         assert.equal(directorDifference.movies[0].imdbRating, null, 'Actual credit contradictions still withhold OMDb data, including historical fallback');
-        assert.ok(apiStore.issues().some(issue => issue.status === 'open' && issue.subject === 'pipeline:omdb:tt1234567'));
+        assert.ok(apiStore.issues().some(issue => issue.status === 'caution' && issue.subject === 'pipeline:omdb:tt1234567'));
         cachedOmdb.metadata.director = 'Director B'; cachedOmdb.metadata.directors = ['Director B']; cachedOmdb.imdbId = 'tt9999999';
         apiStore.saveResource('omdb:tt1234567', cachedOmdb, NOW);
         const wrongId = await execute(apiStore, undefined, { network: false, tmdb: null });
