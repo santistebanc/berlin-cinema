@@ -118,6 +118,13 @@ files if dataset/audit writing fails. Diagnostics are then saved separately when
 the store is writable. If persistence itself cannot be written, the explicit
 error is the recovery signal; no empty store is substituted.
 
+Publication resolves an explicit `publicationRoot` before `PIPELINE_PUBLIC_ROOT`,
+then defaults to the checkout. Dataset, sitemap, success/failure audit history and
+rollback all use that selected root's `public/` directory. Failure auditing appends
+only when that root already has an audit history, preserving the last successful
+dataset and immutable audit runs. With neither override, production paths stay
+unchanged.
+
 ## Public loading and expiry
 
 `programmeStatus` distinguishes `available`, checked `empty` and

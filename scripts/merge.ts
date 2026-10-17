@@ -9,12 +9,13 @@ import { configuredRegistry } from '../api/sources/defaults';
 import { retainedDependencies } from '../api/sources/runtime';
 import type { SourceRegistry } from '../api/sources/registry';
 import type { SourceDependencies } from '../api/sources/types';
+import { resolvePublicationRoot } from '../api/pipeline/publication-paths';
 
 export interface MergeOptions { forceEnrich?: boolean; audit?: boolean; publish?: boolean; network?: boolean; collections?: SourceCollection[]; registry?: SourceRegistry; dependencies?: SourceDependencies; now?: string;
-  operation?: 'acquisition' | 'replay' | 'recalculate' }
+  operation?: 'acquisition' | 'replay' | 'recalculate'; publicationRoot?: string }
 export async function merge(opts: MergeOptions = {}): Promise<PublicationResult> {
   const registry = opts.registry ?? configuredRegistry();
-  const publicationRoot = process.env.PIPELINE_PUBLIC_ROOT ?? path.join(__dirname, '..');
+  const publicationRoot = resolvePublicationRoot(opts.publicationRoot);
   const file = path.join(publicationRoot, 'public/movies.json');
   const legacy = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : undefined;
   const store = new PipelineStore();

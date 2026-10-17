@@ -36,6 +36,28 @@ async function main() {
       : url.includes('startat') ? '<ul class="js-accordion"></ul>' : berlin }),
   };
   const registry = new SourceRegistry([criticAdapter, berlinAdapter], defaultInstances);
+  {
+    const detailCache = new Map<string, any>();
+    let title = 'Old Work'; let now = NOW;
+    const captured: SourceDependencies = { ...deps, now: () => now,
+      cache: { get: key => detailCache.get(key), set: (key, data, fetchedAt) => { detailCache.set(key, { data, fetchedAt }); } },
+      request: async request => ({ status: 200, headers: {}, body: request.purpose === 'film'
+        ? critic.replace('A Film (OV)', 'Old Work (OV)').replace('</h2>', '</h2><dl><dt>Runtime:</dt><dd>120 min</dd></dl>')
+        : critic.replace('A Film (OV)', `${title} (OV)`) }) };
+    const instances = defaultInstances.filter(item => item.id === 'critic.de').map(item => ({ ...item,
+      limits: { ...item.limits, venueDetails: 0, filmDetails: 1 } }));
+    const original = (await new SourceRegistry([criticAdapter], instances).collect(captured))[0];
+    assert.equal(original.records.find(record => record.kind === 'listing')!.data.runtime, 120);
+    const previous = structuredClone(detailCache.get('source-detail:https://www.critic.de/ov-movies-berlin/movie/a-film-123/'));
+    title = 'New Work'; now = '2026-10-15T11:00:00Z';
+    const noDetails = new SourceRegistry([criticAdapter], instances.map(item => ({ ...item, limits: { ...item.limits, filmDetails: 0 } })));
+    const refreshed = (await noDetails.collect(captured))[0];
+    assert.equal(refreshed.records.filter(record => record.kind === 'screening').length, 1);
+    assert.equal(refreshed.records.find(record => record.kind === 'listing')!.data.runtime, undefined,
+      'A collected partial detail cache cannot supply another film reusing its URL and missing all credits');
+    assert.ok(refreshed.diagnostics.some(item => item.code === 'detail-identity-conflict'));
+    assert.deepEqual(detailCache.get('source-detail:https://www.critic.de/ov-movies-berlin/movie/a-film-123/'), previous);
+  }
   const collections = await registry.collect(deps);
   assert.deepEqual(collections.map(item => item.status), ['fresh', 'fresh']);
   for (const collection of collections) {

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { randomUUID } from 'crypto';
+import path from 'path';
 import { merge } from './merge';
 import { recordAuditFailure, sanitizeAudit } from '../api/audit-log';
 import { PipelineStore } from '../api/pipeline/store';
@@ -10,14 +11,16 @@ import type { SourceDependencies } from '../api/sources/types';
 import type { AuditSource } from '../src/types/audit';
 import { collectionDiagnostics, failureDiagnostic, PipelineRunFailure, publicationResult, runDiagnostics } from '../api/pipeline/outcomes';
 import type { PublicationResult } from '../shared/contracts';
+import { resolvePublicationRoot } from '../api/pipeline/publication-paths';
 
 export interface ScrapeOptions { forceEnrich?: boolean; skipBerlinDe?: boolean; publish?: boolean;
-  registry?: SourceRegistry; dependencies?: SourceDependencies; selected?: string[]; store?: PipelineStore }
+  registry?: SourceRegistry; dependencies?: SourceDependencies; selected?: string[]; store?: PipelineStore; publicationRoot?: string }
 const defaultServices = { merge, recordFailure: recordAuditFailure };
 
 export async function scrape(options: ScrapeOptions = {}, services: { merge: (options: Parameters<typeof merge>[0]) => Promise<PublicationResult | void>;
   recordFailure: typeof recordAuditFailure } = defaultServices): Promise<PublicationResult> {
   const { forceEnrich = false, skipBerlinDe = false, publish = true } = options;
+  const publicationRoot = resolvePublicationRoot(options.publicationRoot);
   const registry = (options.registry ?? configuredRegistry()).withSelection({ selected: options.selected,
     disabled: skipBerlinDe ? ['berlin.de'] : [] });
   const store = options.store ?? (options.dependencies ? undefined : new PipelineStore());
@@ -42,7 +45,7 @@ export async function scrape(options: ScrapeOptions = {}, services: { merge: (op
           'Previous publication remains available within its original freshness limits.', true)] });
     }
     store?.releaseLease(owner);
-    const result = await services.merge({ forceEnrich, publish, collections, registry, dependencies: options.dependencies, operation });
+    const result = await services.merge({ forceEnrich, publish, collections, registry, dependencies: options.dependencies, operation, publicationRoot });
     return result || publicationResult(null, collections);
   } catch (error) {
     const result: PublicationResult = error instanceof PipelineRunFailure ? error.result : { schemaVersion: 1, outcome: 'fatal',
@@ -54,7 +57,7 @@ export async function scrape(options: ScrapeOptions = {}, services: { merge: (op
         { outcome: result.outcome, diagnostics: result.diagnostics, operation }, options.dependencies?.now())); }
       finally { store.releaseLease(owner); }
     }
-    try { services.recordFailure(sanitizeAudit(sources), sanitizeAudit((error as Error).message)); }
+    try { services.recordFailure(sanitizeAudit(sources), sanitizeAudit((error as Error).message), path.join(publicationRoot, 'public/audit')); }
     catch (auditError) { console.error('Could not record failed refresh:', (auditError as Error).message); }
     throw new PipelineRunFailure(sanitizeAudit((error as Error).message), result);
   } finally { store?.close(); }

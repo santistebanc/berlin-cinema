@@ -2,6 +2,7 @@ import { sanitizeAudit } from '../audit-log';
 import { Observation, SourceBatch, fingerprint, normalize } from './domain';
 import { PipelineStore } from './store';
 import { detailKey } from '../sources/keys';
+import { filmDetailIdentity } from '../sources/detail-identity';
 import { CollectionEnvelopeSchema, CoverageSchema, DiagnosticSchema, EvidenceValue, IngestionResult, ListingDataSchema,
   ScreeningDataSchema, SourceCollection, SourceRecord, SourceRecordSchema, VenueDataSchema } from '../../shared/contracts';
 import { sourceDiagnostic, validateLegacyBatch } from './legacy-source';
@@ -182,7 +183,8 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
       if (record.kind === 'listing' && record.data.sourceDetails) {
         const details = record.data.sourceDetails;
         const key = detailKey(details.url);
-        store.saveResource(options.cacheKey?.(source, key) ?? key, details, details.fetchedAt);
+        store.saveResource(options.cacheKey?.(source, key) ?? key,
+          { ...details, listingIdentity: details.listingIdentity ?? filmDetailIdentity(record.data) }, details.fetchedAt);
       }
     }
     const previousVenues = store.observations(source).filter(item => item.kind === 'venue');
