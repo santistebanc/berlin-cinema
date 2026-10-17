@@ -173,18 +173,19 @@ class MovieParser {
   }
 
   parseTimes(cellText: string): string[] {
-    let times = cellText.split('\n').map(t => t.trim()).filter(Boolean);
-
-    if (times.length === 1 && times[0].length > 8) {
-      const matches = times[0].match(/(\d{1,2}:\d{2})/g);
-      if (matches && matches.length > 1) times = matches;
-    }
-
-    return times.flatMap(t => {
-      const m = t.match(/(\d{1,2}:\d{2})/);
-      if (!m) this.rejected(`Unsupported screening time: ${t}`);
-      return m ? [m[1]] : [];
+    const times: string[] = [];
+    // Adjacent HTML time elements can become one text run. Split only runs
+    // consisting entirely of supported time tokens, never an unknown suffix.
+    const separated = cellText.split(/([\s,]+)/).map(part => /^(?:\d{1,2}:\d{2})+$/.test(part)
+      ? part.match(/\d{1,2}:\d{2}/g)!.join(' ') : part).join('');
+    const residue = separated.replace(/(?<![\w.:])(\d{1,2}:\d{2})(?![\w.:])/g, (_, time: string) => {
+      const [hour, minute] = time.split(':').map(Number);
+      if (hour > 23 || minute > 59) this.rejected(`Unsupported screening time: ${time}`);
+      else times.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+      return '';
     });
+    if (residue.replace(/[\s,]+/g, '')) this.rejected(`Unsupported screening time: ${residue}`);
+    return times;
   }
 
   private resolveTimestamp(day: number, month: number): number {

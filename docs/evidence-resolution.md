@@ -33,10 +33,17 @@ detail/listing fields, verified provider identity or correction ID. Without enou
 structured evidence it retains ordinary historical authority; it never guesses
 from reason text or a source name alone. Copy migration preserves historical field
 objects and observation hashes verbatim; subsequently selected fields persist roles.
-After identity consolidation, retained unverified detail fields remain candidates
-only for their exact currently linked source listing subject. This carries source
-evidence across the entity reassociation without transferring another entity's
-verified provider identity or correction. Normal field expiry and explicit source
+After identity consolidation, retained source-detail fields remain candidates
+only for their exact currently linked source listing subject with compatible film
+identity evidence: matching interpreted titles or supported identity credits/years,
+without conflicting directors, years or verified external IDs. Reuse of an upstream
+record ID alone cannot carry old facts onto a replacement work. The same check
+applies to detail fields already retained on the current entity.
+Historical `identityVerified: true` source flags do not identify a verified provider;
+the typed or structurally inferred evidence role distinguishes ordinary detail
+values from provider evidence. Cross-entity recovery carries only source details,
+never another entity's verified provider fields or corrections, and respects manual
+separations. Normal field expiry and explicit source
 absence still apply, and historical details retain their original observation time.
 They compete with current fields by the same authority/freshness policy rather
 than losing priority merely because current lower-authority evidence exists.

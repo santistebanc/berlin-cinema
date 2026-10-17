@@ -77,6 +77,59 @@ async function main() {
   } }, { selected: ['critic.de'] });
   assert.equal(mixedCritic[0].coverage[0].status, 'partial',
     'Critic extraction also reports a skipped malformed date beside a valid listing');
+  for (const [source, fixture, original, cells] of [
+    ['berlin.de', berlin, '20:00 (OV)', ['20:00(OV),19.30(OV)', '19.30 (OV), 20:00 (OV)', '20:00 (OV) trailing']],
+    ['critic.de', critic, '20:00', ['20:00,19.30', '19.30,20:00', '20:00 trailing']],
+  ] as const) {
+    for (const cell of cells) {
+      const result = (await registry.collect({ ...deps, request: async request => {
+        const response = await deps.request(request);
+        return { ...response, body: request.purpose || request.url.includes('startat') ? response.body
+          : fixture.replace(original, cell) };
+      } }, { selected: [source] })).find(item => item.sourceInstanceId === source)!;
+      assert.deepEqual(result.records.filter(record => record.kind === 'screening').map(record => record.data.time), ['20:00'],
+        `${source} keeps the supported sibling without guessing an unsupported time: ${cell}`);
+      assert.equal(result.coverage[0].status, 'partial', `${source} must account for the entire time cell: ${cell}`);
+      assert.ok(result.diagnostics.some(item => item.code === 'extraction-incomplete'), `${source} diagnoses residue: ${cell}`);
+      if (cell === cells[0]) {
+        const previous = (await registry.collect({ ...deps, request: async request => {
+          const response = await deps.request(request);
+          return { ...response, body: request.purpose || request.url.includes('startat') ? response.body
+            : fixture.replace(original, original.replace('20:00', '19:30')) };
+        } }, { selected: [source] })).find(item => item.sourceInstanceId === source)!;
+        const store = new PipelineStore(':memory:');
+        const run = (collection: typeof result, now: string) => runPipeline({ store, collections: [collection], now,
+          network: false, model: null, tmdb: null, osm: [], publish: false, audit: false });
+        await run(previous, NOW);
+        const later = '2026-10-15T11:00:00Z';
+        const refresh = structuredClone(result);
+        refresh.observedAt = later;
+        for (const record of refresh.records) record.provenance.observedAt = later;
+        const published = await run(refresh, later);
+        assert.deepEqual(Object.keys(published.movies[0].showings['2026-10-15']).sort(), ['19:30', '20:00'],
+          `${source} partial extraction cannot withdraw retained 19:30 support`);
+      }
+    }
+  }
+  for (const [source, fixture, original, cell, expected] of [
+    ['berlin.de', berlin, '20:00 (OV)', '9:00 (OF), 18:40 (DFmEnglU), 21:00 (OmU)',
+      [['09:00', 'OV'], ['18:40', 'OmeU'], ['21:00', 'OmU']]],
+    ['critic.de', critic, '20:00', '9:00,18:40\n21:00',
+      [['09:00', undefined], ['18:40', undefined], ['21:00', undefined]]],
+    ['critic.de', critic, '20:00', '9:0018:40\n21:00',
+      [['09:00', undefined], ['18:40', undefined], ['21:00', undefined]]],
+  ] as const) {
+    const result = (await registry.collect({ ...deps, request: async request => {
+      const response = await deps.request(request);
+      return { ...response, body: request.purpose || request.url.includes('startat') ? response.body
+        : fixture.replace(original, cell) };
+    } }, { selected: [source] })).find(item => item.sourceInstanceId === source)!;
+    assert.deepEqual(result.records.filter(record => record.kind === 'screening').map(record => [record.data.time, record.data.variant]),
+      expected, `${source} retains its supported separators, one-digit hours and variants`);
+    assert.equal(result.coverage[0].status, 'complete');
+    assert.ok(result.records.find(record => record.kind === 'listing')!.data.variants.includes('OV'));
+    assert.ok(!result.diagnostics.some(item => item.code === 'extraction-incomplete'));
+  }
   const malformedPage = await registry.collect({ ...deps, request: async request => request.url.includes('startat')
     ? { status: 200, headers: {}, body: '<ul class="js-accordion"><li>Unsupported entry</li></ul>' } : deps.request(request)
   }, { selected: ['berlin.de'] });

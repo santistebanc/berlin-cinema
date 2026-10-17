@@ -54,7 +54,7 @@
     "pipeline:eval": "ts-node --project tsconfig.server.json scripts/evaluate-pipeline.ts",
     "typecheck": "tsc --noEmit --project tsconfig.server.json && tsc --noEmit --project tsconfig.app.json",
     "test:contracts": "ts-node --project tsconfig.server.json api/pipeline/ingestion-contract.test.ts && ts-node --project tsconfig.server.json src/services/movie-data.test.ts",
-    "test:resolution": "ts-node --project tsconfig.server.json api/pipeline/resolution.test.ts",
+    "test:resolution": "ts-node --project tsconfig.server.json api/pipeline/resolution.test.ts && ts-node --project tsconfig.server.json api/pipeline/detail-history.test.ts",
     "test:pipeline": "ts-node --project tsconfig.server.json api/pipeline/pipeline.test.ts && ts-node --project tsconfig.server.json api/pipeline/venue-websites.test.ts && ts-node --project tsconfig.server.json api/pipeline/film-screening-evidence.test.ts && npm run test:resolution && npm run test:contracts && npm run test:sources && npm run test:resilience && npm run test:rollout",
     "test:rollout": "ts-node --project tsconfig.server.json scripts/migrate-ingestion.test.ts && ts-node --project tsconfig.server.json scripts/compare-ingestion.test.ts && ts-node --project tsconfig.server.json api/pipeline/rollout.test.ts",
     "test": "ts-node --project tsconfig.server.json api/tmdb-client.test.ts && ts-node --project tsconfig.server.json api/omdb-client.test.ts && ts-node --project tsconfig.server.json api/osm-client.test.ts && ts-node --project tsconfig.server.json api/berlin-de-scraper.test.ts && ts-node --project tsconfig.server.json api/audit-log.test.ts && ts-node --project tsconfig.server.json scripts/merge.test.ts && ts-node --project tsconfig.server.json scripts/sync-data.test.ts && ts-node --project tsconfig.server.json scripts/scrape.test.ts && npm run test:pipeline",
@@ -66,7 +66,7 @@
     "prepreview": "npm run build",
     "preview": "vite preview",
     "test:sources": "ts-node --project tsconfig.server.json api/sources/registry.test.ts && ts-node --project tsconfig.server.json api/sources/adapters.test.ts && ts-node --project tsconfig.server.json api/sources/progress.test.ts",
-    "test:review-fixes": "ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/sources/adapters.test.ts && ts-node --project tsconfig.server.json api/sources/progress.test.ts && ts-node --project tsconfig.server.json api/pipeline/resolution.test.ts",
+    "test:review-fixes": "ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/sources/adapters.test.ts && ts-node --project tsconfig.server.json api/sources/progress.test.ts && npm run test:resolution",
     "test:resilience": "ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/pipeline/run-recovery.test.ts && ts-node --project tsconfig.server.json api/sources/resilience.test.ts"
   }
 }
