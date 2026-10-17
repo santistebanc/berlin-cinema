@@ -326,11 +326,11 @@ cp .env.example .env   # set TMDB_API_KEY and optionally OMDB_API_KEY
 npm run scrape
 
 # Or run each step individually
-npx tsx scripts/scrape-critic-de.ts   # writes data/critic-raw.json
-npx tsx scripts/scrape-berlin-de.ts   # writes data/berlin-raw.json
-npx tsx scripts/merge.ts              # merges, enriches, writes public/movies.json
+npx ts-node --project tsconfig.server.json scripts/scrape-critic-de.ts # collects critic.de
+npx ts-node --project tsconfig.server.json scripts/scrape-berlin-de.ts # collects berlin.de
+npx ts-node --project tsconfig.server.json scripts/merge.ts           # publishes retained collections
 
-# Recalculate from retained observations without scraping
+# Recalculate from retained collections and observations without scraping
 npm run pipeline:replay
 
 # Process cached raw files without replacing the public dataset
@@ -340,6 +340,12 @@ npm run pipeline:shadow -- --offline
 npm run admin
 # Open http://127.0.0.1:3003/admin/review
 ```
+
+Sources are configured instances of reusable adapters. Set `SOURCE_DISABLED`
+to a comma-separated list of instance IDs, or use `SOURCE_INSTANCES_FILE` for
+explicit configuration. Existing evidence and corrections remain eligible until
+their normal expiry. See [source adapters](docs/source-adapters.md) for the
+collection interface, cache compatibility and fixture-backed extension example.
 
 GitHub Actions secrets cannot be read back through the GitHub settings page or API.
 For direct local API calls, obtain keys from the providers and put them in `.env`
