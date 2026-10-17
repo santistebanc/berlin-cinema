@@ -1,7 +1,7 @@
 import { sanitizeAudit } from '../audit-log';
 import { Observation, SourceBatch, fingerprint, normalize } from './domain';
 import { PipelineStore } from './store';
-import { detailKey } from './source-details';
+import { detailKey } from '../sources/keys';
 import { CollectionEnvelopeSchema, CoverageSchema, DiagnosticSchema, EvidenceValue, IngestionResult, ListingDataSchema,
   ScreeningDataSchema, SourceCollection, SourceRecord, SourceRecordSchema, VenueDataSchema } from '../../shared/contracts';
 import { sourceDiagnostic, validateLegacyBatch } from './legacy-source';
@@ -102,7 +102,7 @@ export function ingestBatches(store: PipelineStore, batches: SourceBatch[]): Ing
 }
 
 /** New public ingestion boundary. Record failures are isolated; programming/persistence errors propagate. */
-export function ingestCollections(store: PipelineStore, inputs: unknown[]): IngestionResult[] {
+export function ingestCollections(store: PipelineStore, inputs: unknown[], options: { cacheKey?(source: string, key: string): string } = {}): IngestionResult[] {
   return store.transaction(() => inputs.map(input => {
     const source = typeof (input as any)?.sourceInstanceId === 'string' ? (input as any).sourceInstanceId : 'unknown';
     const envelope = CollectionEnvelopeSchema.safeParse(input);
@@ -178,7 +178,8 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[]): Inge
       accepted.push(item);
       if (record.kind === 'listing' && record.data.sourceDetails) {
         const details = record.data.sourceDetails;
-        store.saveResource(detailKey(details.url), details, details.fetchedAt);
+        const key = detailKey(details.url);
+        store.saveResource(options.cacheKey?.(source, key) ?? key, details, details.fetchedAt);
       }
     }
     if (coverage.some(scope => scope.cinemaRecordIds.some(id => !keys.has(`venue:${id}`)))) {

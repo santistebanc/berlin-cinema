@@ -3,25 +3,23 @@ import fs from 'fs';
 import path from 'path';
 import { PipelineStore } from '../api/pipeline/store';
 import { runPipeline } from '../api/pipeline/pipeline';
-import { SourceBatch } from '../api/pipeline/domain';
+import type { SourceCollection } from '../shared/contracts';
+import { configuredRegistry } from '../api/sources/defaults';
+import { retainedDependencies } from '../api/sources/runtime';
+import type { SourceRegistry } from '../api/sources/registry';
+import type { SourceDependencies } from '../api/sources/types';
 import type { AuditSource } from '../src/types/audit';
 
-export interface MergeOptions { forceEnrich?: boolean; skipBerlinDe?: boolean; sources?: AuditSource[]; audit?: boolean; publish?: boolean; network?: boolean }
+export interface MergeOptions { forceEnrich?: boolean; skipBerlinDe?: boolean; sources?: AuditSource[]; audit?: boolean; publish?: boolean; network?: boolean; collections?: SourceCollection[]; registry?: SourceRegistry; dependencies?: SourceDependencies }
 export async function merge(opts: MergeOptions = {}): Promise<void> {
-  const batches: SourceBatch[] = [];
-  for (const [source, filename] of [['critic.de', 'critic-raw.json'], ['berlin.de', 'berlin-raw.json']]) {
-    const file = path.join(__dirname, '../data', filename);
-    const status = opts.sources?.find(item => item.name === source);
-    const raw = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
-    batches.push({ source, movies: raw?.movies ?? [], observedAt: raw?.scrapedAt ?? new Date().toISOString(),
-      status: source === 'berlin.de' && opts.skipBerlinDe ? 'skipped' : status?.status === 'fresh' ? 'fresh' : raw ? 'cached' : 'failed',
-      complete: status?.status === 'fresh' && raw?.complete !== false, message: status?.message });
-  }
+  const registry = (opts.registry ?? configuredRegistry()).withSelection({ disabled: opts.skipBerlinDe ? ['berlin.de'] : [] });
   const file = path.join(__dirname, '../public/movies.json');
   const legacy = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : undefined;
   const store = new PipelineStore();
   try {
-    const data = await runPipeline({ store, batches, legacy, force: opts.forceEnrich, audit: opts.audit, publish: opts.publish, network: opts.network });
+    const dependencies = opts.dependencies ?? retainedDependencies(store, registry, { network: opts.network });
+    const collections = opts.collections ?? await registry.collect(dependencies, { retained: true, disabled: opts.skipBerlinDe ? ['berlin.de'] : [] });
+    const data = await runPipeline({ store, collections, sourceRegistry: registry, sourceDependencies: dependencies, legacy, force: opts.forceEnrich, audit: opts.audit, publish: opts.publish, network: opts.network });
     console.log(`${opts.publish === false ? 'Shadow processed' : 'Published'} ${data.total} films/programmes; ${data.review.open} issues need local review.`);
   } finally { store.close(); }
 }

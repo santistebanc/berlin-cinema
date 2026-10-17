@@ -22,17 +22,22 @@ import { IdentityResolver, flag, identityConflict, interpret, linkEvidence } fro
 import { enrichEntity } from './enrichment';
 import { PublishedScreening, ScreeningInput, resolveScreenings, screeningModality } from './screenings';
 import { PipelineStore } from './store';
+import { configuredRegistry } from '../sources/defaults';
+import type { SourceRegistry } from '../sources/registry';
+import type { SourceDependencies } from '../sources/types';
 
 const DAY = 86400000;
 const ROOT = path.join(__dirname, '../..');
 export interface PipelineOptions {
+  sourceRegistry?: SourceRegistry; sourceDependencies?: SourceDependencies;
   store: PipelineStore; batches?: SourceBatch[]; collections?: SourceCollection[]; model?: DecisionModel | null;
   tmdb?: TmdbClient | null; omdbKey?: string; osm?: OsmCinema[]; osmAddresses?: OsmAddress[]; geocoder?: VenueGeocoder | null; network?: boolean;
   force?: boolean; now?: string; publish?: boolean; audit?: boolean; legacy?: any;
 }
 
 export async function runPipeline(options: PipelineOptions): Promise<any> {
-  const { store } = options; const now = options.now ?? new Date().toISOString(); const owner = randomUUID();
+  const { store } = options;
+  const registry = options.sourceRegistry ?? configuredRegistry(); const now = options.now ?? new Date().toISOString(); const owner = randomUUID();
   if (!store.acquireLease(owner)) throw new Error('Another pipeline/admin writer is running. Retry after it finishes.');
   const runId = randomUUID(); const revision = store.revision;
   try {
@@ -46,7 +51,9 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       flag(store, 'legacy-evidence', 'pipeline:legacy', 'Previous enriched data retained as unverified legacy evidence',
         { count: options.legacy.movies?.length ?? 0, reason: 'Existing inferred identities are not promoted to verified facts. Source URLs/titles can retain compatible slugs.' }, 'caution', 20);
     }
-    const ingestion = ingestCollections(store, [...(options.batches ?? []).map(translateLegacyBatch), ...(options.collections ?? [])]);
+    const ingestion = ingestCollections(store, [...(options.batches ?? []).map(translateLegacyBatch), ...(options.collections ?? [])], {
+      cacheKey: (source, key) => { const instance = registry.instance(source); return instance ? registry.cacheKey(instance, key) : key; },
+    });
     for (const result of ingestion) {
       const batch = store.resource(`source-status:${result.sourceInstanceId}`)?.data;
       if (batch?.status === 'failed' || batch?.status === 'cached') {
@@ -70,11 +77,11 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     const listingSubjects = new Set(screenings.map(o => o.data.listingSubject));
     const venueSubjects = new Set(screenings.map(o => o.data.venueSubject));
     await refreshListingObservations(store, active.filter(item => item.kind === 'listing' && listingSubjects.has(item.subject)), {
-      network: options.network, now });
+      network: options.network, now, registry, dependencies: options.sourceDependencies });
     active = store.observations(undefined, true);
     const addresses = [...(options.osmAddresses ?? [])];
     const venueObservations = await refreshVenueObservations(store, active.filter(o => o.kind === 'venue' && venueSubjects.has(o.subject)), {
-      network: options.network, force: options.force, now });
+      network: options.network, force: options.force, now, registry, dependencies: options.sourceDependencies });
     const streets = new Map<string, string[]>();
     for (const item of venueObservations) {
       if (osm.some(cinema => venueAddressesMatch(item.data.address, cinema.address || ''))) continue;
