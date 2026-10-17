@@ -5,6 +5,8 @@ Source contract version 1 is separate from public snapshot version 2 and retaine
 pipeline state version 1. No persisted identity migration is needed for this step.
 
 `runPipeline({ collections, ...dependencies })` accepts `SourceCollection[]`.
+Configured collection and detail dispatch are documented in
+[source adapters](source-adapters.md).
 The legacy `batches` option remains supported and passes through
 `translateLegacyBatch` before the same validation/ingestion boundary. The
 translator is outside canonical identity resolution. Validation results are
