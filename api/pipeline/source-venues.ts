@@ -106,8 +106,8 @@ export async function refreshVenueObservations(store: PipelineStore, venues: Obs
   const changed = venues.map((item, index) => ({ item, data: cinemas[index] })).filter(({ item, data }) => fingerprint(item.data) !== fingerprint(data));
   if (changed.length || resources.size) store.transaction(() => {
     for (const [key, details] of resources) store.saveResource(key, details, details.fetchedAt);
-    for (const { item, data } of changed) store.observe(observation(item.source, item.kind, item.sourceKey, data,
-      item.observedAt, data.addressEvidence?.fetchedAt ?? item.fetchedAt));
+    for (const { item, data } of changed) store.observe({ ...item, ...observation(item.source, item.kind, item.sourceKey, data,
+      item.observedAt, data.addressEvidence?.fetchedAt ?? item.fetchedAt) });
   });
   return venues.map(item => store.head(item.subject)!);
 }

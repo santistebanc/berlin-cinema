@@ -145,8 +145,8 @@ export async function refreshListingObservations(store: PipelineStore, listings:
   const changed = listings.map((item, index) => ({ item, data: rows[index] })).filter(({ item, data }) => fingerprint(item.data) !== fingerprint(data));
   if (changed.length || fetched.size) store.transaction(() => {
     for (const [url, details] of fetched) store.saveResource(detailKey(url), details, details.fetchedAt);
-    for (const { item, data } of changed) store.observe(observation(item.source, item.kind, item.sourceKey, data,
-      item.observedAt, data.sourceDetails?.fetchedAt ?? item.fetchedAt));
+    for (const { item, data } of changed) store.observe({ ...item, ...observation(item.source, item.kind, item.sourceKey, data,
+      item.observedAt, data.sourceDetails?.fetchedAt ?? item.fetchedAt) });
   });
   return listings.map(item => store.head(item.subject)!);
 }
