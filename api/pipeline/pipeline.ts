@@ -32,9 +32,9 @@ import { sourceDependencies as defaultSourceDependencies } from '../sources/depe
 import { collectionDiagnostics, failureDiagnostic, PipelineRunFailure, publicationResult, runDiagnostics } from './outcomes';
 import type { Diagnostic, PublicationResult } from '../../shared/contracts';
 import { OptionalProviderFailure, recoverableGeocoder, recoverableMetadata, recoverableModel } from './provider-recovery';
+import { resolvePublicationRoot } from './publication-paths';
 
 const DAY = 86400000;
-const ROOT = path.join(__dirname, '../..');
 export interface PipelineOptions {
   sourceRegistry?: SourceRegistry; sourceDependencies?: SourceDependencies;
   store: PipelineStore; collections?: SourceCollection[]; model?: DecisionModel | null;
@@ -353,6 +353,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     store.run(runId, 'success', { revision, movies: movies.length, review: data.review, sources: data.sources,
       outcome: result.outcome, diagnostics: result.diagnostics }, true);
     if (options.publish !== false) {
+      const publicationRoot = resolvePublicationRoot(options.publicationRoot);
       for (const issue of store.issues().filter(issue => issue.details.decision)) {
         const observation = issue.details.observation;
         publicDecisions.push({ entity: observation?.kind === 'venue' ? 'cinema' : observation?.kind === 'listing' || issue.subject.startsWith('metadata:') ? 'movie' : 'pipeline',
@@ -361,7 +362,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       }
       publishWithRollback(store, data, revision, () => { if (options.audit !== false) recordAudit({ movies: data.movies as any, snapshotAt: now, mode: 'scrape',
         inputs: batchesForAudit(store), decisions: publicDecisions,
-        cinemaAliases: Object.fromEntries([...venues.entries()].map(([subject, e]) => [store.head(subject)!.data.name, e.name])) }); }, options.publicationRoot);
+        cinemaAliases: Object.fromEntries([...venues.entries()].map(([subject, e]) => [store.head(subject)!.data.name, e.name])) }, path.join(publicationRoot, 'public/audit')); }, publicationRoot);
     } else store.flush();
     return data;
   } catch (error) {
@@ -375,7 +376,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
   } finally { store.releaseLease(owner); }
 }
 
-export function publishWithRollback(store: PipelineStore, data: any, revision: number, audit: () => void, root = ROOT) {
+export function publishWithRollback(store: PipelineStore, data: any, revision: number, audit: () => void, root = resolvePublicationRoot()) {
   parsePublicSnapshot(data);
   const files = ['public/movies.json', 'public/sitemap.xml', 'public/audit/index.json'].map(file => path.join(root, file));
   const previous = files.map(file => fs.existsSync(file) ? fs.readFileSync(file) : null);
@@ -421,7 +422,7 @@ function batchesForAudit(store: PipelineStore): any[] {
   });
 }
 
-export function writePublicDataset(data: any, root = ROOT) {
+export function writePublicDataset(data: any, root = resolvePublicationRoot()) {
   parsePublicSnapshot(data);
   const filename = path.join(root, 'public/movies.json'); const temporary = `${filename}.${process.pid}.tmp`;
   fs.mkdirSync(path.dirname(filename), { recursive: true });

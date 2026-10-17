@@ -1,6 +1,9 @@
 import { SourcePersistenceError, type SourceAdapter, type SourceDependencies, type SourceInstance } from './types';
+import { compatibleFilmDetails, filmDetailIdentity } from './detail-identity';
+import type { FilmDetailIdentity } from '../../shared/contracts';
 
-export interface DetailOptions { maxLookups?: number; force?: boolean; onProgress?(): void }
+export interface DetailOptions { maxLookups?: number; force?: boolean; onProgress?(): void;
+  cachedIdentities?(details: { url: string; fetchedAt: string; fields: Record<string, any>; listingIdentity?: FilmDetailIdentity }): FilmDetailIdentity[] }
 const DAY = 86400000;
 const fresh = (deps: SourceDependencies, cached: any, ttl: number) => cached
   && Date.parse(deps.now()) - Date.parse(cached.fetchedAt) < ttl;
@@ -19,12 +22,19 @@ export async function collectFilmDetails(movies: any[], adapter: SourceAdapter, 
       && (!cached.data.failed || cached.data.parserVersion >= 5)
       && (cached.data.creditsChecked !== undefined || Object.keys(cached.data.fields ?? {}).length)
       && fresh(deps, cached, cached.data.failed ? 5 * 60000 : 7 * DAY) ? cached.data : null);
+    if (details && (!compatibleFilmDetails(movie, details) || options.cachedIdentities?.(details)
+      .some(listingIdentity => !compatibleFilmDetails(movie, { ...details, listingIdentity })))) {
+      deps.diagnostic({ schemaVersion: 1, category: 'data-quality', stage: 'film-details', code: 'detail-identity-conflict',
+        sourceInstanceId: '', reason: 'Cached detail identity is incompatible with the current listing; optional cached fields were withheld.',
+        retryable: false, evidence: { url: url.href, fetchedAt: details.fetchedAt } });
+      details = null;
+    }
     if (!details && deps.network !== false && lookups < (options.maxLookups ?? 40)) {
       lookups++;
       try {
         const response = await deps.request({ url: url.href, purpose: 'film', timeout: 8000 });
         const extracted = adapter.film.extract(response.body, url.href);
-        details = { url: url.href, ...extracted, fetchedAt: deps.now(), parserVersion: 5, failed: !extracted.creditsChecked,
+        details = { url: url.href, ...extracted, listingIdentity: filmDetailIdentity(movie), fetchedAt: deps.now(), parserVersion: 5, failed: !extracted.creditsChecked,
           ...(!extracted.creditsChecked ? { reason: 'The source page contained no supported credit fields or confirmed empty-credit record.' } : {}) };
       } catch (error: any) {
         if (error instanceof SourcePersistenceError) throw error;

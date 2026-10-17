@@ -32,6 +32,11 @@ function legacyFlags(store: PipelineStore) {
     return original;
   }));
 }
+function criticCollection(values: any, at = NOW) {
+  const result = collection('critic.de', values, at, true);
+  for (const record of result.records) record.provenance.upstreamLineage = [];
+  return result;
+}
 async function legacyReassociation() {
   const store = new PipelineStore(':memory:');
   const initial = await execute(store, [collection('detail', { runtime: 120, listingFields: { runtime: null },
@@ -61,6 +66,78 @@ async function replacementWork(roleless: boolean) {
     assert.deepEqual([next.movies[0].title, next.movies[0].director, next.movies[0].year, next.movies[0].runtime],
       ['New Work', 'Second Director', 2026, 90], `Replacement work never inherits old facts (${roleless ? 'roleless original flags' : 'typed roles'})`);
   }
+}
+async function cachedReplacementWork(roleless: boolean) {
+  const store = new PipelineStore(':memory:');
+  // The actual default critic adapter accepts this URL. Its parser-v5 detail
+  // cache is consulted by runPipeline before the resolver sees the new listing.
+  const url = 'https://www.critic.de/movie/stable-film-record/';
+  const first = await execute(store, [criticCollection({ url, title: 'Old Work', director: 'First Director', year: 2020, runtime: 120,
+    listingFields: { director: null, year: null, runtime: null },
+    sourceDetails: { url, fetchedAt: NOW, parserVersion: 5, creditsChecked: true,
+      fields: { director: 'First Director', year: 2020, runtime: 120 } } })]);
+  assert.equal(first.movies[0].runtime, 120);
+  if (roleless) legacyFlags(store);
+  const historical = structuredClone(first.movies[0].provenance.runtime);
+  const cache = structuredClone(store.resource(`source-detail:${url}`));
+  for (const now of ['2026-10-17T11:00:00Z', '2026-10-17T12:00:00Z', '2026-10-17T13:00:00Z']) {
+    // Missing year/runtime is essential: a fully populated replacement masks
+    // the pre-resolution leak because cache fields only fill gaps.
+    const next = await execute(store, [criticCollection({ url, title: 'New Work', director: 'Second Director' }, now)], now);
+    assert.equal(next.movies.length, 1, 'Supported showings survive rejected optional cached details');
+    assert.notEqual(next.movies[0].id, first.movies[0].id);
+    assert.ok(store.issues().some(issue => issue.type === 'source-identity-changed'));
+    assert.deepEqual([next.movies[0].title, next.movies[0].director, next.movies[0].year, next.movies[0].runtime],
+      ['New Work', 'Second Director', null, null], `URL-keyed cached facts cannot fill a replacement work (${roleless ? 'legacy true flags' : 'typed roles'})`);
+    assert.equal(next.movies[0].identityStatus, 'source-only');
+    assert.equal(next.movies[0].sourceAliases[0].provenance.observedAt, now);
+    assert.deepEqual(next.movies[0].sourceAliases[0].provenance.upstreamLineage, [], 'Cache reuse never invents independent provenance');
+    assert.ok(next.ingestion.length && store.resource('pipeline:last-outcome')?.data.diagnostics.some((item: any) => item.code === 'detail-identity-conflict'));
+    assert.deepEqual(store.resource(`source-detail:${url}`), cache, 'Withholding cached evidence preserves its original fields and fetch time');
+    assert.deepEqual(first.movies[0].provenance.runtime, historical);
+  }
+  store.close();
+}
+async function cachedPartialDetails(legacyCache: boolean) {
+  const store = new PipelineStore(':memory:');
+  const url = 'https://www.critic.de/movie/runtime-only/';
+  await execute(store, [criticCollection({ url, title: 'Old Work', director: 'First Director', year: 2020, runtime: 120,
+    listingFields: { runtime: null }, sourceDetails: { url, fetchedAt: NOW, parserVersion: 5, creditsChecked: true,
+      fields: { runtime: 120 } } })]);
+  if (legacyCache) {
+    legacyFlags(store);
+    const original = structuredClone(store.resource(`source-detail:${url}`)!);
+    delete original.data.listingIdentity;
+    store.saveResource(`source-detail:${url}`, original.data, original.fetchedAt);
+  }
+  const now = '2026-10-17T11:00:00Z';
+  const next = await execute(store, [criticCollection({ url, title: 'New Work', director: 'Second Director' }, now)], now);
+  assert.deepEqual([next.movies[0].year, next.movies[0].runtime], [null, null],
+    `A partial detail cache stays bound to the film it described, even without cached director/year fields (${legacyCache ? 'historical attribution' : 'typed binding'})`);
+  store.close();
+}
+async function compatibleCachedDetails(roleless: boolean) {
+  const store = new PipelineStore(':memory:');
+  const url = 'https://www.critic.de/movie/established-film/';
+  const first = await execute(store, [criticCollection({ url, title: 'Established Film', runtime: 120,
+    listingFields: { runtime: null }, sourceDetails: { url, fetchedAt: NOW, parserVersion: 2,
+      fields: { runtime: 120 } } })]);
+  if (roleless) {
+    legacyFlags(store);
+    const original = structuredClone(store.resource(`source-detail:${url}`)!);
+    delete original.data.listingIdentity;
+    store.saveResource(`source-detail:${url}`, original.data, original.fetchedAt);
+  }
+  for (const now of ['2026-10-17T11:00:00Z', '2026-10-17T12:00:00Z']) {
+    const next = await execute(store, [criticCollection({ url, title: 'Established Film' }, now),
+      collection('listing', { runtime: 90 }, now)], now);
+    assert.equal(next.movies.length, 1);
+    assert.equal(next.movies[0].id, first.movies[0].id);
+    assert.equal(next.movies[0].runtime, 120, 'Compatible legacy cache and same-film reassociation keep detail priority');
+    assert.equal(next.movies[0].provenance.runtime.observedAt, NOW, 'Cached detail attribution keeps the original fetch time');
+    assert.equal(next.movies[0].provenance.runtime.evidenceRole, 'source-detail');
+  }
+  store.close();
 }
 async function protectedReassociation(separate: boolean) {
   const store = new PipelineStore(':memory:');
@@ -108,6 +185,9 @@ async function detailAvailability(absent: boolean) {
 }
 async function main() {
   const cases = [legacyReassociation(), replacementWork(false), replacementWork(true),
+    cachedReplacementWork(false), cachedReplacementWork(true),
+    cachedPartialDetails(false), cachedPartialDetails(true),
+    compatibleCachedDetails(false), compatibleCachedDetails(true),
     protectedReassociation(false), protectedReassociation(true), detailAvailability(false), detailAvailability(true)];
   const failures = (await Promise.allSettled(cases)).flatMap(result => result.status === 'rejected' ? [result.reason] : []);
   if (failures.length) throw new AggregateError(failures, 'Historical detail acceptance failures');

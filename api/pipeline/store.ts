@@ -227,6 +227,13 @@ export class PipelineStore {
     return (this.state.fields[entityId] ?? []).map(field => ({ ...field,
       evidenceRole: fieldEvidenceRole(field, field.observationId ? this.state.observations[field.observationId] : undefined) }));
   }
+  /** Read original detail attribution even after its listing head has changed. */
+  sourceDetailOrigins(source: string, details: { url: string; fetchedAt: string; fields: Record<string, any> }): Observation[] {
+    const fields = fingerprint(details.fields);
+    return Object.values(this.state.observations).filter(original => original.kind === 'listing' && original.source === source
+      && original.data.sourceDetails?.url === details.url && original.data.sourceDetails.fetchedAt === details.fetchedAt
+      && fingerprint(original.data.sourceDetails.fields) === fields);
+  }
   retainedSourceDetails(sources: Observation[], compatible: (original: Observation, current: Observation) => boolean): FieldValue[] {
     const subjects = new Map(sources.map(source => [source.subject, source]));
     return Object.entries(this.state.fields).flatMap(([ownerId, fields]) => fields.flatMap(field => {

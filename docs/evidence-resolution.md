@@ -48,6 +48,19 @@ absence still apply, and historical details retain their original observation ti
 They compete with current fields by the same authority/freshness policy rather
 than losing priority merely because current lower-authority evidence exists.
 
+URL-keyed optional detail caches are checked before filling listing gaps, ahead
+of identity resolution. Conflicting current director/year evidence withholds the
+cached details and emits `detail-identity-conflict`; usable screenings remain.
+Newly collected details and accepted embedded detail caches retain a typed
+`listingIdentity` description of the film they accompanied. Reused URLs must have
+compatible titles or supporting film credits, without contradictory identity
+dimensions. Historical caches without that description remain readable under the
+available credit/year compatibility checks and any exactly attributed original
+listing descriptions (same source, URL, fetch time and detail fields). This is a
+read view over retained observations, not a rewrite of historical data. Fetch/observation times, upstream
+lineage and original historical observations are preserved; URL reuse never
+establishes independent corroboration.
+
 Known overlapping upstream lineage prevents independent corroboration. Empty
 lineage means unknown origin, not independence. Provider-derived metadata cannot
 validate its own provider identity through another configured source. Compatible

@@ -8,7 +8,10 @@ import { sourceDependencies } from '../sources/dependencies';
 import { collectFilmDetails } from '../sources/details';
 import type { SourceRegistry } from '../sources/registry';
 import type { SourceDependencies } from '../sources/types';
-export interface SourceDetails { url: string; fetchedAt: string; fields: Record<string, any>; failed?: boolean; parserVersion?: number; creditsChecked?: boolean; reason?: string }
+import type { FilmDetailIdentity } from '../../shared/contracts';
+import { filmDetailIdentity } from '../sources/detail-identity';
+export interface SourceDetails { url: string; fetchedAt: string; fields: Record<string, any>; listingIdentity?: FilmDetailIdentity;
+  failed?: boolean; parserVersion?: number; creditsChecked?: boolean; reason?: string }
 import { detailKey } from '../sources/keys';
 export { detailKey } from '../sources/keys';
 export interface SourceRefreshOptions { network?: boolean; now?: string; force?: boolean; registry?: SourceRegistry; dependencies?: SourceDependencies; sourceInstanceId?: string }
@@ -46,7 +49,8 @@ export async function fillSourceDetails(movies: any[], store: PipelineStore, max
     if (!instance) continue;
     const context = contexts.get(instance.id)!;
     const resources = await collectFilmDetails([movie], registry.adapter(instance), context,
-      { maxLookups: Math.min(maxLookups - lookups, instance.limits.filmDetails - (instanceLookups.get(instance.id) ?? 0)), force: options.force });
+      { maxLookups: Math.min(maxLookups - lookups, instance.limits.filmDetails - (instanceLookups.get(instance.id) ?? 0)), force: options.force,
+        cachedIdentities: details => details.listingIdentity ? [] : store.sourceDetailOrigins(instance.id, details).map(original => filmDetailIdentity(original.data)) });
     for (const [key, details] of resources) {
       context.cache.set(detailKey(key), details, details.fetchedAt);
       fetched.set(options.sourceFor ? registry.cacheKey(instance, detailKey(key)) : key, details); lookups++;
