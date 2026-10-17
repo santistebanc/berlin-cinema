@@ -13,7 +13,8 @@ const movie = (title = 'A Film'): any => ({ title, rawTitle: title, sourceId: 'f
   cinemas: [{ name: 'Example Cinema', address: 'Example Street 1, 10115 Berlin' }],
   showings: [{ cinema: 'Example Cinema', date: '2026-10-16', time: '20:00', url: 'https://example.test/cinema/1' }] });
 const batch = (movies: any[]): any => ({ source: 'critic.de', observedAt: NOW, status: 'fresh', complete: true, movies });
-const execute = (store: PipelineStore, input: any) => runPipeline({ store, now: NOW, network: false, model: null, tmdb: null,
+const execute = (store: PipelineStore, { batches, ...input }: any) => runPipeline({ store, now: NOW, network: false, model: null, tmdb: null,
+  ...(batches ? { collections: batches.map(observations.translateLegacyBatch) } : {}),
   osm: [{ id: 'node/1', name: 'Example Cinema', address: 'Example Street 1', insideBerlin: true }],
   publish: false, audit: false, ...input });
 

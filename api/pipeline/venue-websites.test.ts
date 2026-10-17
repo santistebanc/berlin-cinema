@@ -2,7 +2,8 @@ import assert from 'assert/strict';
 import axios from 'axios';
 import { PipelineStore } from './store';
 import { adaptBatch, observation } from './observations';
-import { fillVenueDetails, parseVenueDetails } from './source-venues';
+import { fillVenueDetails } from './source-venues';
+import { parseCriticVenue as parseVenueDetails } from '../sources/critic-venue';
 import { attachVenueWebsites } from './venue-websites';
 
 async function main() {
@@ -12,11 +13,11 @@ async function main() {
   const html = `<div id="kino_infos"><address><a class="mob-adr-lnk">${address}</a></address>
     <a class="external-link" href="https://cinema.example/programme">Website of Example Cinema</a></div>
     <footer><a href="https://advertiser.example">Website of Advertiser</a></footer>`;
-  const fields = parseVenueDetails(html, url)!;
+  const fields = parseVenueDetails(html)!;
   assert.equal(fields.websiteUrl, 'https://cinema.example/programme');
   assert.equal(fields.websiteName, 'Example Cinema');
-  assert.equal(parseVenueDetails(html.replace('https://cinema.example/programme', 'javascript:alert(1)'), url)?.websiteUrl, undefined);
-  assert.equal(parseVenueDetails('<footer><a href="https://advertiser.example">Website of Cinema</a></footer>', url), null);
+  assert.equal(parseVenueDetails(html.replace('https://cinema.example/programme', 'javascript:alert(1)'))?.websiteUrl, undefined);
+  assert.equal(parseVenueDetails('<footer><a href="https://advertiser.example">Website of Cinema</a></footer>'), null);
 
   const store = new PipelineStore(':memory:'); let requests = 0;
   const originalGet = axios.get;

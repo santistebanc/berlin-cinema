@@ -226,6 +226,19 @@ export class IdentityResolver {
       ...this.store.overrides(`entity:${entity.id}`).filter(o => o.action === 'patch').map(o => o.patch?.fields ?? {})) : null;
     const confirmsVenue = entity?.kind === 'venue' && normalize(entity.name) === normalize(observation.data.name)
       && venueAddressesMatch(observation.data.address, venueFields?.address || '');
+    const correctedAddress = entity?.kind === 'venue' && this.store.overrides(`entity:${entity.id}`)
+      .filter(o => o.action === 'patch' && Object.hasOwn(o.patch?.fields ?? {}, 'address')).slice(-1)[0];
+    // A stable source venue with a reviewed address must not move to a newly
+    // inferred physical identity when that address changes. Keep the explicit
+    // field fallback; checkFieldCorrections presents its contradictory facts.
+    if (entity?.kind === 'venue' && kind === 'venue' && correctedAddress
+      && correction.evidenceFingerprint !== linkEvidence(observation)
+      && normalize(entity.name) === normalize(observation.data.name) && !confirmsVenue) {
+      if (!correctedAddress.patch?.fieldBaseline) flag(this.store, 'correction-conflict', `entity:${entity.id}`,
+        'Changed source address needs review', { entityId: entity.id, observation, correction: correctedAddress,
+          fallback: 'Keep the saved physical venue and corrected address until reviewed.' }, 'open', 100, linkEvidence(observation));
+      this.store.saveLink(observation.subject, entity.id, linkEvidence(observation), 'manual-field-fallback'); return entity;
+    }
     if (!entity || entity.kind !== kind || (correction.evidenceFingerprint !== linkEvidence(observation) && !confirmsVenue)) {
       flag(this.store, 'correction-conflict', observation.subject, 'Changed source evidence needs a manual identity check',
         { observation, correction, candidate: entity }, 'open', 100, linkEvidence(observation)); return 'conflict';

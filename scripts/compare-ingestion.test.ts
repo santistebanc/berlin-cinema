@@ -1,0 +1,12 @@
+import assert from 'assert/strict';
+import { compareSnapshots } from './compare-ingestion';
+const snapshot = (movies: any[]) => ({ movies, review: { open: 0, caution: 0 } });
+const movie = (id: string) => ({ id, slug: id, title: id, showings: {}, sourceAliases: [{ source: 'critic.de', subject: `critic.de:listing:${id}` }] });
+const before = snapshot([movie('one'), movie('two')]);
+const same = compareSnapshots(before, before);
+assert.equal(same.stablePublicIdentities, 2, 'Distinct records from the same source are not aliases of each other');
+assert.equal(same.changed.length, 0); assert.equal(same.splitOrRegrouped.length, 0);
+const missing = compareSnapshots(before, snapshot([movie('one')]));
+assert.equal(missing.missing.length, 1);
+assert.equal(missing.missing[0].id, 'two');
+console.log('shadow comparison distinguishes stable routes, real shared aliases and missing identities');

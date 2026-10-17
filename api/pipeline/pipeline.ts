@@ -6,8 +6,8 @@ import { osmStreetPattern, parseVenueAddress, venueAddressesMatch } from './addr
 import TmdbClient from '../tmdb-client';
 import { recordAudit, sanitizeAudit } from '../audit-log';
 import { DecisionEngine, configuredModel } from './decision-model';
-import { DecisionModel, Entity, Observation, ParsedLabel, SourceBatch, fingerprint, identity, normalize } from './domain';
-import { ingestCollections, translateLegacyBatch } from './observations';
+import { DecisionModel, Entity, Observation, ParsedLabel, fingerprint, identity, normalize } from './domain';
+import { ingestCollections } from './observations';
 import type { SourceCollection } from '../../shared/contracts';
 import { parsePublicSnapshot } from '../../shared/contracts';
 import { refreshVenueObservations } from './source-venues';
@@ -37,7 +37,7 @@ const DAY = 86400000;
 const ROOT = path.join(__dirname, '../..');
 export interface PipelineOptions {
   sourceRegistry?: SourceRegistry; sourceDependencies?: SourceDependencies;
-  store: PipelineStore; batches?: SourceBatch[]; collections?: SourceCollection[]; model?: DecisionModel | null;
+  store: PipelineStore; collections?: SourceCollection[]; model?: DecisionModel | null;
   tmdb?: TmdbClient | null; omdbKey?: string; osm?: OsmCinema[]; osmAddresses?: OsmAddress[]; geocoder?: VenueGeocoder | null; network?: boolean;
   force?: boolean; now?: string; publish?: boolean; audit?: boolean; legacy?: any;
   operation?: 'acquisition' | 'replay' | 'recalculate'; publicationRoot?: string;
@@ -62,7 +62,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     diagnostic: value => { diagnostics.push(value); options.sourceDependencies?.diagnostic(value); } };
   try {
     store.beginReviewPass(now);
-    store.run(runId, 'running', { sources: options.batches?.map(batch => batch && { source: batch.source, observedAt: batch.observedAt, status: batch.status }) ?? [], revision });
+    store.run(runId, 'running', { sources: options.collections?.map(collection => ({ source: collection.sourceInstanceId, observedAt: collection.observedAt, status: collection.status })) ?? [], revision });
     const engine = new DecisionEngine(store, recoverableModel(options.model === undefined ? options.network === false ? null : configuredModel() : options.model, value => diagnostics.push(value)), { now: () => now });
     if (!engine.model) flag(store, 'provider-configuration', 'pipeline:decision-model', 'Decision model is not configured',
       { reason: 'Rules and previous accepted decisions remain available. Ambiguous records require local review. Configure a model key to enable decisions.' }, 'caution', 30);
@@ -71,7 +71,7 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
       flag(store, 'legacy-evidence', 'pipeline:legacy', 'Previous enriched data retained as unverified legacy evidence',
         { count: options.legacy.movies?.length ?? 0, reason: 'Existing inferred identities are not promoted to verified facts. Source URLs/titles can retain compatible slugs.' }, 'caution', 20);
     }
-    const ingestion = ingestCollections(store, [...(options.batches ?? []).map(translateLegacyBatch), ...(options.collections ?? [])], {
+    const ingestion = ingestCollections(store, options.collections ?? [], {
       cacheKey: (source, key) => { const instance = registry.instance(source); return instance ? registry.cacheKey(instance, key) : key; },
     });
     diagnostics.push(...ingestion.flatMap(item => item.diagnostics));
