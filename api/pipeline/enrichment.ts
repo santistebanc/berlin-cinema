@@ -295,11 +295,22 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     }
   }
   const retainedDetails: FieldValue[] = [];
-  for (const previous of [...prior, ...store.retainedSourceDetails(sources)]) {
+  const compatibleDetails = store.retainedSourceDetails(sources, (original, current) => {
+    const profile = (observation: Observation) => {
+      const label = parseLabel(observation.data.rawTitle || observation.data.title);
+      return { ...observation.data, title: label.title, year: Number(observation.data.year) || label.year,
+        tmdbId: observation.data.verifiedTmdbId };
+    };
+    const before = profile(original); const after = profile(current);
+    return !identityConflict(before, after) && (normalize(before.title) === normalize(after.title) || supportsFilmIdentity(before, after));
+  });
+  // All retained details, including fields on this entity, pass the same identity gate.
+  // A stable upstream subject alone cannot authorize facts about a replacement work.
+  for (const previous of [...prior.filter(field => field.evidenceRole !== 'source-detail'), ...compatibleDetails]) {
     const detail = previous.evidenceRole === 'source-detail';
     if ((previous.source === 'manual' && previous.correctionId)
       || !detail && (selected.has(previous.field) || attributedCandidates.some(field => field.field === previous.field))) continue;
-    const fromExternal = previous.identityVerified && /^(TMDb|OMDb):/.test(previous.source);
+    const fromExternal = previous.identityVerified && (previous.evidenceRole === 'tmdb' || previous.evidenceRole === 'omdb');
     if (!fromExternal && sources.some(source => source.source === previous.source && source.fields?.[previous.field]?.state === 'absent')) continue;
     if (rejectedOmdb && previous.source.startsWith('OMDb:')) continue;
     if (fromExternal && (!acceptedId || (previous.source.startsWith('TMDb:') && previous.source !== `TMDb:${acceptedId}`)

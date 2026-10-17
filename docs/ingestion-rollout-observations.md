@@ -82,6 +82,15 @@ committed baseline lists value differences and
 the names of changed provenance fields without duplicating entire provider plots
 for every attribution reason.
 
+The round-two review-fix comparison repeats the same pinned base, retained inputs
+and fixed clocks with a process-level HTTP/HTTPS/fetch/socket block installed
+before loading either implementation, in addition to the comparison's captured
+transports and internal network guard. All five scenario reports and the rollout
+gate are structurally identical to the committed baseline, including metadata,
+provenance differences, identity/viewing continuity and workload metrics. No baseline
+values were changed. Full round-two snapshots and logs are retained under
+`t3-88de735b/.recovery/accepted-shadow/` and its adjacent comparison log.
+
 Original-base actionable review counts are 52 for recalculation and 54 for raw
 replay. Both become 42. Operational cached-source failures and optional metadata
 notices no longer become human identity questions, and related decisions consolidate.
