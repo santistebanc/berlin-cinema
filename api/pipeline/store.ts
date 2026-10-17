@@ -227,15 +227,19 @@ export class PipelineStore {
     return (this.state.fields[entityId] ?? []).map(field => ({ ...field,
       evidenceRole: fieldEvidenceRole(field, field.observationId ? this.state.observations[field.observationId] : undefined) }));
   }
-  retainedSourceDetails(sources: Observation[]): FieldValue[] {
-    const subjects = new Set(sources.map(source => source.subject));
-    return Object.values(this.state.fields).flat().flatMap(field => {
+  retainedSourceDetails(sources: Observation[], compatible: (original: Observation, current: Observation) => boolean): FieldValue[] {
+    const subjects = new Map(sources.map(source => [source.subject, source]));
+    return Object.entries(this.state.fields).flatMap(([ownerId, fields]) => fields.flatMap(field => {
       const original = field.observationId && this.state.observations[field.observationId];
-      if (!original || original.kind !== 'listing' || !subjects.has(original.subject)
-        || original.source !== field.source || field.identityVerified || field.correctionId) return [];
+      const current = original && subjects.get(original.subject);
+      if (!original || original.kind !== 'listing' || !current
+        || original.source !== field.source || field.correctionId || !compatible(original, current)) return [];
+      const targetId = this.link(current.subject)?.entityId;
+      if (ownerId !== targetId && (this.entity(ownerId)?.data.manualSeparate || targetId && this.entity(targetId)?.data.manualSeparate
+        || this.overrides(current.subject).some(correction => correction.action === 'separate' && correction.targetId === ownerId))) return [];
       const evidenceRole = fieldEvidenceRole(field, original);
       return evidenceRole === 'source-detail' ? [{ ...field, evidenceRole }] : [];
-    });
+    }));
   }
   saveFields(entityId: string, values: FieldValue[]) { this.state.fields[entityId] = values; }
   resource(key: string) { return this.state.resources[key] ?? null; }

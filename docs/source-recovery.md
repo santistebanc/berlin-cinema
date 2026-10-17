@@ -33,6 +33,13 @@ The default website adapters report partially unparsed entries, dates and time
 cells as `extraction-incomplete`, retaining supported sibling screenings. Their
 coverage is unbounded, so extraction uncertainty makes that declaration partial;
 surviving rows alone cannot prove that the page was fully extracted.
+Time extraction accounts for the entire cell, including mixed supported and
+unsupported fragments. Colon-separated hours/minutes support one- or two-digit
+hours; supported tokens use commas or whitespace as separators, and Berlin tokens
+may carry parenthesized source variants. Out-of-range times and any remaining
+unsupported text produce a diagnostic and partial coverage. For example,
+`20:00 (OV), 19.30 (OV)` retains 20:00, diagnoses the unsupported fragment and
+cannot withdraw an earlier 19:30 observation. Dot-separated times are not guessed.
 
 Valid sibling partitions remain independently usable. Omission is not a
 cancellation. Listing/venue heads can retire only when omitted and orphaned by

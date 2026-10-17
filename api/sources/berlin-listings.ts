@@ -40,18 +40,19 @@ function normalizeVariant(v: string): string | null {
 // Parse "20:45 (OmU)" or "16:20 (DFmEnglU), 18:40 (DFmEnglU), 21:00 (DFmEnglU)"
 function parseTimeCell(cell: string, rejected: () => void): { time: string; variant: string | null }[] {
   const results: { time: string; variant: string | null }[] = [];
-  const parts = cell.split(/,\s*(?=\d{1,2}:\d{2})/);
-  for (const part of parts) {
-    const timeMatch = part.match(/(\d{1,2}:\d{2})/);
-    if (!timeMatch) { rejected(); continue; }
-    const variantMatch = part.match(/\(([^)]+)\)/);
-    const [hour, minute] = timeMatch[1].split(':').map(Number);
-    if (hour > 23 || minute > 59) { rejected(); continue; }
+  // Consume supported tokens, then account for everything left in the cell.
+  // Unsupported siblings must not disappear merely because another time matched.
+  const token = /(?<![\w.:])(\d{1,2}:\d{2})(?![\w.:])(?:\s*\(([^()]+)\))?/g;
+  const residue = cell.replace(token, (_, time: string, variant: string | undefined) => {
+    const [hour, minute] = time.split(':').map(Number);
+    if (hour > 23 || minute > 59) { rejected(); return ''; }
     results.push({
       time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-      variant: variantMatch ? normalizeVariant(variantMatch[1]) : null,
+      variant: variant ? normalizeVariant(variant) : null,
     });
-  }
+    return '';
+  });
+  if (residue.replace(/[\s,]+/g, '')) rejected();
   return results;
 }
 
