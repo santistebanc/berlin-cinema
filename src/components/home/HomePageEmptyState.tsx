@@ -1,9 +1,12 @@
 import React from 'react';
 import Button from '../ui/Button';
+import type { MovieDataState } from '../../services/movie-data';
 
 interface HomePageEmptyStateProps {
   onClearSearch: () => void;
   searchQuery: string;
+  dataState?: MovieDataState;
+  failed?: boolean;
 }
 
 const SEARCH_TIPS = [
@@ -13,11 +16,13 @@ const SEARCH_TIPS = [
   { label: 'Format', example: '"OmU" or "OV"' },
 ];
 
-const HomePageEmptyState: React.FC<HomePageEmptyStateProps> = ({ onClearSearch, searchQuery }) => {
+const HomePageEmptyState: React.FC<HomePageEmptyStateProps> = ({ onClearSearch, searchQuery, dataState, failed }) => {
   if (!searchQuery) {
     return (
       <p className="body-muted px-1 py-6">
-        No listings right now — check back in a moment.
+        {dataState === 'expired' ? 'No current listings remain. Previous screening support has expired.'
+          : failed ? 'Current listings are unavailable. Try loading them again.'
+          : 'No screenings are currently listed in the checked programme.'}
       </p>
     );
   }
