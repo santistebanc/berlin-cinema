@@ -2,18 +2,20 @@ import { FieldValue, Observation, fingerprint } from './domain';
 import type { ResolvedField, EvidenceValue } from '../../shared/contracts';
 import { PipelineStore } from './store';
 import { parseLabel } from './labels';
+import { fieldEvidenceRole, isDetailValue } from './field-evidence';
 
 export const sourceFields = ['director', 'cast', 'country', 'year', 'posterUrl', 'originalTitle', 'altTitle', 'runtime'];
 const present = (value: any) => value != null && value !== '' && (!Array.isArray(value) || value.length > 0);
 
 /** Authority belongs to a field/evidence role, never a configured source's name. */
 function authority(field: FieldValue): number {
-  if (field.source === 'manual' && field.correctionId) return 100;
-  const provider = field.identityVerified && /^(TMDb|OMDb):/.test(field.source);
-  const detail = field.reason.startsWith('Explicit source detail');
+  const role = fieldEvidenceRole(field);
+  if (role === 'manual-correction' && field.source === 'manual' && field.correctionId) return 100;
+  const provider = field.identityVerified && (role === 'tmdb' || role === 'omdb');
+  const detail = role === 'source-detail';
   if (field.field === 'runtime') return detail ? 80 : provider ? 70 : 50;
   if (['imdbRating', 'imdbVotes', 'allRatings', 'awards'].includes(field.field))
-    return provider && field.source.startsWith('OMDb:') ? 90 : provider ? 80 : 40;
+    return provider && role === 'omdb' ? 90 : provider ? 80 : 40;
   return provider ? 80 : detail ? 60 : 40;
 }
 
@@ -23,11 +25,10 @@ export function sourceCandidates(sources: Observation[], now: string, includeUrl
     let value = observation.data[field];
     if (field === 'year') value = Number(value) || parseLabel(observation.data.rawTitle || observation.data.title).year;
     if (!present(value)) return [];
-    const detail = observation.data.sourceDetails && Object.hasOwn(observation.data.listingFields ?? {}, field)
-      && observation.data.listingFields[field] == null;
+    const detail = isDetailValue(observation, field, value);
     return [{ field, value, source: observation.source, observationId: observation.id,
       observedAt: detail ? observation.data.sourceDetails.fetchedAt : observation.observedAt,
-      selectedAt: now, identityVerified: false,
+      selectedAt: now, identityVerified: false, evidenceRole: detail ? 'source-detail' as const : 'listing' as const,
       reason: detail ? `Explicit source detail-page value (${observation.data.sourceDetails.url})` : 'Attributed listing evidence' }];
   }));
 }

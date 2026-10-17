@@ -38,15 +38,15 @@ function normalizeVariant(v: string): string | null {
 }
 
 // Parse "20:45 (OmU)" or "16:20 (DFmEnglU), 18:40 (DFmEnglU), 21:00 (DFmEnglU)"
-function parseTimeCell(cell: string): { time: string; variant: string | null }[] {
+function parseTimeCell(cell: string, rejected: () => void): { time: string; variant: string | null }[] {
   const results: { time: string; variant: string | null }[] = [];
   const parts = cell.split(/,\s*(?=\d{1,2}:\d{2})/);
   for (const part of parts) {
     const timeMatch = part.match(/(\d{1,2}:\d{2})/);
-    if (!timeMatch) continue;
+    if (!timeMatch) { rejected(); continue; }
     const variantMatch = part.match(/\(([^)]+)\)/);
     const [hour, minute] = timeMatch[1].split(':').map(Number);
-    if (hour > 23 || minute > 59) continue;
+    if (hour > 23 || minute > 59) { rejected(); continue; }
     results.push({
       time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
       variant: variantMatch ? normalizeVariant(variantMatch[1]) : null,
@@ -91,8 +91,9 @@ export interface BerlinDeRawMovie {
   isSpecial: boolean;
 }
 
-export function mergeBerlinPage(html: string, movieMap: Map<string, BerlinDeRawMovie>): void {
+export function mergeBerlinPage(html: string, movieMap: Map<string, BerlinDeRawMovie>): string[] {
     const $ = cheerio.load(html);
+    const rejected: string[] = [];
 
     // Each li in the movie list is one (movie, cinema) pair.
     // The movie title is in span.info inside the trigger.
@@ -105,12 +106,13 @@ export function mergeBerlinPage(html: string, movieMap: Map<string, BerlinDeRawM
       const rawTitle = decode(
         infoSpan.length ? infoSpan.text().trim() : trigger.text().trim()
       );
-      if (!rawTitle || rawTitle === 'Zurücksetzen') return;
+      if (rawTitle === 'Zurücksetzen') return;
+      if (!rawTitle) { rejected.push('Unsupported listing title'); return; }
 
       // Strip format/language suffixes → base title; keep extracted variants
       const { baseTitle, titleVariants } = parseTitle(rawTitle);
 
-      if (!baseTitle) return;
+      if (!baseTitle) { rejected.push('Unsupported listing title'); return; }
 
       const panel = $(li).find('.js-accordion__panel').first();
 
@@ -118,7 +120,7 @@ export function mergeBerlinPage(html: string, movieMap: Map<string, BerlinDeRawM
       const paraText = decode(panel.find('p').first().text());
       const cinemaMatch = paraText.match(/läuft im\s+"([^"]+)"/);
       const cinemaName = cinemaMatch ? cinemaMatch[1].trim() : null;
-      if (!cinemaName) return;
+      if (!cinemaName) { rejected.push('Unsupported cinema relationship'); return; }
 
       const cinemaHref = panel.find('a[href*="kinodetail.php"]').first().attr('href');
       const cinemaUrl = cinemaHref
@@ -165,19 +167,21 @@ export function mergeBerlinPage(html: string, movieMap: Map<string, BerlinDeRawM
       }
 
       // Parse showings from the schedule table
-      panel.find('table tbody tr').each((_, row) => {
+      const rows = panel.find('table tbody tr');
+      if (!rows.length) rejected.push('Missing screening rows');
+      rows.each((_, row) => {
         const cells = $(row).find('td');
         const dateCell = decode(cells.eq(0).text().trim());
         const timeCell = decode(cells.eq(1).text().trim());
-        if (!dateCell || !timeCell) return;
+        if (!dateCell || !timeCell) { rejected.push('Missing screening date or time'); return; }
 
         const dateStr = parseGermanDate(dateCell);
-        if (!dateStr) return;
+        if (!dateStr) { rejected.push(`Invalid screening date: ${dateCell}`); return; }
 
         const dayMatch = dateCell.match(/^(\w{2}),/);
         const dayOfWeek = dayMatch ? germanDayToEn(dayMatch[1]) : '';
 
-        for (const { time, variant } of parseTimeCell(timeCell)) {
+        for (const { time, variant } of parseTimeCell(timeCell, () => rejected.push(`Unsupported screening time: ${timeCell}`))) {
           const resolvedVariant = variant ?? (titleVariants.length === 1 ? titleVariants[0] : null);
           if (resolvedVariant && !movie.variants.includes(resolvedVariant)) movie.variants.push(resolvedVariant);
           if (movie.showings.some(showing => showing.date === dateStr && showing.time === time
@@ -197,5 +201,5 @@ export function mergeBerlinPage(html: string, movieMap: Map<string, BerlinDeRawM
         }
       });
     });
-
+    return rejected;
   }

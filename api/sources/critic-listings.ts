@@ -6,7 +6,8 @@ import { parseLabel, modalityTags } from '../pipeline/labels';
 class MovieParser {
   private httpClient: Pick<HttpClient, 'ensureAbsoluteUrl'>;
 
-  constructor(httpClient: Pick<HttpClient, 'ensureAbsoluteUrl'>, private now = () => new Date().toISOString()) {
+  constructor(httpClient: Pick<HttpClient, 'ensureAbsoluteUrl'>, private now = () => new Date().toISOString(),
+    private rejected: (reason: string) => void = () => {}) {
     this.httpClient = httpClient;
   }
 
@@ -34,7 +35,7 @@ class MovieParser {
     const altTitle = altTitleParsed.trim();
     const movieUrl = titleElement.attr('href');
 
-    if (!title || !movieUrl) return null;
+    if (!title || !movieUrl) { this.rejected('Missing listing title or URL'); return null; }
 
     const movieDetails = this.extractMovieDetails($item, $);
     const isSpecial = this.detectSpecial(title, movieUrl);
@@ -113,6 +114,7 @@ class MovieParser {
       cinemas.push(data.cinema);
       showings.push(...data.showings);
     });
+    if (!$item.find('article.cinema').length) this.rejected('Missing cinema relationship');
 
     return { cinemas, showings };
   }
@@ -142,7 +144,7 @@ class MovieParser {
   ) {
     const showings: any[] = [];
     const $table = $cinema.find('table.vorstellung');
-    if ($table.length === 0) return showings;
+    if ($table.length === 0) { this.rejected('Missing screening table'); return showings; }
 
     const $headers = $table.find('thead th');
     $table.find('tbody tr').each((_: number, row: any) => {
@@ -152,7 +154,7 @@ class MovieParser {
         if (cellText && $cell.hasClass('wird_gezeigt')) {
           const dateHeader = $headers.eq(cellIndex).text().trim();
           const parsedDate = this.parseDate(dateHeader);
-          if (!parsedDate) return;
+          if (!parsedDate) { this.rejected(`Unsupported screening date: ${dateHeader}`); return; }
           const dayOfWeek = this.getDayOfWeek(dateHeader);
           const times = this.parseTimes(cellText);
 
@@ -180,6 +182,7 @@ class MovieParser {
 
     return times.flatMap(t => {
       const m = t.match(/(\d{1,2}:\d{2})/);
+      if (!m) this.rejected(`Unsupported screening time: ${t}`);
       return m ? [m[1]] : [];
     });
   }

@@ -65,12 +65,20 @@ The primary value differences are deliberate field-policy changes:
   current observations report two different posters. Both alternatives and the
   data-quality diagnostic remain; the showing stays available.
 
-Selected-field attribution changes on 182 records: the new policy distinguishes
+Selected-field attribution changes on 183 records: the new policy distinguishes
 unverified source values from verified provider values, adds the selected listing
 URL evidence and explains authority/freshness or abstention. This affects provenance
 descriptions, not public identity or the 131 retained verified film identities.
+The round-one review-fix comparison adds typed evidence roles on selected fields.
+This expands the changed-field attribution lists, including Der perfekte Urlaub
+(`film-605cc48a5db1b9d5cc5c37d6`), whose selected values otherwise match the old
+implementation. The previous report counted 182 records. All five scenarios'
+metadata values, identities, viewings and workload counts are unchanged from that
+report; the regenerated baseline records the actual new attribution differences.
 The full before/after snapshots remain in the implementation worktree's ignored
-`.recovery/fixed-clock-shadow/`; the committed baseline lists value differences and
+`.recovery/accepted-shadow/` in worktree `t3-ead59ea0` (the earlier
+`t3-79d417de/.recovery/fixed-clock-shadow/` remains historical evidence); the
+committed baseline lists value differences and
 the names of changed provenance fields without duplicating entire provider plots
 for every attribution reason.
 

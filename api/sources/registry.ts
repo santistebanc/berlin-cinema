@@ -71,8 +71,16 @@ export class SourceRegistry {
       }
       let collection: SourceCollection;
       const diagnostics: Diagnostic[] = [];
+      let progress: SourceCollection | undefined;
       try {
         const collected = await withinDeadline(signal => adapter.collect(instance, this.context(instance, { ...deps, signal,
+          progress: value => {
+            if (signal.aborted) return;
+            CollectionEnvelopeSchema.parse(value);
+            if (value.sourceInstanceId !== instance.id || value.status !== 'fresh') throw new Error('Invalid acquisition progress');
+            // Own a snapshot: timed-out work must not mutate the returned records later.
+            progress = structuredClone(value);
+          },
           diagnostic: diagnostic => { diagnostics.push(diagnostic); deps.diagnostic(diagnostic); } })), instance.limits.collectionTimeoutMs ?? 120000);
         CollectionEnvelopeSchema.parse(collected);
         if (collected.sourceInstanceId !== instance.id) throw new Error('Adapter returned a different source instance');
@@ -80,15 +88,23 @@ export class SourceRegistry {
           diagnostics: [...collected.diagnostics, ...diagnostics] };
       } catch (error) {
         if (error instanceof SourcePersistenceError) throw error;
-        const collection = empty('failed', sanitizeAudit(error instanceof Error ? error.message : 'Source acquisition failed.'));
-        const diagnostic: Diagnostic = { schemaVersion: 1, category: 'recovery', stage: 'collection', code: 'source-failed',
-          sourceInstanceId: instance.id, reason: collection.message!, retryable: retryableRequest(error),
+        const message = sanitizeAudit(error instanceof Error ? error.message : 'Source acquisition failed.');
+        const diagnostic: Diagnostic = { schemaVersion: 1, category: 'recovery', stage: 'collection',
+          code: progress ? 'collection-incomplete' : 'source-failed',
+          sourceInstanceId: instance.id, reason: message, retryable: retryableRequest(error),
           fallback: 'Retain eligible evidence and successful sibling sources within their original freshness limits.' };
-        deps.diagnostic(diagnostic); collection.diagnostics.push(...sanitizeAudit(diagnostics), diagnostic);
-        const cached = retained();
-        if (cached) return { ...structuredClone(cached), status: 'cached', message: collection.message,
-          coverage: cached.coverage.map(scope => ({ ...scope, status: 'partial' })), diagnostics: [...cached.diagnostics, ...collection.diagnostics] };
-        return collection;
+        deps.diagnostic(diagnostic);
+        if (progress) {
+          collection = { ...progress, message, coverage: progress.coverage.map(scope => ({ ...scope, status: 'partial', emptyProgrammeConfirmed: false })),
+            diagnostics: [...progress.diagnostics, ...sanitizeAudit(diagnostics), diagnostic] };
+        } else {
+          collection = empty('failed', message);
+          collection.diagnostics.push(...sanitizeAudit(diagnostics), diagnostic);
+          const cached = retained();
+          if (cached) return { ...structuredClone(cached), status: 'cached', message,
+            coverage: cached.coverage.map(scope => ({ ...scope, status: 'partial' })), diagnostics: [...cached.diagnostics, ...collection.diagnostics] };
+          return collection;
+        }
       }
       if (collection.status === 'fresh') deps.cache.set(cacheKey, collection, collection.observedAt);
       return collection;
