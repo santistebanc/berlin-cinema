@@ -52,6 +52,8 @@ export function createAdminServer(store: PipelineStore, options: { port?: number
           const model = configuredModel();
           return json(response, 200, { revision: store.revision, issues: store.issues(), corrections: store.allOverrides(),
             jobs: store.jobs(), runs: store.runs(), snapshot: store.snapshotInfo(),
+            operations: sanitizeAudit({ latest: store.resource('pipeline:last-outcome')?.data ?? null,
+              attempts: store.resources('source-attempt:'), validation: store.resources('source-validation:'), coverage: store.resources('source-coverage:') }),
             model: model ? { provider: model.provider, model: model.model, inputUsdPerMillion: model.inputUsdPerMillion } : null,
             spendUsd: store.spend(), limitUsd: Number(process.env.DECISION_MONTHLY_USD_LIMIT || 8),
             threshold: Number(process.env.DECISION_THRESHOLD || 0.97),

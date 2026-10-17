@@ -26,6 +26,7 @@ export const DiagnosticSchema = z.object({
   schemaVersion: z.literal(1), category: z.enum(['recovery', 'data-quality', 'actionable']),
   stage: label, code: label, sourceInstanceId: z.string(), recordId: z.string().optional(),
   path: z.string().optional(), reason: label, retryable: z.boolean(), evidence: z.json().optional(),
+  scope: z.json().optional(), fallback: z.string().optional(),
 });
 export type Diagnostic = z.infer<typeof DiagnosticSchema>;
 export const CoverageSchema = z.object({
@@ -79,6 +80,7 @@ export const SourceCollectionSchema = CollectionEnvelopeSchema.extend({
 export type SourceCollection = z.infer<typeof SourceCollectionSchema>;
 export const IngestionResultSchema = z.object({ schemaVersion: z.literal(1), sourceInstanceId: z.string(),
   status: z.enum(['accepted', 'partial', 'rejected-source']), acceptedRecords: z.number().int().nonnegative(),
+  acceptedScreenings: z.number().int().nonnegative().optional(),
   safeForWithdrawal: z.boolean(), coverage: z.array(CoverageSchema), diagnostics: z.array(DiagnosticSchema),
 });
 export type IngestionResult = z.infer<typeof IngestionResultSchema>;
@@ -137,10 +139,13 @@ export const PublishedMovieSchema = z.object({ title: label, slug: label, id: z.
   isSpecial: z.boolean().optional(), tmdbFetched: z.boolean().optional(), omdbFetchedAt: TimestampSchema.optional(),
 }).passthrough();
 export const PublicSnapshotSchema = z.object({ schemaVersion: z.union([z.literal(1), z.literal(2)]).optional(),
+  programmeStatus: z.enum(['available', 'empty', 'no-current-support']).optional(),
   movies: z.array(PublishedMovieSchema), scrapedAt: TimestampSchema,
   total: z.number().int().nonnegative().optional(), totalMovies: z.number().int().nonnegative().optional(),
 }).passthrough().refine(snapshot => (snapshot.total === undefined || snapshot.total === snapshot.movies.length)
-  && (snapshot.totalMovies === undefined || snapshot.totalMovies === snapshot.movies.length), 'Movie count does not match snapshot');
+  && (snapshot.totalMovies === undefined || snapshot.totalMovies === snapshot.movies.length), 'Movie count does not match snapshot')
+  .refine(snapshot => !snapshot.programmeStatus || (snapshot.programmeStatus === 'available') === (snapshot.movies.length > 0),
+    'Programme status does not match snapshot');
 export type PublishedMovie = z.infer<typeof PublishedMovieSchema>;
 export type PublishedVenue = z.infer<typeof PublishedVenueSchema>;
 export type PublishedScreening = z.infer<typeof PublishedScreeningSchema>;
@@ -150,8 +155,10 @@ export const PublicationResultSchema = z.object({ schemaVersion: z.literal(1),
   snapshot: PublicSnapshotSchema.nullable(), diagnostics: z.array(DiagnosticSchema) });
 export type PublicationResult = z.infer<typeof PublicationResultSchema>;
 
+export class InvalidPublicSnapshotError extends Error {}
+
 export function parsePublicSnapshot(input: unknown): PublicSnapshot {
   const result = PublicSnapshotSchema.safeParse(input);
-  if (!result.success) throw new Error(`Invalid public snapshot: ${result.error.issues.map(issue => `${issue.path.join('.') || 'snapshot'}: ${issue.message}`).join('; ')}`);
+  if (!result.success) throw new InvalidPublicSnapshotError(`Invalid public snapshot: ${result.error.issues.map(issue => `${issue.path.join('.') || 'snapshot'}: ${issue.message}`).join('; ')}`);
   return result.data;
 }
