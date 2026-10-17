@@ -45,12 +45,16 @@ const listingMetadata = {
   altTitle: z.string().nullable().optional(), originalTitle: z.string().nullable().optional(),
   posterUrl: url.nullable().optional(), runtime: z.number().positive().nullable().optional(),
 };
+export const FilmDetailIdentitySchema = z.object({ title: z.string().optional(),
+  director: listingMetadata.director, cast: listingMetadata.cast, year: listingMetadata.year });
+export type FilmDetailIdentity = z.infer<typeof FilmDetailIdentitySchema>;
 export const ListingDataSchema = z.object({
   ...listingMetadata,
   rawTitle: label, title: z.string().nullable().optional(), displayTitle: z.string().nullable().optional(),
   sourceId: z.union([z.string(), z.number()]).nullable().optional(), url: url.nullable().optional(),
   variants: strings.optional(),
   sourceDetails: z.object({ url, fetchedAt: TimestampSchema, fields: z.object(listingMetadata).passthrough(),
+    listingIdentity: FilmDetailIdentitySchema.optional(),
     failed: z.boolean().optional(), creditsChecked: z.boolean().optional(), parserVersion: z.number().optional(), reason: z.string().optional() }).passthrough().optional(),
   listingFields: z.object(listingMetadata).passthrough().optional(),
 }).passthrough();
