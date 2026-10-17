@@ -128,6 +128,7 @@ export interface ShowtimeEntry {
 
 export interface ScrapingResult {
   schemaVersion?: number;
+  programmeStatus?: 'available' | 'empty' | 'no-current-support';
   movies: Movie[];
   totalMovies: number;
   scrapedAt: string;

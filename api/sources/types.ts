@@ -6,12 +6,14 @@ export type RequestPurpose = 'listing' | 'film' | 'venue';
 const label = z.string().trim().min(1);
 const limit = z.number().int().nonnegative();
 export const SourceInstanceSchema = z.object({ id: label, adapterId: label, enabled: z.boolean(), cacheIdentity: label,
-  config: z.record(z.string(), z.any()), limits: z.object({ requests: limit, filmDetails: limit, venueDetails: limit }),
+  config: z.record(z.string(), z.any()), limits: z.object({ requests: limit, filmDetails: limit, venueDetails: limit,
+    attempts: z.number().int().min(1).max(5).optional(), requestTimeoutMs: z.number().int().positive().optional(),
+    collectionTimeoutMs: z.number().int().positive().optional() }),
   legacyCache: z.boolean().optional(), retainedFile: label.optional() });
 export type SourceInstance = z.infer<typeof SourceInstanceSchema>;
 export interface SourceRequest {
   url: string; method?: 'GET' | 'POST'; body?: URLSearchParams; purpose?: RequestPurpose;
-  headers?: Record<string, string>; timeout?: number;
+  headers?: Record<string, string>; timeout?: number; signal?: AbortSignal;
 }
 export interface SourceResponse { body: string; status: number; headers: Record<string, any> }
 export interface SourceCache {
@@ -22,7 +24,7 @@ export interface SourceDependencies {
   request(request: SourceRequest): Promise<SourceResponse>;
   cache: SourceCache; now(): string; diagnostic(diagnostic: Diagnostic): void;
   wait?(milliseconds: number): Promise<void>;
-  network?: boolean; force?: boolean;
+  network?: boolean; force?: boolean; signal?: AbortSignal;
 }
 export class SourcePersistenceError extends Error {}
 export interface FilmDetailExtractor {

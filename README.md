@@ -346,6 +346,8 @@ to a comma-separated list of instance IDs, or use `SOURCE_INSTANCES_FILE` for
 explicit configuration. Existing evidence and corrections remain eligible until
 their normal expiry. See [source adapters](docs/source-adapters.md) for the
 collection interface, cache compatibility and fixture-backed extension example.
+See [source recovery](docs/source-recovery.md) for scoped completeness, retry
+limits, run outcomes, local diagnostics and public empty/stale/reload behavior.
 
 GitHub Actions secrets cannot be read back through the GitHub settings page or API.
 For direct local API calls, obtain keys from the providers and put them in `.env`

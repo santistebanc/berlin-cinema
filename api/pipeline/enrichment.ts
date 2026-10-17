@@ -10,12 +10,16 @@ import type { FilmScreeningMatch } from './film-screening-evidence';
 import { sourceCandidates, selectEvidence } from './evidence-policy';
 import { providerDerived } from './lineage';
 import { checkFieldCorrections } from './correction-evidence';
+import type { Diagnostic } from '../../shared/contracts';
+import { failureDiagnostic } from './outcomes';
 
 const DAY = 86400000;
 const empty = (value: any) => value == null || value === '' || (Array.isArray(value) && !value.length);
 const stableFields = new Set(['director', 'directors', 'writers', 'cast', 'year', 'originalTitle', 'tmdbTitle', 'alternativeTitles', 'posterUrl', 'backdropUrl', 'plot', 'genres', 'keywords', 'country', 'productionCountries', 'productionCompanies', 'originalLanguage', 'spokenLanguages', 'trailerUrl', 'ageRating', 'certifications', 'tagline', 'imdbId', 'externalIds', 'releaseDate', 'germanReleaseDate', 'homepage', 'awards']);
 
 export interface EnrichmentOptions { tmdb?: TmdbClient | null; omdbKey?: string; force?: boolean; now: string; identityEvidence?: CachedFilmEvidence;
+  providerUnavailable?: boolean;
+  diagnostic?: (value: Diagnostic) => void;
   screeningPeer?: { entityId: string; tmdbId: number; matches: FilmScreeningMatch[] } }
 
 export async function enrichEntity(store: PipelineStore, engine: DecisionEngine, entity: Entity, sources: Observation[], options: EnrichmentOptions): Promise<Record<string, any>> {
@@ -82,7 +86,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
   const searchEvidence = fingerprint({ identity: evidence, queries: searchTitles, retrieval: 'whole-title-v2' });
   const searchKey = 'tmdb-search:' + searchEvidence;
   const previousPending = store.issues().find(issue => issue.subject === metadataSubject && issue.type === 'metadata-match' && issue.status === 'open');
-  if (entity.kind === 'film' && (options.tmdb || store.resource(searchKey)) && !acceptedId && !(override?.patch && override.patch.tmdbId === null)) {
+  if (!options.providerUnavailable && entity.kind === 'film' && (options.tmdb || store.resource(searchKey)) && !acceptedId && !(override?.patch && override.patch.tmdbId === null)) {
     const errorKey = 'tmdb-search-errors:' + searchEvidence;
     const errorsBefore = options.tmdb?.retrievalErrors?.().length ?? 0;
     let retrievalErrors: any[] = [];
@@ -249,6 +253,8 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       else if (failure) store.saveResource(`omdb-error:${imdbId}`, { reason: failure }, options.now);
     }
     const failure = store.resource(`omdb-error:${imdbId}`);
+    if (!ratings && failure) options.diagnostic?.({ ...failureDiagnostic('ratings', 'optional-provider-unavailable', failure.data.reason,
+      'Keep eligible retained ratings and verified film metadata; omit unavailable optional fields.', true), recordId: entity.id });
     if (!ratings && failure) flag(store, 'source-unavailable', `pipeline:omdb:${imdbId}`, `OMDb lookup unavailable: ${entity.name}`,
       { entityId: entity.id, imdbId, reason: failure.data.reason, resolutionCode: 'optional-provider-unavailable',
         resolution: 'Keep the established film and available metadata. Missing OMDb enrichment is an operational status and can be retried without an identity decision.' }, 'caution', 45);

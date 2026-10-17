@@ -1,4 +1,4 @@
-import type { SourceAdapter, SourceDependencies, SourceInstance } from './types';
+import { SourcePersistenceError, type SourceAdapter, type SourceDependencies, type SourceInstance } from './types';
 
 export interface DetailOptions { maxLookups?: number; force?: boolean }
 const DAY = 86400000;
@@ -22,18 +22,12 @@ export async function collectFilmDetails(movies: any[], adapter: SourceAdapter, 
     if (!details && deps.network !== false && lookups < (options.maxLookups ?? 40)) {
       lookups++;
       try {
-        const request = () => deps.request({ url: url.href, purpose: 'film', timeout: 8000 });
-        let response;
-        try { response = await request(); }
-        catch (error: any) {
-          if (![307, 408, 429, 500, 502, 503, 504].includes(error.response?.status)) throw error;
-          await deps.wait?.(250);
-          response = await request(); // Retry only the allowlisted original, never follow film redirects.
-        }
+        const response = await deps.request({ url: url.href, purpose: 'film', timeout: 8000 });
         const extracted = adapter.film.extract(response.body, url.href);
         details = { url: url.href, ...extracted, fetchedAt: deps.now(), parserVersion: 5, failed: !extracted.creditsChecked,
           ...(!extracted.creditsChecked ? { reason: 'The source page contained no supported credit fields or confirmed empty-credit record.' } : {}) };
       } catch (error: any) {
+        if (error instanceof SourcePersistenceError) throw error;
         details = { url: url.href, fields: {}, fetchedAt: deps.now(), failed: true, parserVersion: 5, creditsChecked: false,
           reason: error.response?.status ? `Source detail request returned HTTP ${error.response.status}.` : 'Source detail request failed or timed out.' };
       }
@@ -84,6 +78,7 @@ export async function collectVenueDetails(movies: any[], instance: SourceInstanc
         details = { url: url.href, fetchedAt: deps.now(), fields: fields ?? {}, parserVersion: 2, failed: !fields,
           status: fields ? 'resolved' : 'parse-failed', reason: fields ? 'Explicit address extracted from the source venue page.' : 'The venue page did not contain a supported structured address.' };
       } catch (error: any) {
+        if (error instanceof SourcePersistenceError) throw error;
         details = { url: url.href, fetchedAt: deps.now(), fields: {}, parserVersion: 2, failed: true, status: 'request-failed',
           reason: error.response?.status ? `Venue detail request returned HTTP ${error.response.status}.` : 'Venue detail request failed or timed out.' };
       }

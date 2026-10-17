@@ -7,8 +7,14 @@ const LegacyBatchSchema = z.object({ source: z.string().min(1), observedAt: Time
   status: z.enum(['fresh', 'cached', 'failed', 'skipped']), complete: z.boolean(), movies: z.array(z.unknown()), message: z.string().optional() });
 export function sourceDiagnostic(sourceInstanceId: string, code: string, reason: string, evidence: unknown,
   path?: string, recordId?: string): Diagnostic {
+  const raw = evidence as any;
+  const scope = Array.isArray(raw?.cinemaRecordIds) ? raw : raw?.kind === 'screening' ? {
+    cinemaRecordIds: typeof raw.data?.venueRecordId === 'string' ? [raw.data.venueRecordId] : [],
+    date: raw.data?.date ?? null, filters: { variant: raw.data?.variant ?? raw.data?.movieVariants ?? null },
+  } : undefined;
   return { schemaVersion: 1, category: 'data-quality', stage: 'ingestion', sourceInstanceId, code, reason,
-    retryable: false, evidence: sanitizeAudit(evidence), ...(path ? { path } : {}), ...(recordId ? { recordId } : {}) };
+    retryable: false, evidence: sanitizeAudit(evidence), ...(scope ? { scope: sanitizeAudit(scope) } : {}),
+    ...(path ? { path } : {}), ...(recordId || typeof raw?.recordId === 'string' ? { recordId: recordId ?? raw.recordId } : {}) };
 }
 
 /** Explicit legacy compatibility: missing/null fields remain unknown; never infer absence. */
