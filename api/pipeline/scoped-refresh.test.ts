@@ -114,6 +114,17 @@ async function main() {
     'A failed filtered partition preserves retained support whose filter membership is unknown');
   unknownMembership.close();
 
+  const unknownAliasMembership = new PipelineStore(':memory:');
+  const unknownAlias = collection([showing('Cinema A', '2026-10-16')]);
+  const uncertainScreening = unknownAlias.records.find(record => record.kind === 'screening')!;
+  uncertainScreening.fields.variant = { state: 'unknown' };
+  (uncertainScreening.data as any).movieVariants = ['OmU'];
+  await execute(unknownAliasMembership, [unknownAlias]);
+  const aliasOverlap = await execute(unknownAliasMembership, [incomplete], LATER);
+  assert.equal(entries(aliasOverlap).length, 1,
+    'An obsolete variant fallback cannot exclude retained unknown evidence from a failed partition');
+  unknownAliasMembership.close();
+
   const filters = new PipelineStore(':memory:');
   await execute(filters, [collection([showing('Cinema A', '2026-10-16'), showing('Cinema A', '2026-10-16', 'OmU')])]);
   const invalidFilter = collection([], LATER);

@@ -66,7 +66,7 @@
     "prepreview": "npm run build",
     "preview": "vite preview",
     "test:sources": "ts-node --project tsconfig.server.json api/sources/registry.test.ts && ts-node --project tsconfig.server.json api/sources/adapters.test.ts && ts-node --project tsconfig.server.json api/sources/progress.test.ts && ts-node --project tsconfig.server.json api/sources/detail-cache.test.ts",
-    "test:review-fixes": "ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/sources/adapters.test.ts && ts-node --project tsconfig.server.json api/sources/progress.test.ts && ts-node --project tsconfig.server.json api/sources/detail-cache.test.ts && npm run test:resolution",
-    "test:resilience": "ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/pipeline/run-recovery.test.ts && ts-node --project tsconfig.server.json api/pipeline/publication-root.test.ts && ts-node --project tsconfig.server.json api/sources/resilience.test.ts"
+    "test:review-fixes": "ts-node --project tsconfig.server.json api/pipeline/rejected-scope.test.ts && ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/sources/adapters.test.ts && ts-node --project tsconfig.server.json api/sources/progress.test.ts && ts-node --project tsconfig.server.json api/sources/detail-cache.test.ts && npm run test:resolution",
+    "test:resilience": "ts-node --project tsconfig.server.json api/pipeline/rejected-scope.test.ts && ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/pipeline/run-recovery.test.ts && ts-node --project tsconfig.server.json api/pipeline/publication-root.test.ts && ts-node --project tsconfig.server.json api/sources/resilience.test.ts"
   }
 }

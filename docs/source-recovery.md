@@ -10,6 +10,12 @@ or invalid dimensions cannot prove exclusion. Variant alternatives must all be
 nonempty strings; arrays containing invalid elements and boolean variants remain
 unknown even on rejected rows. A failed filtered partition therefore protects
 retained support with unknown variant membership from an overlapping complete one.
+Scope checks use the same field-state overrides and per-field schemas as ingestion,
+including for rejected records and broken relationships. Raw placeholders cannot
+prove exclusion after a known override, failed lookup, unknown, absence or clear.
+Malformed dates/times cannot narrow a failure, and an unavailable variant cannot
+borrow an obsolete fallback label. Valid known disjoint dimensions still isolate
+independent partitions. Diagnostics retain the original rejected evidence.
 
 ## Adapter completeness and failures
 
