@@ -9,7 +9,7 @@ import { DecisionEngine, configuredModel } from './decision-model';
 import { DecisionModel, Entity, Observation, ParsedLabel, fingerprint, identity, normalize } from './domain';
 import { ingestCollections } from './observations';
 import type { SourceCollection } from '../../shared/contracts';
-import { parsePublicSnapshot } from '../../shared/contracts';
+import { CollectionEnvelopeSchema, parsePublicSnapshot } from '../../shared/contracts';
 import { refreshVenueObservations } from './source-venues';
 import { refreshListingObservations } from './source-details';
 import { CachedFilmEvidence, creditNames, filmMetadataInput } from './identity-evidence';
@@ -55,14 +55,19 @@ export async function runPipelineResult(options: PipelineOptions): Promise<Publi
 export async function runPipeline(options: PipelineOptions): Promise<any> {
   const { store } = options;
   const registry = options.sourceRegistry ?? configuredRegistry(); const now = options.now ?? new Date().toISOString(); const owner = randomUUID();
+  const runId = randomUUID(); let revision: number | undefined;
+  const diagnostics: Diagnostic[] = [];
   if (!store.acquireLease(owner)) throw new Error('Another pipeline/admin writer is running. Retry after it finishes.');
-  const runId = randomUUID(); const revision = store.revision;
-  const diagnostics = collectionDiagnostics(options.collections ?? []);
-  const dependencies: SourceDependencies = { ...(options.sourceDependencies ?? defaultSourceDependencies(store, { network: options.network, now, force: options.force })),
-    diagnostic: value => { diagnostics.push(value); options.sourceDependencies?.diagnostic(value); } };
   try {
+    revision = store.revision;
+    diagnostics.push(...collectionDiagnostics(options.collections ?? []));
+    const dependencies: SourceDependencies = { ...(options.sourceDependencies ?? defaultSourceDependencies(store, { network: options.network, now, force: options.force })),
+      diagnostic: value => { diagnostics.push(value); options.sourceDependencies?.diagnostic(value); } };
     store.beginReviewPass(now);
-    store.run(runId, 'running', { sources: options.collections?.map(collection => ({ source: collection.sourceInstanceId, observedAt: collection.observedAt, status: collection.status })) ?? [], revision });
+    store.run(runId, 'running', { sources: options.collections?.flatMap(input => {
+      const envelope = CollectionEnvelopeSchema.safeParse(input);
+      return envelope.success ? [{ source: envelope.data.sourceInstanceId, observedAt: envelope.data.observedAt, status: envelope.data.status }] : [];
+    }) ?? [], revision });
     const engine = new DecisionEngine(store, recoverableModel(options.model === undefined ? options.network === false ? null : configuredModel() : options.model, value => diagnostics.push(value)), { now: () => now });
     if (!engine.model) flag(store, 'provider-configuration', 'pipeline:decision-model', 'Decision model is not configured',
       { reason: 'Rules and previous accepted decisions remain available. Ambiguous records require local review. Configure a model key to enable decisions.' }, 'caution', 30);
