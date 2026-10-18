@@ -28,7 +28,8 @@ export function inCoverage(scope: Coverage, data: Record<string, any>, cinemaRec
 
 /** Reject only partitions which may contain the invalid evidence; missing dimensions remain conservative. */
 export function affectedCoverage(scope: Coverage, raw: any, records: any[]): boolean {
-  if (Array.isArray(raw?.cinemaRecordIds)) {
+  const record = raw && ['kind', 'recordId', 'data', 'fields', 'provenance'].some(field => Object.hasOwn(raw, field));
+  if (!record && Array.isArray(raw?.cinemaRecordIds)) {
     if (scope.cinemaRecordIds.length && raw.cinemaRecordIds.length
       && raw.cinemaRecordIds.every(id => typeof id === 'string' && !!id.trim())
       && !raw.cinemaRecordIds.some(id => scope.cinemaRecordIds.includes(id))) return false;

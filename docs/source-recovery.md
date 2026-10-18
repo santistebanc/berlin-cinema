@@ -16,6 +16,15 @@ prove exclusion after a known override, failed lookup, unknown, absence or clear
 Malformed dates/times cannot narrow a failure, and an unavailable variant cannot
 borrow an obsolete fallback label. Valid known disjoint dimensions still isolate
 independent partitions. Diagnostics retain the original rejected evidence.
+Source-field validation does not depend on a valid record discriminator: every
+scope value must satisfy its defining v1 source-data field schemas. Shared field
+names must satisfy all defining contracts; untyped extensions remain unknown for
+scope interpretation. Coverage declarations can specify alternative values, but
+that does not permit arrays or objects in scalar source fields such as variant,
+date, time or venueRecordId. Only declared array fields such as movieVariants can
+supply source alternatives. Record extensions cannot turn a rejected record into
+a coverage declaration. These checks only constrain the scope read view; original
+source records and diagnostics remain unchanged.
 
 ## Adapter completeness and failures
 
