@@ -4,9 +4,10 @@ import { PipelineStore } from './store';
 import { detailKey } from '../sources/keys';
 import { compatibleFilmDetails, detailIdentityConflict, filmDetailIdentity } from '../sources/detail-identity';
 import { CollectionEnvelopeSchema, CoverageSchema, DiagnosticSchema, EvidenceValue, IngestionResult, ListingDataSchema,
-  ScreeningDataSchema, SourceCollection, SourceRecord, SourceRecordSchema, VenueDataSchema } from '../../shared/contracts';
+  SourceCollection, SourceRecord, SourceRecordSchema } from '../../shared/contracts';
 import { sourceDiagnostic, validateLegacyBatch } from './legacy-source';
 import { affectedCoverage, inCoverage, reconcileCoverage } from './coverage';
+import { effectiveRecordData, sourceDataSchema } from './source-record';
 
 export function observation(source: string, kind: Observation['kind'], sourceKey: string, data: Record<string, any>,
   observedAt: string, fetchedAt = observedAt): Observation {
@@ -132,17 +133,14 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
     });
     const accepted: Observation[] = [];
     const records: SourceRecord[] = [];
+    const originals = new Map<SourceRecord, unknown>();
     if (collection.status !== 'failed' && collection.status !== 'skipped') for (const raw of collection.records) {
       const item = raw as any;
       // Isolate invalid optional data before parsing the discriminated record.
-      const schema = item?.kind === 'listing' ? ListingDataSchema : item?.kind === 'venue' ? VenueDataSchema : item?.kind === 'screening' ? ScreeningDataSchema : null;
+      const schema = sourceDataSchema(item?.kind);
       let candidate = item;
       if (schema && item.data && typeof item.data === 'object' && !Array.isArray(item.data)) {
-        const data = { ...item.data }; const fields = { ...item.fields };
-        for (const [field, value] of Object.entries(fields) as [string, any][]) {
-          if (value?.state === 'known') data[field] = value.value;
-          else if (['unknown', 'absent', 'failed', 'cleared'].includes(value?.state) && (value.state !== 'unknown' || data[field] != null)) delete data[field];
-        }
+        const data = effectiveRecordData(item); const fields = { ...item.fields };
         for (const [field, fieldSchema] of Object.entries(schema.shape)) {
           if (data[field] === undefined || !fieldSchema.isOptional()) continue;
           const checked = fieldSchema.safeParse(data[field]);
@@ -158,21 +156,28 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
         unsafe.push(raw); diagnostics.push(sourceDiagnostic(source, 'invalid-record', parsed.success ? 'Provenance identity does not match record/source' : parsed.error.message, raw)); continue;
       }
       records.push(parsed.data);
+      originals.set(parsed.data, raw);
     }
     const keys = new Map<string, SourceRecord>(); const conflictingKeys = new Set<string>();
     for (const record of records) {
       const key = `${record.kind}:${record.recordId}`;
-      if (conflictingKeys.has(key)) continue;
+      if (conflictingKeys.has(key)) {
+        unsafe.push(originals.get(record));
+        diagnostics.push(sourceDiagnostic(source, 'invalid-record', 'Conflicting duplicate record identity', originals.get(record)));
+        continue;
+      }
       const previous = keys.get(key);
       if (previous && fingerprint(previous.data) !== fingerprint(record.data)) {
-        unsafe.push(record, previous); keys.delete(key); conflictingKeys.add(key); diagnostics.push(sourceDiagnostic(source, 'invalid-record', 'Conflicting duplicate record identity', record));
+        unsafe.push(originals.get(record), originals.get(previous)); keys.delete(key); conflictingKeys.add(key);
+        for (const rejected of [previous, record]) diagnostics.push(sourceDiagnostic(source, 'invalid-record',
+          'Conflicting duplicate record identity', originals.get(rejected)));
       } else keys.set(key, record);
     }
     for (const record of keys.values()) {
       let data: Record<string, any> = { ...record.data };
       if (record.kind === 'screening') {
         const listing = keys.get(`listing:${record.data.listingRecordId}`); const venue = keys.get(`venue:${record.data.venueRecordId}`);
-        if (!listing || !venue) { unsafe.push(record); diagnostics.push(sourceDiagnostic(source, 'broken-reference', 'Screening requires valid listing and venue records', record)); continue; }
+        if (!listing || !venue) { unsafe.push(originals.get(record)); diagnostics.push(sourceDiagnostic(source, 'broken-reference', 'Screening requires valid listing and venue records', originals.get(record))); continue; }
         const { listingRecordId, venueRecordId, ...rest } = record.data;
         data = { ...rest, listingSubject: observation(source, 'listing', listingRecordId, {}, record.provenance.observedAt).subject,
           venueSubject: observation(source, 'venue', venueRecordId, {}, record.provenance.observedAt).subject } as any;
@@ -222,7 +227,7 @@ export function ingestCollections(store: PipelineStore, inputs: unknown[], optio
     const effectiveCoverage = coverage.map(scope => {
       if (scope.status !== 'complete') return scope;
       const invalidVenue = scope.cinemaRecordIds.some(id => !keys.has(`venue:${id}`) && !previousVenues.some(venue => venue.sourceKey === id));
-      const unconfirmedEmpty = !scope.emptyProgrammeConfirmed && !accepted.some(item => item.kind === 'screening' && inCoverage(scope, item.data, cinemaFor(item)));
+      const unconfirmedEmpty = !scope.emptyProgrammeConfirmed && !accepted.some(item => item.kind === 'screening' && inCoverage(scope, item.data, cinemaFor(item), item.fields));
       if (invalidVenue) diagnostics.push(sourceDiagnostic(source, 'invalid-coverage', 'Coverage references an invalid venue', scope));
       if (unconfirmedEmpty) diagnostics.push(sourceDiagnostic(source, 'unconfirmed-empty', 'Empty programme has not been confirmed', scope));
       return collection.status !== 'fresh' || invalidVenue || unconfirmedEmpty || unsafe.some(raw => affectedCoverage(scope, raw, collection.records))
