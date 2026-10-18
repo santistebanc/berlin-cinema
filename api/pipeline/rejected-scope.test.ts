@@ -49,6 +49,13 @@ async function scenario(name: string, configure: (row: any, next: SourceCollecti
     const expected = disjoint ? ['21:00'] : ['20:00', '21:00'];
     assert.deepEqual(Object.keys(file.movies[0].showings[DAY]).sort(), expected, `${name}: actual public file preserves eligible support`);
     assert.deepEqual(Object.keys(snapshot.movies[0].showings[DAY]).sort(), expected);
+    assert.equal(file.movies[0].showings[DAY]['21:00'][0].lastObservedAt, NEXT, 'Fresh valid sibling stays usable at its actual observation time');
+    if (!disjoint) {
+      for (const field of ['id', 'observationIds', 'provenance', 'lastObservedAt']) {
+        assert.deepEqual(file.movies[0].showings[DAY]['20:00'][0][field], first.movies[0].showings[DAY]['20:00'][0][field],
+          `Retained support keeps its original ${field}`);
+      }
+    }
     assert.equal(snapshot.ingestion[0].coverage[0].status, disjoint ? 'complete' : 'partial');
     assert.equal(snapshot.ingestion[0].safeForWithdrawal, disjoint);
     assert.equal(file.movies[0].identityStatus, 'source-only');
@@ -67,6 +74,22 @@ async function main() {
     ['unknown variant', row => { row.fields.variant = { state: 'unknown' }; }],
     ['raw invalid control', row => { row.data.variant = [42]; }],
     ['known disjoint control', row => { row.fields.variant = { state: 'known', value: 'OmU' }; }, true],
+    ['unsupported kind with invalid variant array', row => {
+      row.kind = 'unsupported-kind'; row.data.variant = ['OmU'];
+    }],
+    ['unsupported kind with invalid known variant array', row => {
+      row.kind = 'unsupported-kind'; row.fields.variant = { state: 'known', value: ['OmU'] };
+    }],
+    ['unsupported kind with invalid time array', (row, next) => {
+      row.kind = 'unsupported-kind'; row.data.variant = 'OV'; row.data.time = ['22:00'];
+      next.coverage[0].filters = { time: '20:00' }; next.coverage[0].emptyProgrammeConfirmed = true;
+    }],
+    ['supported kind with invalid variant array control', row => { row.data.variant = ['OmU']; }],
+    ['supported kind with invalid time array control', (row, next) => {
+      row.data.variant = 'OV'; row.data.time = ['22:00'];
+      next.coverage[0].filters = { time: '20:00' }; next.coverage[0].emptyProgrammeConfirmed = true;
+    }],
+    ['unsupported kind with valid disjoint variant control', row => { row.kind = 'unsupported-kind'; }, true],
     ['absent variant', row => { row.fields.variant = { state: 'absent', reason: 'Not reported' }; }],
     ['cleared variant', row => { row.fields.variant = { state: 'cleared', correctionId: 'fixture-clear', reason: 'Cleared' }; }],
     ['invalid known variant', row => { row.fields.variant = { state: 'known', value: [42] }; }],
@@ -129,6 +152,65 @@ async function main() {
       const second = structuredClone(first); second.data.time = '22:00'; next.records.push(first, second);
     }],
   ];
+  const kinds: [string, unknown][] = [['unsupported', 'unsupported-kind'], ['missing', undefined],
+    ['null', null], ['object', { value: 'screening' }], ['array', ['screening']], ['numeric', 42]];
+  const dimensions: [string, unknown[], unknown][] = [
+    ['variant', [['OmU'], { value: 'OmU' }, true, 42, null], 'OmU'],
+    ['date', [['2026-10-20'], { value: '2026-10-20' }, '2026-02-30', 42, null], '2026-10-20'],
+    ['time', [['22:00'], { value: '22:00' }, '25:00', 22, null], '22:00'],
+    ['venueRecordId', [['other-venue'], { value: 'other-venue' }, '', 42, null], 'other-venue'],
+    ['cinema', [['Other Cinema'], { value: 'Other Cinema' }, true, 42, null], 'Other Cinema'],
+    ['movieVariants', ['OmU', { value: 'OmU' }, [42], 42, null], ['OmU']],
+  ];
+  for (const [kindName, kind] of kinds) for (const [field, invalid, disjointValue] of dimensions) {
+    const setup = (row: any, next: SourceCollection) => {
+      if (kind === undefined) delete row.kind; else row.kind = kind;
+      row.data.variant = 'OV';
+      if (field === 'movieVariants') delete row.data.variant;
+      if (field === 'time' || field === 'cinema') {
+        next.coverage[0].filters = { [field]: field === 'time' ? '20:00' : 'Example Cinema' };
+        next.coverage[0].emptyProgrammeConfirmed = true;
+      }
+    };
+    for (const [index, value] of invalid.entries()) for (const known of [false, true]) {
+      cases.push([`${kindName} kind / ${field} invalid ${index} / ${known ? 'known sidecar' : 'raw'}`, (row, next) => {
+        setup(row, next);
+        if (known) row.fields[field] = { state: 'known', value }; else row.data[field] = value;
+      }]);
+    }
+    for (const state of ['unknown', 'failed', 'absent', 'cleared', 'invalid']) {
+      cases.push([`${kindName} kind / ${field} ${state} sidecar`, (row, next) => {
+        setup(row, next); row.data[field] = disjointValue;
+        row.fields[field] = state === 'failed' ? { state, reason: 'Unavailable', retryable: false }
+          : state === 'absent' ? { state, reason: 'Not reported' }
+          : state === 'cleared' ? { state, reason: 'Cleared', correctionId: 'fixture-clear' } : { state };
+      }]);
+    }
+    for (const known of [false, true]) cases.push([`${kindName} kind / valid disjoint ${field} / ${known ? 'known sidecar' : 'raw'}`, (row, next) => {
+      setup(row, next);
+      if (known) row.fields[field] = { state: 'known', value: disjointValue }; else row.data[field] = disjointValue;
+    }, true]);
+  }
+  cases.push(['untyped extension cannot prove disjointness', (row, next) => {
+    row.kind = 'unsupported-kind'; row.data.variant = 'OV'; row.data.untypedScope = ['elsewhere'];
+    next.coverage[0].filters = { untypedScope: 'here' }; next.coverage[0].emptyProgrammeConfirmed = true;
+  }]);
+  cases.push(['record extensions cannot masquerade as coverage declarations', row => {
+    row.kind = 'unsupported-kind'; row.data.variant = 'OV';
+    row.cinemaRecordIds = ['other-venue']; row.dateRange = { from: '2026-10-20', to: '2026-10-20' };
+    row.filters = { variant: 'OmU' };
+  }]);
+  cases.push(['invalid variant still allows independently valid disjoint date', row => {
+    row.kind = null; row.data.variant = ['OmU']; row.data.date = '2026-10-20';
+  }, true]);
+  cases.push(['invalid venue and date still allow independently valid disjoint time', (row, next) => {
+    row.kind = {}; row.data.venueRecordId = ['other-venue']; row.data.date = ['2026-10-20']; row.data.time = '22:00';
+    next.coverage[0].filters = { time: '20:00' }; next.coverage[0].emptyProgrammeConfirmed = true;
+  }, true]);
+  cases.push(['invalid fallback variant cannot defeat a known OV override', row => {
+    delete row.kind; row.data.variant = ['OmU']; row.data.movieVariants = ['OmU'];
+    row.fields.variant = { state: 'known', value: 'OV' };
+  }]);
   const failures: string[] = [];
   for (const [name, configure, disjoint] of cases) {
     try { await scenario(name, configure, disjoint); console.log(`PASS ${name}`); }
