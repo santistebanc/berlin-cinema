@@ -1,15 +1,22 @@
-import { DateSchema, type Coverage } from '../../shared/contracts';
+import { DateSchema, TimeSchema, type Coverage } from '../../shared/contracts';
 import type { Observation } from './domain';
 import { fingerprint } from './domain';
 import type { PipelineStore } from './store';
+import { recordScopeData } from './source-record';
 
 // Empty or malformed evidence is unknown, including arrays with even one invalid alternative.
-const usableFilter = (value: any, key: string): boolean => typeof value === 'boolean' && key !== 'variant' && key !== 'variants'
-  || typeof value === 'string' && !!value.trim()
-  || Array.isArray(value) && value.length > 0 && value.every(item => typeof item === 'string' && !!item.trim());
+const usableFilter = (value: any, key: string): boolean => {
+  const values = Array.isArray(value) ? value : [value];
+  if (key === 'date' || key === 'time') return values.length > 0
+    && values.every(item => (key === 'date' ? DateSchema : TimeSchema).safeParse(item).success);
+  return typeof value === 'boolean' && key !== 'variant' && key !== 'variants'
+    || typeof value === 'string' && !!value.trim()
+    || Array.isArray(value) && value.length > 0 && value.every(item => typeof item === 'string' && !!item.trim());
+};
 
 /** Filters are conjunctive; array values are alternatives. Unknown values never prove membership. */
-export function inCoverage(scope: Coverage, data: Record<string, any>, cinemaRecordId?: string): boolean {
+export function inCoverage(scope: Coverage, data: Record<string, any>, cinemaRecordId?: string, fields?: Observation['fields']): boolean {
+  data = recordScopeData({ kind: 'screening', data, fields });
   if (scope.cinemaRecordIds.length && !scope.cinemaRecordIds.includes(cinemaRecordId ?? '')) return false;
   if (scope.dateRange && !(data.date >= scope.dateRange.from && data.date <= scope.dateRange.to)) return false;
   return Object.entries(scope.filters).every(([key, expected]) => {
@@ -37,17 +44,19 @@ export function affectedCoverage(scope: Coverage, raw: any, records: any[]): boo
     return true;
   }
   if (raw?.kind === 'listing') {
-    const dependents = records.filter(record => record?.kind === 'screening' && record.data?.listingRecordId === raw.recordId);
+    const dependents = records.filter(record => record?.kind === 'screening'
+      && (!recordScopeData(record).listingRecordId || recordScopeData(record).listingRecordId === raw.recordId));
     return !dependents.length || dependents.some(record => affectedCoverage(scope, record, records));
   }
-  const cinema = raw?.kind === 'venue' ? raw.recordId : raw?.data?.venueRecordId;
+  const data = recordScopeData(raw);
+  const cinema = raw?.kind === 'venue' ? raw.recordId : data.venueRecordId;
   if (typeof cinema === 'string' && cinema.trim() && scope.cinemaRecordIds.length && !scope.cinemaRecordIds.includes(cinema)) return false;
-  const date = raw?.data?.date;
+  const date = data.date;
   if (DateSchema.safeParse(date).success && scope.dateRange && (date < scope.dateRange.from || date > scope.dateRange.to)) return false;
   // A known contradictory filter isolates a failure; unknown/invalid filter data cannot prove exclusion.
   for (const [key, expected] of Object.entries(scope.filters)) {
     if (!usableFilter(expected, key)) continue;
-    const value = key === 'variant' || key === 'variants' ? raw?.data?.variant ?? raw?.data?.movieVariants : raw?.data?.[key];
+    const value = key === 'variant' || key === 'variants' ? data.variant ?? data.movieVariants : data[key];
     if (!usableFilter(value, key)) continue;
     const alternatives = Array.isArray(expected) ? expected : [expected];
     if (!(Array.isArray(value) ? value : [value]).some(item => alternatives.includes(item))) return false;
@@ -70,9 +79,9 @@ export function reconcileCoverage(store: PipelineStore, source: string, coverage
   const retained = new Set(accepted.map(item => item.subject));
   const eligible = (item: Observation) => item.kind === 'screening'
     && Date.parse(item.observedAt) <= Date.parse(at)
-    && coverage.some(scope => scope.status === 'complete' && inCoverage(scope, item.data, store.head(item.data.venueSubject)?.sourceKey))
+    && coverage.some(scope => scope.status === 'complete' && inCoverage(scope, item.data, store.head(item.data.venueSubject)?.sourceKey, item.fields))
     && !coverage.some(scope => scope.status !== 'complete' && affectedCoverage(scope,
-      { kind: 'screening', data: { ...item.data, venueRecordId: store.head(item.data.venueSubject)?.sourceKey } }, []));
+      { kind: 'screening', fields: item.fields, data: { ...item.data, venueRecordId: store.head(item.data.venueSubject)?.sourceKey } }, []));
   const parents = new Set(store.observations(source, true).filter(item => !retained.has(item.subject) && eligible(item))
     .flatMap(item => [item.data.listingSubject, item.data.venueSubject]));
   store.retireMissing(source, retained, eligible, at);
