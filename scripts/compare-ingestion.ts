@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { createHash } from 'crypto';
+import { decodeState, STATE_NAME } from '../api/pipeline/state-file';
 import { PipelineStore } from '../api/pipeline/store';
 import { runPipeline } from '../api/pipeline/pipeline';
 import { defaultRegistry } from '../api/sources/defaults';
@@ -93,7 +94,7 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
     throw new Error('Pinned baseline has tracked changes; comparison refused');
   const baseline = require(path.join(baselineRoot, 'api/pipeline/pipeline'));
   const BaselineStore = require(path.join(baselineRoot, 'api/pipeline/store')).PipelineStore;
-  const inputBytes = fs.readFileSync(options.stateFile); const inputState = JSON.parse(inputBytes.toString('utf8'));
+  const inputBytes = fs.readFileSync(options.stateFile); const inputState = decodeState(inputBytes, options.stateFile);
   if (inputState.schemaVersion !== 1) throw new Error('Pinned baseline comparison requires original v1 state');
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'cinema-shadow-'));
   fs.mkdirSync(options.output, { recursive: true });
@@ -171,13 +172,13 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
       const coldState = { schemaVersion: 1, revision: 0, observations: {}, heads: {}, entities: {}, links: {}, decisions: {}, issues: {}, overrides: [], fields: {},
         resources: Object.fromEntries(Object.entries(inputState.resources).filter(([key]) => /^(tmdb-|omdb:|source-detail:|source-venue:|geoapify:|osm:)/.test(key))),
         spend: {}, snapshots: [], runs: [], jobs: [] };
-      const oldFile = path.join(scratch, `${name}-old.json`); fs.writeFileSync(oldFile, name === 'cold-raw-replay' ? JSON.stringify(coldState) : inputBytes);
-      const newFile = path.join(scratch, `${name}-new.json`);
+      const oldFile = path.join(scratch, `${name}-old.json`); fs.writeFileSync(oldFile, JSON.stringify(name === 'cold-raw-replay' ? coldState : inputState));
+      const newFile = path.join(scratch, `${name}-new.json.gz`);
       if (name === 'cold-raw-replay') {
         const coldBundle = path.join(scratch, 'cold-migrated');
         migrateIngestion({ stateFile: oldFile, dataDir: options.dataDir, output: coldBundle, registry: defaultRegistry });
-        fs.copyFileSync(path.join(coldBundle, 'state.json'), newFile);
-      } else fs.copyFileSync(path.join(bundle, 'state.json'), newFile);
+        fs.copyFileSync(path.join(coldBundle, STATE_NAME), newFile);
+      } else fs.copyFileSync(path.join(bundle, STATE_NAME), newFile);
       const oldStore = new BaselineStore(oldFile); const newStore = new PipelineStore(newFile);
       try {
         const collections = name === 'retained-recalculate' ? [] : await defaultRegistry.collect(retainedDependencies(newStore, defaultRegistry,

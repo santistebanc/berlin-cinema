@@ -1,7 +1,10 @@
 import assert from 'assert/strict';
 import fs from 'fs';
 import os from 'os';
+import { gunzipSync } from 'zlib';
+import { createHash } from 'crypto';
 import path from 'path';
+import { loadStateFile, defaultStateFile } from '../api/pipeline/state-file';
 import { PipelineStore } from '../api/pipeline/store';
 import { runPipeline } from '../api/pipeline/pipeline';
 import { translateLegacyBatch } from '../api/pipeline/observations';
@@ -42,8 +45,8 @@ async function main() {
     const manifest = migrateIngestion({ stateFile, dataDir: rawDir, output, registry: defaultRegistry });
     assert.deepEqual(manifest.unconfiguredRetainedFiles, ['retired-provider.json']);
     assert.equal(fs.readFileSync(path.join(output, 'data/retired-provider.json'), 'utf8'), '{"historical":"unconfigured original bytes"}\n');
-    const migrated = new PipelineStore(path.join(output, 'state.json'));
-    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(output, 'state.json'), 'utf8')).fields, original.fields,
+    const migrated = new PipelineStore(path.join(output, 'state.json.gz'));
+    assert.deepEqual(loadStateFile(path.join(output, 'state.json.gz')).fields, original.fields,
       'Adding typed evidence roles never rewrites historical selected fields during migration');
     assert.equal(migrated.fields(before.movies[0].id).find(field => field.field === 'runtime')?.evidenceRole, 'source-detail',
       'Historical detail authority is read from retained attribution, independent of reason wording');
@@ -61,17 +64,29 @@ async function main() {
     assert.equal(replay[0].status, 'cached');
     assert.ok(replay[0].coverage.every(c => c.status !== 'complete'));
     assert.deepEqual(migrateIngestion({ stateFile, dataDir: rawDir, output, registry: defaultRegistry }), manifest, 'Repeat is byte-stable and idempotent');
-    const preparedState = fs.readFileSync(path.join(output, 'state.json'));
-    fs.writeFileSync(path.join(output, 'state.json'), '{}');
+    const legacyBundle = path.join(root, 'legacy-plain-bundle');
+    fs.cpSync(output, legacyBundle, { recursive: true });
+    const plainBytes = gunzipSync(fs.readFileSync(path.join(legacyBundle, 'state.json.gz')));
+    fs.writeFileSync(path.join(legacyBundle, 'state.json'), plainBytes); fs.unlinkSync(path.join(legacyBundle, 'state.json.gz'));
+    const legacyManifest = { ...manifest, outputs: manifest.outputs.map(entry => entry.file === 'state.json.gz'
+      ? { file: 'state.json', sha256: createHash('sha256').update(plainBytes).digest('hex') } : entry) };
+    fs.writeFileSync(path.join(legacyBundle, 'manifest.json'), JSON.stringify(legacyManifest));
+    assert.deepEqual(migrateIngestion({ stateFile, dataDir: rawDir, output: legacyBundle, registry: defaultRegistry }), legacyManifest,
+      'An existing pre-compression plain migration bundle remains repeatable without rewriting it');
+    const restoredLegacy = path.join(root, 'restored-legacy');
+    restoreIngestion(legacyBundle, restoredLegacy);
+    assert.deepEqual(fs.readFileSync(path.join(restoredLegacy, 'state.json')), stateBytes);
+    const preparedState = fs.readFileSync(path.join(output, 'state.json.gz'));
+    fs.writeFileSync(path.join(output, 'state.json.gz'), '{}');
     assert.throws(() => migrateIngestion({ stateFile, dataDir: rawDir, output, registry: defaultRegistry }), /checksum/i, 'A modified output cannot masquerade as a repeatable migration');
-    fs.writeFileSync(path.join(output, 'state.json'), preparedState);
+    fs.writeFileSync(path.join(output, 'state.json.gz'), preparedState);
     fs.writeFileSync(`${stateFile}.lock`, 'test writer');
     assert.throws(() => migrateIngestion({ stateFile, dataDir: rawDir, output: path.join(root, 'locked'), registry: defaultRegistry }), /writer lock/i);
     assert.equal(fs.existsSync(path.join(root, 'locked')), false);
     fs.unlinkSync(`${stateFile}.lock`);
     const second = path.join(root, 'migrated-again');
-    migrateIngestion({ stateFile: path.join(output, 'state.json'), dataDir: path.join(output, 'data'), output: second, registry: defaultRegistry });
-    assert.deepEqual(fs.readFileSync(path.join(second, 'state.json')), fs.readFileSync(path.join(output, 'state.json')), 'v2 migration is a lossless no-op on identities and timestamps');
+    migrateIngestion({ stateFile: path.join(output, 'state.json.gz'), dataDir: path.join(output, 'data'), output: second, registry: defaultRegistry });
+    assert.deepEqual(fs.readFileSync(path.join(second, 'state.json.gz')), fs.readFileSync(path.join(output, 'state.json.gz')), 'v2 migration is a lossless no-op on identities and timestamps');
     assert.deepEqual(fs.readFileSync(stateFile), stateBytes); assert.deepEqual(fs.readFileSync(path.join(rawDir, 'critic-raw.json')), rawBytes);
     const restored = path.join(root, 'restored'); restoreIngestion(output, restored);
     assert.deepEqual(fs.readFileSync(path.join(restored, 'state.json')), stateBytes);
@@ -92,7 +107,7 @@ async function main() {
     fs.writeFileSync(stateFile, JSON.stringify(repeatedObservation));
     const historicalOutput = path.join(root, 'historical-head');
     migrateIngestion({ stateFile, dataDir: rawDir, output: historicalOutput, registry: defaultRegistry });
-    const migratedHead = new PipelineStore(path.join(historicalOutput, 'state.json')).head(subject)!;
+    const migratedHead = new PipelineStore(path.join(historicalOutput, 'state.json.gz')).head(subject)!;
     assert.equal(migratedHead.observedAt, '2026-10-15T11:00:00Z');
     assert.equal(migratedHead.provenance?.observedAt, migratedHead.observedAt, 'Original last observation is retained when an unchanged historical observation ID was reused');
     fs.writeFileSync(stateFile, stateBytes);
@@ -104,11 +119,11 @@ async function main() {
     fs.writeFileSync(path.join(output, 'original/state.json'), 'corrupt backup');
     assert.throws(() => restoreIngestion(output, path.join(root, 'bad-restore')), /checksum/i, 'Recovery validates originals before writing');
     assert.equal(fs.existsSync(path.join(root, 'bad-restore')), false);
-    const representative = path.join(__dirname, '../pipeline/state.json');
-    const retainedState = JSON.parse(fs.readFileSync(representative, 'utf8'));
+    const representative = defaultStateFile(path.join(__dirname, '../pipeline'));
+    const retainedState = loadStateFile(representative);
     const representativeOutput = path.join(root, 'representative');
     migrateIngestion({ stateFile: representative, dataDir: path.join(root, 'no-raw'), output: representativeOutput, registry: defaultRegistry });
-    const convertedState = JSON.parse(fs.readFileSync(path.join(representativeOutput, 'state.json'), 'utf8'));
+    const convertedState = loadStateFile(path.join(representativeOutput, 'state.json.gz'));
     for (const key of Object.keys(retainedState).filter(k => !['schemaVersion', 'observations'].includes(k)))
       assert.deepEqual(convertedState[key], retainedState[key], `Representative ${key} remains intact`);
     for (const [id, old] of Object.entries(retainedState.observations) as [string, any][]) {
