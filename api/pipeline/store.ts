@@ -3,7 +3,8 @@ import path from 'path';
 import os from 'os';
 import { randomUUID } from 'crypto';
 import { Entity, FieldValue, Observation, Override, ReviewIssue, fingerprint } from './domain';
-import { attributeHistoricalObservation, readState } from './state-format';
+import { attributeHistoricalObservation } from './state-format';
+import { configuredStateFile, defaultStateFile, loadStateFile, writeStateFile } from './state-file';
 import { fieldEvidenceRole } from './field-evidence';
 
 interface State {
@@ -30,25 +31,22 @@ export class PipelineStore {
   private reviewPass: Set<string> | null = null;
   private reviewNow: string | undefined;
   private readonly filename: string;
-  constructor(filename = process.env.PIPELINE_STATE || path.join(__dirname, '../../pipeline/state.json')) {
-    this.filename = filename; this.state = this.load();
+  private readonly defaultSelection: boolean;
+  constructor(filename?: string) {
+    this.defaultSelection = filename === undefined && !process.env.PIPELINE_STATE;
+    this.filename = filename ?? configuredStateFile(); this.state = this.load();
   }
   private load(): State {
+    if (this.defaultSelection && defaultStateFile() !== this.filename)
+      throw new Error('Default pipeline state path changed; reopen the store after migration/export');
     if (this.filename === ':memory:' || !fs.existsSync(this.filename)) return blank();
-    return readState(JSON.parse(fs.readFileSync(this.filename, 'utf8')));
+    return loadStateFile(this.filename);
   }
   refresh() { if (!this.owner && this.filename !== ':memory:') this.state = this.load(); }
   flush() {
     if (this.filename === ':memory:') return;
     if (!this.owner) throw new Error('Pipeline state requires the writer lock before saving');
-    fs.mkdirSync(path.dirname(this.filename), { recursive: true });
-    const temporary = `${this.filename}.${process.pid}.${randomUUID()}.tmp`;
-    try {
-      const descriptor = fs.openSync(temporary, 'wx', 0o600);
-      try { fs.writeFileSync(descriptor, JSON.stringify(this.state) + '\n'); fs.fsyncSync(descriptor); }
-      finally { fs.closeSync(descriptor); }
-      fs.renameSync(temporary, this.filename);
-    } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+    writeStateFile(this.filename, this.state);
   }
   close() { if (this.owner) this.releaseLease(this.owner); }
   transaction<T>(fn: () => T): T {

@@ -52,7 +52,7 @@ async function main() {
     const historicalFile = path.join(root, 'historical-state.json'); fs.writeFileSync(historicalFile, JSON.stringify(historical));
     const historicalOutput = path.join(root, 'historical-migrated');
     migrateIngestion({ stateFile: historicalFile, dataDir: path.join(root, 'no-raw'), output: historicalOutput, registry });
-    const historicalStore = new PipelineStore(path.join(historicalOutput, 'state.json'));
+    const historicalStore = new PipelineStore(path.join(historicalOutput, 'state.json.gz'));
     try {
       const historicalReplay = await runPipelineResult({ store: historicalStore, collections: [], sourceRegistry: registry,
         now: NOW, network: false, model: null, tmdb: null, geocoder: null, osm: [], osmAddresses: [], publish: false, audit: false });

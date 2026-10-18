@@ -23,9 +23,10 @@ npm run pipeline:migrate -- \
   --output /isolated/rollout-v2
 ```
 
-`--output` must be a new directory. The result contains `state.json`, `data/`,
-`original/state.json`, `original/data/` and `manifest.json`. The manifest records
-input/output SHA-256 values, configuration hash, missing configured raw files,
+`--output` must be a new directory. The result contains `state.json.gz`, `data/`,
+`original/state.json` (or `original/state.json.gz` for compressed input),
+`original/data/` and `manifest.json`. The manifest records
+input/output encoded-byte SHA-256 values, configuration hash, missing configured raw files,
 unconfigured raw files and retained validation diagnostics. Extra unconfigured
 JSON files are copied byte-for-byte and archived, without activating a source or
 claiming their contents were validated. Other files/directories remain in the
@@ -67,7 +68,9 @@ directory:
 npm run pipeline:migrate -- --restore /isolated/rollout-v2 --output /isolated/recovered-v1
 ```
 
-Use the original code revision to operate restored v1 state. Current code can read
+Use the original code revision to operate restored v1 state. Compressed originals
+restore as gzip; code predating compression needs a decoded copy in a separate
+directory, retaining the original encoded backup and checksum manifest. Current code can read
 v1 for inspection/development, but refuses writer leases with migration guidance.
 Do not substitute a blank store to recover an error: that loses accepted identities,
 corrections and verified provenance. If a bundle has already been used by writers,
@@ -117,7 +120,7 @@ destructive cold rebuild and is **not** an alternative migration strategy.
 After inspecting the comparison, select the migrated paths explicitly:
 
 ```sh
-export PIPELINE_STATE=/isolated/rollout-v2/state.json
+export PIPELINE_STATE=/isolated/rollout-v2/state.json.gz
 export PIPELINE_DATA_DIR=/isolated/rollout-v2/data
 export PIPELINE_PUBLIC_ROOT=/isolated/publication-copy
 npm run pipeline:shadow -- --offline --now 2026-10-16T07:08:38.647Z
@@ -135,7 +138,10 @@ offline verification never requires live acquisition or provider spending.
 Scheduled workflow preparation explicitly creates an isolated migration bundle,
 uploads its original evidence/manifest as a seven-day recovery artifact, and
 collects against the migrated paths. Only the successfully processed state is
-copied into the checkout for the existing artifact commit. `PIPELINE_MODE=shadow`
+exported losslessly as `pipeline/state.json.gz` into the checkout for the artifact
+commit. The workflow removes/stages any obsolete tracked plain state only after
+verifying the compressed replacement. The next checkout uses that same gzip file;
+repeated migrations remain lossless. See [state format and recovery](source-recovery.md#retained-state-files). `PIPELINE_MODE=shadow`
 continues withholding public replacement. No workflow was run or deployed as part
 of this verification. A real rollout still requires retaining the recovery artifact,
 reviewing the comparison and deliberately enabling the intended publication mode.

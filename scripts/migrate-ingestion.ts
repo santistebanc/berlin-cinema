@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createHash, randomUUID } from 'crypto';
+import { decodeState, encodeState, configuredStateFile, STATE_NAME } from '../api/pipeline/state-file';
 import { migrateState } from '../api/pipeline/state-format';
 import { configuredRegistry } from '../api/sources/defaults';
 import type { SourceRegistry } from '../api/sources/registry';
@@ -17,7 +18,7 @@ const write = (root: string, name: string, bytes: Buffer | string): FileEntry =>
 };
 function verify(root: string, entries: FileEntry[]) {
   for (const entry of entries) {
-    if (!['state.json', 'data'].includes(entry.file.split('/')[0]) || entry.file.split('/').some(p => p === '..')
+    if (!['state.json', STATE_NAME, 'data'].includes(entry.file.split('/')[0]) || entry.file.split('/').some(p => p === '..')
       || hash(fs.readFileSync(path.join(root, entry.file))) !== entry.sha256) throw new Error(`Migration checksum/path mismatch: ${entry.file}`);
   }
 }
@@ -34,9 +35,13 @@ function createBundle(output: string, action: (staging: string) => void) {
 export function migrateIngestion(options: MigrationOptions): Manifest {
   const { stateFile, dataDir, registry } = options; const output = path.resolve(options.output);
   if (fs.existsSync(`${stateFile}.lock`)) throw new Error('Pipeline writer lock exists; stop writers before migration');
-  const stateBytes = fs.readFileSync(stateFile); const state = migrateState(JSON.parse(stateBytes.toString('utf8')));
-  const originals = new Map<string, Buffer>([['state.json', stateBytes]]);
-  const converted = new Map<string, string | Buffer>([['state.json', JSON.stringify(state) + '\n']]);
+  const stateBytes = fs.readFileSync(stateFile); const state = migrateState(decodeState(stateBytes, stateFile));
+  const originalName = stateFile.endsWith('.gz') ? STATE_NAME : 'state.json';
+  const prior = fs.existsSync(output) ? JSON.parse(fs.readFileSync(path.join(output, 'manifest.json'), 'utf8')) : undefined;
+  // Existing plain migration bundles remain repeatable; newly prepared bundles use gzip.
+  const outputName = prior?.outputs?.some((entry: FileEntry) => entry.file === 'state.json') ? 'state.json' : STATE_NAME;
+  const originals = new Map<string, Buffer>([[originalName, stateBytes]]);
+  const converted = new Map<string, string | Buffer>([[outputName, encodeState(state, outputName)]]);
   const missingRetainedSources: string[] = []; const diagnostics: any[] = [];
   for (const instance of registry.instances) {
     const name = instance.retainedFile ?? `${encodeURIComponent(instance.cacheIdentity)}-collection.json`;
@@ -66,8 +71,7 @@ export function migrateIngestion(options: MigrationOptions): Manifest {
   const manifest: Manifest = { schemaVersion: 1, migration: 'ingestion-state-v1-v2', inputs, outputs,
     configurationHash: hash(JSON.stringify(registry.instances)), stateVersion: state.schemaVersion, missingRetainedSources, unconfiguredRetainedFiles, diagnostics };
   if (fs.existsSync(output)) {
-    const old = JSON.parse(fs.readFileSync(path.join(output, 'manifest.json'), 'utf8'));
-    if (JSON.stringify(old) !== JSON.stringify(manifest)) throw new Error('Migration inputs/configuration changed; use a new output directory');
+    if (JSON.stringify(prior) !== JSON.stringify(manifest)) throw new Error('Migration inputs/configuration changed; use a new output directory');
     verify(output, outputs); verify(path.join(output, 'original'), inputs); return manifest;
   }
   createBundle(output, staging => {
@@ -75,7 +79,7 @@ export function migrateIngestion(options: MigrationOptions): Manifest {
     for (const [name, bytes] of converted) write(staging, name, bytes);
     // Detect an acquisition/state writer changing any input during preparation.
     for (const [name, bytes] of originals) {
-      const file = name === 'state.json' ? stateFile : path.join(dataDir, name.slice(5));
+      const file = name === originalName ? stateFile : path.join(dataDir, name.slice(5));
       if (hash(fs.readFileSync(file)) !== hash(bytes) || fs.existsSync(`${stateFile}.lock`)) throw new Error('Migration inputs changed; stop writers and retry');
     }
     write(staging, 'manifest.json', JSON.stringify(manifest, null, 2) + '\n');
@@ -96,8 +100,8 @@ if (require.main === module) {
     const output = arg('--output'); if (!output) throw new Error('Required: --output NEW_DIRECTORY');
     if (arg('--restore')) restoreIngestion(arg('--restore')!, output);
     else {
-      const stateFile = arg('--state'); const dataDir = arg('--data');
-      if (!stateFile || !dataDir) throw new Error('Required: --state FILE --data DIRECTORY --output NEW_DIRECTORY');
+      const stateFile = arg('--state') ?? configuredStateFile(); const dataDir = arg('--data');
+      if (!dataDir) throw new Error('Required: --state FILE --data DIRECTORY --output NEW_DIRECTORY');
       console.log(JSON.stringify(migrateIngestion({ stateFile, dataDir, output, registry: configuredRegistry() }), null, 2));
     }
   } catch (error) { console.error((error as Error).message); process.exitCode = 1; }
