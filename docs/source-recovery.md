@@ -147,6 +147,59 @@ only when that root already has an audit history, preserving the last successful
 dataset and immutable audit runs. With neither override, production paths stay
 unchanged.
 
+## Retained state files
+
+The canonical checkout artifact is `pipeline/state.json.gz`: one gzip member
+containing the complete UTF-8 JSON state, including its schema version. Compression
+changes storage only; it does not remove observations, provenance, corrections,
+snapshots, diagnostics or audit history, or change validation/retention policy.
+Node's built-in zlib reads/writes it without a service, dependency or Git LFS.
+
+All store consumers (app preparation, admin, scrape, replay, cleanup and shadow)
+use the same selection: explicit `PIPELINE_STATE` is an exact path with no fallback;
+otherwise use the sole existing `pipeline/state.json.gz` or legacy
+`pipeline/state.json`. A new empty directory chooses gzip. If both default files
+exist, stop with an explicit error: preserve both, inspect their histories and
+select the intended one explicitly before recovery. Neither file is assumed newer.
+Existing default store readers recheck ambiguity on refresh and reject a changed
+selected path; reopen them after conversion instead of reviving the old filename.
+Do not leave a stale plain file beside the compressed checkout artifact.
+A `.gz` suffix means gzip; other filenames mean plain JSON. A custom
+`PIPELINE_STATE=/isolated/custom.json` keeps writing plain JSON. Do not rename
+gzip bytes to a plain suffix. Invalid/truncated gzip, malformed JSON and unsupported
+schemas fail without substituting an empty store or overwriting the input.
+V1 is still readable and read-only until explicit v1-to-v2 migration.
+
+Saves retain the existing writer lock, exclusive temporary file, fsync and atomic
+rename. Failed writes preserve the previous file and clean up their temporary
+file; operation cleanup releases the lease. Compression completes before file
+replacement. Stop all acquisition/admin writers before migration or export.
+
+Scheduled preparation writes `.recovery/scheduled-migration/state.json.gz` and
+uploads the manifest plus immutable original bytes. After successful processing,
+`npm run pipeline:export-state` exports the explicit `PIPELINE_STATE` into
+`pipeline/state.json.gz`. It requires a separate prepared input, locks that input
+and both checkout filenames, validates state and the encoded-size limit, atomically
+writes/verifies gzip, then removes an obsolete plain file. It leaves the separate
+input/recovery bundle intact. A failed rename retains the previous artifact.
+Interruption or failure after replacement but before plain-file removal can leave
+both files; default discovery then refuses to guess. Preserve the bundle and
+rerun the explicit export after all writers stop. An active lock is never removed
+by the exporter; investigate an interrupted process before removing its stale lock.
+The workflow stages the gzip file and, if tracked, the plain-file deletion.
+No newly committed state blob may reach 100 MiB; an oversized compressed export
+fails explicitly and keeps the previous artifact.
+
+Inventory and migration accept both suffixes; inventory without an argument uses
+the same default/environment selection. Migration without `--state` does too.
+Recovery manifests hash the **encoded original bytes** and retain their correct
+`original/state.json` or `original/state.json.gz` name. Restoration reproduces those
+bytes exactly. Older plain bundles remain checksum-verifiable, repeatable and
+restorable. To use a compressed original with code predating gzip support, decode
+a copy into a separate directory (`gzip -dc original/state.json.gz > /new/state.json`);
+retain the encoded backup and manifest. Never replace a damaged state with a blank
+one, or discard either history to resolve a default-path ambiguity.
+
 ## Public loading and expiry
 
 `programmeStatus` distinguishes `available`, checked `empty` and

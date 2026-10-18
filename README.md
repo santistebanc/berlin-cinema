@@ -210,7 +210,9 @@ mall/building match supplies geography. A precise named cinema/city point with
 a verified non-Berlin state can establish exclusion even if the provider omits
 its street address; missing street addresses inside Berlin remain unresolved.
 
-`pipeline/state.json` is the durable, Git-versioned evidence/decision store.
+`pipeline/state.json.gz` is the durable, Git-versioned evidence/decision store (gzip-compressed JSON, with lossless v1/v2 readers).
+Legacy `pipeline/state.json` and explicit `PIPELINE_STATE` plain JSON paths remain supported.
+Default discovery refuses coexisting plain/gzip files; see [state storage and recovery](docs/source-recovery.md#retained-state-files).
 It contains public source data, observations, links, resources, review issues,
 corrections, a spending ledger and two recent snapshots. It contains no provider
 credentials. Writers use a process lock and atomic file replacement; concurrent
@@ -379,7 +381,8 @@ changes flagged for another review. Applying/undoing a correction queues local
 regeneration, with saved/processing/published/failed status. No source scrape is
 needed. Unchanged decisions and resource lookups are reused.
 
-Commit and push `pipeline/state.json` to propagate local corrections to Actions.
+Commit and push the selected `pipeline/state.json.gz` to propagate local corrections to Actions.
+Custom `PIPELINE_STATE` paths remain explicit; migrate/export deliberately before replacing the scheduled state.
 Pull the latest state before reviewing; if Git reports a state-file conflict,
 keep both versions and reconcile the corrections rather than accepting a
 whole-file replacement blindly. Git supplies the historical archive; current
@@ -387,7 +390,8 @@ state is loaded into memory. Partition the store if history grows substantially.
 
 Pushing to `main` runs the production workflow: Node 24, `npm ci`, type checks,
 tests, a fresh scrape, and the production build. Successful runs commit the
-dataset, sitemap, public audit and `pipeline/state.json`, then deploy GitHub Pages.
+dataset, sitemap, public audit and `pipeline/state.json.gz`, then deploy GitHub Pages.
+The workflow exports the successful isolated run as gzip and stages removal of an obsolete tracked plain state, avoiding GitHub's 100 MiB per-file limit.
 Scheduled runs refresh the same data every six hours. The existing `TMDB_API_KEY`
 and `OMDB_API_KEY` secrets are reused; optional `GEOAPIFY_API_KEY` enables extra
 venue verification. No decision-model credentials are required: deterministic
