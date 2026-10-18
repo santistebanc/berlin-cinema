@@ -119,6 +119,13 @@ and `source-validation:<source>` independently of public publication. Open
 diagnostics**, then **Source attempts and coverage**. The same information is
 returned by local `GET /api/review/state` under `operations`.
 
+Invalid collection envelopes produce `rejected-source` ingestion results with
+their original rejected evidence. Diagnostic and run metadata readers validate
+the envelope before using its fields. Valid sibling sources can still publish;
+rejected input cannot authorize withdrawal of retained support. The writer lease
+is released after every acquired run, including dependency setup and failures
+while saving error diagnostics, so a later valid run can retry the same store.
+
 Optional metadata, ratings, model and geocoding outages keep eligible retained
 evidence or source-only fields. They cannot establish missing facts, overwrite
 corrections, merge protected identities or bypass verified Berlin location
