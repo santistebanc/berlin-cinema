@@ -23,7 +23,8 @@ export function auditFingerprint(snapshot: AuditSnapshot): string {
 
 interface Observation { source: string; at: string; name: string; url: string | null; details: Record<string, any> }
 interface Candidate { kind: AuditKind; label: string; keys: string[]; data: Record<string, any>; observations: Observation[]; movieId?: string; cinemaId?: string }
-const normalize = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const normalize = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{M}\p{N}]/gu, '');
+const movieIdentityKeys = (data: Record<string, any>): string[] => typeof data.id === 'string' && data.id ? [`movie-id:${data.id}`] : [];
 const hash = (value: string) => createHash('sha256').update(value).digest('hex').slice(0, 20);
 const dateIsValid = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const secretKey = /^(?:.*[_-])?(api[_-]?key|access[_-]?token|refresh[_-]?token|token|authorization|password|secret|cookie|set-cookie)$/i;
@@ -81,7 +82,7 @@ export function buildAudit(previous: AuditIndex | null, snapshot: AuditSnapshot)
     schemaVersion: 1, trackingStartedAt: recordedAt, latestRunId: '', snapshotHash: '', entities: {}, runs: [], recordRuns: {},
   };
   const keyIndex = new Map<string, Set<string>>();
-  for (const entity of Object.values(index.entities)) for (const key of entity.keys) {
+  for (const entity of Object.values(index.entities)) for (const key of [...entity.keys, ...(entity.kind === 'movie' ? movieIdentityKeys(entity.data) : [])]) {
     const ids = keyIndex.get(key) ?? new Set(); ids.add(entity.id); keyIndex.set(key, ids);
   }
   const active = new Set<string>();
@@ -96,11 +97,14 @@ export function buildAudit(previous: AuditIndex | null, snapshot: AuditSnapshot)
     const compatible = [...matches].filter(id => {
       const historical = index.entities[id];
       return !active.has(id) && historical.kind === candidate.kind
+        && !(candidate.kind === 'movie' && historical.data.id && candidate.data.id && historical.data.id !== candidate.data.id)
         && !(candidate.kind === 'movie' && historical.data.imdbId && candidate.data.imdbId
           && historical.data.imdbId !== candidate.data.imdbId);
     });
+    const publishedIdentity = compatible.filter(id => candidate.kind === 'movie' && candidate.data.id && index.entities[id].data.id === candidate.data.id);
+    const listedPublishedIdentity = publishedIdentity.filter(id => index.entities[id].listed);
     const exactIdentity = compatible.filter(id => candidate.data.imdbId && index.entities[id].data.imdbId === candidate.data.imdbId);
-    const available = exactIdentity.length ? exactIdentity : compatible;
+    const available = listedPublishedIdentity.length ? listedPublishedIdentity : publishedIdentity.length ? publishedIdentity : exactIdentity.length ? exactIdentity : compatible;
     const id = available.length === 1 ? available[0] : `${candidate.kind}-${hash(candidate.keys.join('|'))}`;
     if (active.has(id)) throw new Error(`Ambiguous audit identity: ${candidate.label}`);
     if (available.length > 1) decisions.push({ entity: 'pipeline', subject: candidate.label, provider: 'audit', action: 'identity-review', details: { matches: available, reason: 'Multiple historical identities match; not automatically merged.' } });
@@ -191,7 +195,7 @@ export function buildAudit(previous: AuditIndex | null, snapshot: AuditSnapshot)
   for (const input of snapshot.inputs) for (const raw of input.movies) {
     const linked = raw.subject ? snapshot.movies.filter(movie => movie.sourceAliases?.some(alias => alias.source === input.name && alias.subject === raw.subject)) : [];
     const candidates = snapshot.movies.filter(movie => [movie.title, ...(movie.sourceTitles ?? [])]
-      .some(name => normalize(parseTitle(name).baseTitle) === normalize(parseTitle(raw.title).baseTitle))
+      .some(name => normalize(parseTitle(name).baseTitle) !== '' && normalize(parseTitle(name).baseTitle) === normalize(parseTitle(raw.title).baseTitle))
       && (!movie.year || !raw.year || Math.abs(movie.year - Number(raw.year)) <= 1));
     const exactUrl = candidates.filter(movie => raw.url && movie.url === raw.url);
     const matched = linked.length === 1 ? linked[0] : exactUrl.length === 1 ? exactUrl[0] : candidates.length === 1 ? candidates[0] : null;
@@ -202,8 +206,8 @@ export function buildAudit(previous: AuditIndex | null, snapshot: AuditSnapshot)
 
   for (const movie of snapshot.movies) {
     const titleNames = [...new Set([movie.title, ...(movie.sourceTitles ?? [])])].sort();
-    const titleKeys = titleNames.map(name => `movie-title:${normalize(parseTitle(name).baseTitle)}:${movie.year ?? ''}`);
-    const keys = [...(movie.imdbId ? [`imdb:${movie.imdbId}`] : []), ...(movie.url ? [`movie-url:${movie.url}`] : []), ...titleKeys];
+    const titleKeys = titleNames.map(name => normalize(parseTitle(name).baseTitle)).filter(Boolean).map(name => `movie-title:${name}:${movie.year ?? ''}`);
+    const keys = [...movieIdentityKeys(movie), ...(movie.imdbId ? [`imdb:${movie.imdbId}`] : []), ...(movie.url ? [`movie-url:${movie.url}`] : []), ...titleKeys];
     const matching = snapshot.inputs.flatMap(input => input.movies
       .filter(raw => rawAssignments.get(raw) === movie)
       .map(raw => ({ input, raw })));
