@@ -83,12 +83,17 @@ try {
   fs.mkdirSync(path.join(checkout, 'pipeline'));
   for (const name of fs.readdirSync(path.join(repository, 'pipeline')).filter(name => name.endsWith('.ts')))
     fs.copyFileSync(path.join(repository, 'pipeline', name), path.join(checkout, 'pipeline', name));
-  fs.writeFileSync(path.join(checkout, 'pipeline/state.json'), input.endsWith('.gz') ? gunzipSync(source) : source);
+  // Preserve the real release artifact. Decompressing a v2 baseline would push
+  // the oversized blob before installing the hook, so Git could reuse it later.
+  const retainedState = `pipeline/${path.basename(input)}`;
+  fs.writeFileSync(path.join(checkout, retainedState), source);
   fs.mkdirSync(path.join(checkout, 'public/audit'), { recursive: true });
   for (const name of ['movies.json', 'sitemap.xml', 'audit/index.json']) fs.writeFileSync(path.join(checkout, 'public', name), 'fixture');
   const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@localhost', ...args],
     { cwd: checkout, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git('init', '-b', 'main'); git('add', 'api', 'scripts', 'shared', 'src', '.github', 'package.json', 'tsconfig.server.json', 'pipeline', 'public'); git('commit', '-m', 'fixture baseline');
+  assert.ok(Number(git('cat-file', '-s', `HEAD:${retainedState}`)) < 100 * 1024 * 1024,
+    'The fixture baseline must fit the release limit before exercising rejection of a new oversized blob');
   git('init', '--bare', remote); git('remote', 'add', 'origin', remote); git('push', '-u', 'origin', 'main');
   fs.writeFileSync(path.join(remote, 'hooks/pre-receive'), '#!/bin/sh\nwhile read old new ref; do\n git rev-list --objects --no-object-names "$old..$new" | git cat-file --batch-check="%(objecttype) %(objectsize)" | awk \'$1 == "blob" && $2 >= 104857600 { bad=1 } END { exit bad }\' || exit 1\ndone\n', { mode: 0o755 });
   if (expected.length >= 100 * 1024 * 1024) {
