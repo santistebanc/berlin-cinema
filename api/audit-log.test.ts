@@ -23,6 +23,36 @@ function snapshot(at: string, overrides: Partial<Movie> = {}): AuditSnapshot {
   };
 }
 
+for (const titles of [['그녀에게', '가능한 사랑'], ['Shared Title', 'Shared Title']]) {
+  const paired = snapshot(t1, { id: 'film-a', title: titles[0], slug: 'film-a', sourceTitles: [titles[0]], url: null });
+  const other = snapshot(t1, { id: 'film-b', title: titles[1], slug: 'film-b', sourceTitles: [titles[1]], url: null });
+  if (titles[0] === titles[1]) { paired.movies[0].imdbId = 'tt1234567'; other.movies[0].imdbId = 'tt1234567'; }
+  paired.movies.push(other.movies[0]); paired.inputs[0].movies.push(other.inputs[0].movies[0]);
+  const baseline = buildAudit(null, paired);
+  const films = Object.values(baseline.index.entities).filter(entity => entity.kind === 'movie');
+  assert.equal(films.length, 2, 'Distinct published film IDs survive title/year collisions and non-Latin titles');
+  assert.equal(baseline.run.counts.screening, 2, 'Each resolved film retains its own viewing');
+  if (titles[0] !== titles[1]) {
+    for (const entity of films) assert.equal(entity.sources['critic.de'].lastName, entity.data.title, 'Unicode titles retain the correct source evidence');
+    const withoutIds = structuredClone(paired);
+    for (const movie of withoutIds.movies) delete movie.id;
+    for (const raw of withoutIds.inputs[0].movies) delete raw.id;
+    assert.equal(buildAudit(null, withoutIds).run.counts.movie, 2, 'Legacy non-Latin films without public IDs also remain distinct');
+  }
+  const identities = new Map(films.map(entity => [entity.data.id, entity.id]));
+  const reordered = buildAudit(baseline.index, { ...paired, movies: [...paired.movies].reverse(), recordedAt: t2, snapshotAt: t2 });
+  for (const entity of Object.values(reordered.index.entities).filter(entity => entity.kind === 'movie'))
+    assert.equal(entity.id, identities.get(entity.data.id), 'Reordering films must not swap their audit histories');
+
+  const legacy = structuredClone(baseline.index);
+  for (const entity of Object.values(legacy.entities).filter(entity => entity.kind === 'movie')) entity.keys = ['movie-title::2026'];
+  const retired = structuredClone(films[0]); retired.id = 'movie-retired-history'; retired.listed = false;
+  legacy.entities[retired.id] = retired;
+  const upgraded = buildAudit(legacy, { ...paired, movies: [...paired.movies].reverse(), recordedAt: t2, snapshotAt: t2 });
+  for (const entity of Object.values(upgraded.index.entities).filter(entity => entity.kind === 'movie' && entity.listed))
+    assert.equal(entity.id, identities.get(entity.data.id), 'Existing public IDs recover audit continuity from legacy collided title keys');
+}
+
 const first = buildAudit(null, snapshot(t1));
 assert.equal(first.run.changes.baseline, 3);
 assert.equal(first.run.changes.added, 0, 'A baseline must not claim old records were just created');
