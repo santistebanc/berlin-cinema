@@ -25,6 +25,10 @@ interface Placement {
 
 const TRIGGER_GAP = 4;
 const VIEWPORT_MARGIN = 8;
+const CLOSED_SHEET = { present: false, visible: false, motion: 'instant' as 'instant' | 'animate' };
+// One filter can still be exiting when keyboard navigation opens the next.
+let mobileScrollLocks = 0;
+let previousBodyOverflow = '';
 
 /** Open below unless the panel only fits (or fits better) above; keep it horizontally inside the viewport. */
 function placePanel(trigger: DOMRect, panel: DOMRect): Placement {
@@ -110,13 +114,23 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [placement, setPlacement] = useState<Placement | null>(null);
+  const [mobileSheet, setMobileSheet] = useState(CLOSED_SHEET);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const openRef = useRef(open);
+
+  useLayoutEffect(() => { openRef.current = open; }, [open]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)');
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    const handler = () => {
+      setIsMobile(mq.matches);
+      // Switching presentation is immediate, even halfway through an exit.
+      const visible = mq.matches && openRef.current;
+      setMobileSheet({ present: visible, visible, motion: 'instant' });
+    };
+    handler();
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
@@ -154,14 +168,88 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     setPlacement(placePanel(triggerRef.current.getBoundingClientRect(), panelRef.current.getBoundingClientRect()));
   }, [open, isMobile]);
 
-  useEffect(() => {
-    if (!open || !isMobile) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [open, isMobile]);
+  const mobileLocked = isMobile && (open || mobileSheet.present);
+  useLayoutEffect(() => {
+    if (!mobileLocked) return;
+    if (mobileScrollLocks++ === 0) {
+      previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      if (--mobileScrollLocks === 0) document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [mobileLocked]);
 
-  const handleTriggerClick = () => setOpen(o => !o);
+  const changeMobileOpen = (nextOpen: boolean, animate: boolean) => {
+    if (!nextOpen && sheetRef.current?.contains(document.activeElement)) {
+      triggerRef.current?.focus({ preventScroll: true });
+    }
+    openRef.current = nextOpen;
+    setOpen(nextOpen);
+    setMobileSheet(previous => ({
+      // A sheet closed before its entry frame needs no exit animation.
+      present: nextOpen || (animate && previous.visible),
+      visible: nextOpen && (previous.present || !animate),
+      motion: animate ? 'animate' : 'instant',
+    }));
+  };
+
+  useLayoutEffect(() => {
+    if (!isMobile || !open || !mobileSheet.present || mobileSheet.visible) return;
+    // Commit a hidden frame before targeting the CSS transition; no JS animation loop.
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        setMobileSheet(previous => ({ ...previous, visible: true }));
+      });
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
+    };
+  }, [isMobile, open, mobileSheet.present, mobileSheet.visible]);
+
+  useLayoutEffect(() => {
+    if (!isMobile || open || !mobileSheet.present || mobileSheet.visible) return;
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let fallback: ReturnType<typeof setTimeout>;
+    const finish = () => {
+      if (!openRef.current) setMobileSheet(CLOSED_SHEET);
+    };
+    const onEnd = (event: TransitionEvent) => {
+      if (event.target === sheet && event.propertyName === (mq.matches ? 'opacity' : 'transform')) finish();
+    };
+    const scheduleFallback = () => {
+      clearTimeout(fallback);
+      const duration = getComputedStyle(sheet).transitionDuration;
+      const durationMs = parseFloat(duration) * (duration.endsWith('ms') ? 1 : 1000);
+      fallback = setTimeout(finish, durationMs + 50);
+    };
+    scheduleFallback();
+    sheet.addEventListener('transitionend', onEnd);
+    mq.addEventListener('change', scheduleFallback);
+    return () => {
+      clearTimeout(fallback);
+      sheet.removeEventListener('transitionend', onEnd);
+      mq.removeEventListener('change', scheduleFallback);
+    };
+  }, [isMobile, open, mobileSheet.present, mobileSheet.visible]);
+
+  useEffect(() => {
+    if (!isMobile || !mobileSheet.present) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') changeMobileOpen(false, false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isMobile, mobileSheet.present]);
+
+  const handleTriggerClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isMobile) changeMobileOpen(!openRef.current, event.detail > 0);
+    else setOpen(o => !o);
+  };
 
   const activeCount = allSelected ? 0 : selected.length;
 
@@ -212,22 +300,30 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     document.body
   );
 
-  const bottomSheet = open && isMobile && createPortal(
+  const bottomSheet = mobileSheet.present && isMobile && createPortal(
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/40"
-        onClick={() => setOpen(false)}
+        className="mobile-filter-backdrop fixed inset-0 z-40 bg-black/40"
+        data-visible={mobileSheet.visible}
+        data-motion={mobileSheet.motion}
+        onClick={event => { if (openRef.current) changeMobileOpen(false, event.detail > 0); }}
         aria-hidden
       />
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl"
+        ref={sheetRef}
+        className="mobile-filter-sheet fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl"
+        data-visible={mobileSheet.visible}
+        data-motion={mobileSheet.motion}
+        inert={!open}
+        aria-hidden={!open || undefined}
         style={{ backgroundColor: 'rgb(var(--surface))' }}
       >
         <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'rgb(var(--border))' }}>
           <span className="text-sm font-semibold" style={{ color: 'rgb(var(--text))' }}>{label}</span>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={event => changeMobileOpen(false, event.detail > 0)}
+            aria-label={`Close ${label} filter`}
             className="rounded-full p-1 transition-colors hover:bg-[rgb(var(--surface-muted))]"
             style={{ color: 'rgb(var(--text-muted))' }}
           >
@@ -238,8 +334,8 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           options={options}
           selected={selected}
           allSelected={allSelected}
-          onToggle={onToggle}
-          onToggleAll={onToggleAll}
+          onToggle={value => { if (openRef.current) onToggle(value); }}
+          onToggleAll={() => { if (openRef.current) onToggleAll(); }}
           mobile
         />
         <div className="h-[env(safe-area-inset-bottom,0px)]" />
