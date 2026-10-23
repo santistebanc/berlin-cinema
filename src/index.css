@@ -333,6 +333,52 @@
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --duration-mobile-filter-enter: 220ms;
+  --duration-mobile-filter-exit: 200ms;
+  --duration-mobile-filter-backdrop: 160ms;
+  --duration-mobile-filter-reduced: 120ms;
+}
+
+.mobile-filter-sheet {
+  transform: translateY(100%);
+  opacity: 1;
+  transition: transform var(--duration-mobile-filter-exit) var(--ease-out);
+}
+
+.mobile-filter-sheet[data-visible="true"] {
+  transform: translateY(0);
+  transition-duration: var(--duration-mobile-filter-enter);
+}
+
+.mobile-filter-backdrop {
+  opacity: 0;
+  transition: opacity var(--duration-mobile-filter-backdrop) var(--ease-out);
+}
+
+.mobile-filter-backdrop[data-visible="true"] { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-filter-sheet {
+    transform: none;
+    opacity: 0;
+    transition-property: opacity;
+  }
+
+  .mobile-filter-sheet[data-visible="true"] {
+    transform: none;
+    opacity: 1;
+  }
+
+  .mobile-filter-sheet,
+  .mobile-filter-sheet[data-visible="true"],
+  .mobile-filter-backdrop {
+    transition-duration: var(--duration-mobile-filter-reduced);
+  }
+}
+
+.mobile-filter-sheet[data-motion="instant"],
+.mobile-filter-backdrop[data-motion="instant"] {
+  transition: none;
 }
 
 .movie-poster-transition { view-transition-name: movie-poster; }
