@@ -66,6 +66,12 @@ async function main() {
   }));
   assert.equal(tokened[0].status, 'fresh', 'A delay token is returned on the retry');
   assert.deepEqual(sentCookies, [undefined, 'bo_delay_token=abc']);
+  const expiring = new SourceRegistry([adapter], [instance('expiring', { collectionTimeoutMs: 10 })]);
+  const expired = expiring.context(expiring.instances[0], { ...deps(async () => ({ status: 200, headers: {}, body: '' })),
+    cache: { get: () => ({ data: 'retained', fetchedAt: NOW }), set: () => {} } }, { cacheAfterDeadline: true });
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert.equal(expired.cache.get('detail')?.data, 'retained', 'Cached evidence stays readable after the network deadline');
+  await assert.rejects(expired.request({ url: 'https://fixture.test/late' }), /deadline exceeded/, 'Late network requests stop at the deadline');
   console.log('source acquisition resilience acceptance tests passed');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
