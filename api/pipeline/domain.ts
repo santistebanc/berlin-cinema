@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { normalizeComparisonText } from '../../shared/text-normalization';
 import type { EvidenceValue, Provenance, FieldEvidenceRole } from '../../shared/contracts';
 export type { Modality } from '../../shared/contracts';
 import type { Modality } from '../../shared/contracts';
@@ -125,8 +126,7 @@ export function fingerprint(value: any): string {
   return createHash('sha256').update(stable(value)).digest('hex');
 }
 export function normalize(value: string): string {
-  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-    .replace(/ß/g, 'ss').replace(/\u0131/g, 'i').replace(/[^a-z0-9]+/g, ' ').trim();
+  return normalizeComparisonText(value);
 }
 export function identity(kind: string, key: string): string { return `${kind}-${fingerprint(key).slice(0, 24)}`; }
 export { emptyModality } from '../../src/utils/screeningLabels';

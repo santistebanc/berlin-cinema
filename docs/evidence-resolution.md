@@ -95,6 +95,39 @@ fields. A synopsis or website alone does not establish external identity; websit
 links are recorded without fetching them. Existing detail caches keep their
 seven-day TTL, and berlin.de requests retain their six-second minimum spacing.
 
+### Text comparison rules
+
+Title retrieval, film identity comparison and person credits use the same
+`shared/text-normalization.ts` comparison keys. Source labels remain unchanged
+in display data and audit evidence. Keys use Unicode compatibility decomposition,
+lowercase, Latin accent removal and punctuation/whitespace normalization.
+Common Latin transcriptions are explicit: `ı → i`, `ß → ss`, `ł → l`, `ø → o`,
+`đ/ð → d`, `þ → th`, `æ → ae`, `œ → oe`, `ħ → h`, `ŧ → t`, `ŋ → ng`, `ƒ → f`.
+Unicode decomposition also handles ordinary accented letters, presentation
+ligatures and full-width forms.
+
+Other scripts and their vowel marks remain intact instead of being deleted or
+guessed into Latin letters. Confusable letters from different scripts are not
+equated. Sequel numbers, complete words and full person names remain significant.
+These spelling keys retrieve and compare candidates; the independent film
+identity requirements still apply. They do not translate titles, infer aliases,
+remove sequel markers or accept approximate/partial person names.
+
+Whole-person keys also join hyphens/apostrophes inside a name and sort complete
+name tokens, so `Sanggeun Park` and `Park Sang-geun` compare equally. This rule
+does not join arbitrary spaces or accept a matching surname alone. Explicit
+TMDb person aliases are bound to the credited person's ID and cached for seven
+days. Alias lookups are limited to full-title candidates within one year, at
+most two credited directors per candidate and four person requests per film.
+Display credits still list the canonical people, not each alias as another director.
+
+The existing one-year production/release-year allowance requires independent
+credits or other supported identity evidence. A year and title alone do not
+confirm a film. An explicit metadata review may settle a source/provider credit
+discrepancy for a complete matching title within that year allowance; this is
+recorded as a caution with the correction reason. It does not create a general
+fuzzy-name rule, and changed source evidence invalidates the old review.
+
 ## Review lifecycle
 
 Operational failures and optional-data notices are cautions, separate from open

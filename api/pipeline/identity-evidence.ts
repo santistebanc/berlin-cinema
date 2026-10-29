@@ -1,6 +1,8 @@
 import { Entity, fingerprint, normalize } from './domain';
 import { PipelineStore } from './store';
 import { parseLabel } from './labels';
+import { normalizePersonComparison } from '../../shared/text-normalization';
+import { cachedDirectorAliases } from './person-aliases';
 
 export function filmMetadataInput(entity: Entity) {
   return { title: entity.name, titles: entity.data.titles, year: entity.data.year, director: entity.data.director };
@@ -9,17 +11,19 @@ export function filmMetadataInput(entity: Entity) {
 export function creditNames(value: any): string[] {
   return [...new Set<string>((Array.isArray(value) ? value : value ? String(value).split(/[,;]/) : [])
     // Credit providers may write the surname first. Compare complete name tokens, never partial names.
-    .map(person => normalize((typeof person === 'string' ? person : person?.name || '')
-      .replace(/[łŁ]/g, 'l').replace(/[øØ]/g, 'o').replace(/[đĐðÐ]/g, 'd').replace(/[æÆ]/g, 'ae').replace(/[œŒ]/g, 'oe'))
-      .split(' ').filter(Boolean).sort().join(' ')).filter(Boolean))];
+    .map(person => normalizePersonComparison(typeof person === 'string' ? person : person?.name || '')).filter(Boolean))];
 }
 export function sharedCast(a: any, b: any): number {
   const right = new Set(creditNames(b.cast));
   return creditNames(a.cast).filter(person => right.has(person)).length;
 }
+export function directorCreditNames(value: any): string[] {
+  return creditNames([...creditNames(value.directors?.length ? value.directors : value.director),
+    ...(Array.isArray(value.directorAliases) ? value.directorAliases : [])]);
+}
 export function sharedDirector(a: any, b: any): boolean {
-  const right = new Set(creditNames(b.directors?.length ? b.directors : b.director));
-  return creditNames(a.directors?.length ? a.directors : a.director).some(person => right.has(person));
+  const right = new Set(directorCreditNames(b));
+  return directorCreditNames(a).some(person => right.has(person));
 }
 
 function filmTitles(value: any): string[] {
@@ -27,7 +31,7 @@ function filmTitles(value: any): string[] {
     ...(value.titles ?? []), ...(value.alternativeTitles ?? [])].filter(Boolean)
     .map(title => normalize(parseLabel(title).title)).filter(Boolean);
 }
-function fullTitleMatches(a: any, b: any): boolean {
+export function fullTitleMatches(a: any, b: any): boolean {
   const right = new Set(filmTitles(b));
   return filmTitles(a).some(title => right.has(title));
 }
@@ -109,6 +113,7 @@ export class CachedFilmEvidence {
             ...(data.translations?.translations ?? []).map((item: any) => item.data?.title)].filter(Boolean),
           year: Number(movie.release_date?.slice(0, 4)) || null,
           directors: (data.credits?.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)).map((person: any) => person.name),
+          directorAliases: cachedDirectorAliases(store, data, now),
           cast: (data.credits?.cast ?? []).map((person: any) => person.name),
           runtime: movie.runtime, country: (movie.production_countries ?? []).map((country: any) => country.name).join(', '),
           productionCountries: (movie.production_countries ?? []).map((country: any) => ({ code: country.iso_3166_1, name: country.name })),

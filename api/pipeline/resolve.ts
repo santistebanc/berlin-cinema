@@ -5,7 +5,7 @@ import { PipelineStore } from './store';
 import { OsmAddress, OsmCinema } from '../osm-client';
 import { parseVenueAddress, venueAddressesMatch, venueAddressTypoCompatible } from './addresses';
 import { GeoCandidate, GeoLookup, VenueGeocoder } from './geocoding';
-import { CachedFilmEvidence, creditNames, filmMetadataInput, supportsFilmIdentity, corroboratedDirectorTransliteration } from './identity-evidence';
+import { CachedFilmEvidence, creditNames, directorCreditNames, filmMetadataInput, supportsFilmIdentity, corroboratedDirectorTransliteration } from './identity-evidence';
 import { providerDerived, independentObservations } from './lineage';
 
 export function linkEvidence(observation: Observation): string {
@@ -23,7 +23,7 @@ export function similarity(a: string, b: string): number {
   return left.size && right.size ? [...left].filter(t => right.has(t)).length / new Set([...left, ...right]).size : 0;
 }
 export function identityConflict(a: any, b: any): boolean {
-  const directors = (value: any) => creditNames(value.directors?.length ? value.directors : value.director);
+  const directors = directorCreditNames;
   const leftDirectors = directors(a); const rightDirectors = directors(b);
   const creditedDirector = leftDirectors.some((person: string) => rightDirectors.includes(person));
   return !!(a.verifiedImdbId && b.verifiedImdbId && a.verifiedImdbId !== b.verifiedImdbId)
