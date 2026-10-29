@@ -23,6 +23,8 @@ interface State {
 const blank = (): State => ({ schemaVersion: 2, revision: 0, observations: {}, heads: {}, entities: {}, links: {},
   decisions: {}, issues: {}, overrides: [], fields: {}, resources: {}, spend: {}, snapshots: [], runs: [], jobs: [] });
 
+const detailOriginKey = (source: string, url: string, fetchedAt: string) => [source, url, fetchedAt].join('\n');
+
 /** Git-versioned evidence store. Writers hold a process lock; saves atomically replace one complete file. */
 export class PipelineStore {
   private state: State;
@@ -101,7 +103,7 @@ export class PipelineStore {
   }
   observe(observation: Observation, reactivate = true) {
     observation = attributeHistoricalObservation({ ...observation });
-    this.state.observations[observation.id] ??= observation;
+    if (!this.state.observations[observation.id]) { this.state.observations[observation.id] = observation; this.detailIndex = null; }
     const head = this.state.heads[observation.subject];
     if (!head || Date.parse(observation.observedAt) >= Date.parse(head.observedAt)
       && (!head.withdrawnAt || reactivate && Date.parse(observation.observedAt) >= Date.parse(head.withdrawnAt))) {
@@ -228,9 +230,22 @@ export class PipelineStore {
   /** Read original detail attribution even after its listing head has changed. */
   sourceDetailOrigins(source: string, details: { url: string; fetchedAt: string; fields: Record<string, any> }): Observation[] {
     const fields = fingerprint(details.fields);
-    return Object.values(this.state.observations).filter(original => original.kind === 'listing' && original.source === source
-      && original.data.sourceDetails?.url === details.url && original.data.sourceDetails.fetchedAt === details.fetchedAt
-      && fingerprint(original.data.sourceDetails.fields) === fields);
+    return (this.detailOrigins().get(detailOriginKey(source, details.url, details.fetchedAt)) ?? [])
+      .map(id => this.state.observations[id]).filter(original => fingerprint(original.data.sourceDetails.fields) === fields);
+  }
+  /** Listing IDs by retained detail page. Collection asks once per film, so scanning every observation is too slow. */
+  private detailIndex: { state: State; ids: Map<string, string[]> } | null = null;
+  private detailOrigins(): Map<string, string[]> {
+    if (this.detailIndex?.state === this.state) return this.detailIndex.ids;
+    const ids = new Map<string, string[]>();
+    for (const original of Object.values(this.state.observations)) {
+      const details = original.kind === 'listing' ? original.data.sourceDetails : undefined;
+      if (!details?.url) continue;
+      const key = detailOriginKey(original.source, details.url, details.fetchedAt);
+      ids.set(key, [...ids.get(key) ?? [], original.id]);
+    }
+    this.detailIndex = { state: this.state, ids };
+    return ids;
   }
   retainedSourceDetails(sources: Observation[], compatible: (original: Observation, current: Observation) => boolean): FieldValue[] {
     const subjects = new Map(sources.map(source => [source.subject, source]));
