@@ -8,7 +8,8 @@ export const defaultInstances: SourceInstance[] = [
   { id: 'critic.de', adapterId: 'critic.de', enabled: true, cacheIdentity: 'critic', legacyCache: true,
     retainedFile: 'critic-raw.json', config: {}, limits: { requests: 300, filmDetails: 40, venueDetails: 100 } },
   { id: 'berlin.de', adapterId: 'berlin.de', enabled: true, cacheIdentity: 'berlin', legacyCache: true,
-    retainedFile: 'berlin-raw.json', config: {}, limits: { requests: 300, filmDetails: 40, venueDetails: 100 } },
+    retainedFile: 'berlin-raw.json', config: {}, limits: { requests: 300, filmDetails: 40, venueDetails: 100,
+      requestIntervalMs: 6000, collectionTimeoutMs: 900000 } },
 ];
 export const defaultRegistry = new SourceRegistry([criticAdapter, berlinAdapter], defaultInstances);
 

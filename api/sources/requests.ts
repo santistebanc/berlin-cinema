@@ -45,7 +45,9 @@ export async function retryRequest(request: SourceRequest, instance: SourceInsta
         evidence: { url: request.url, purpose: request.purpose ?? 'listing', attempt: count } }));
       if (!retry) throw error;
       const seconds = Number(error?.response?.headers?.['retry-after']);
-      await deps.wait?.(Number.isFinite(seconds) && seconds > 0 ? Math.min(60000, seconds * 1000) : 250 * count);
+      // Rate limits without Retry-After need a real pause, not a quick retry.
+      const limited = [425, 429].includes(error?.response?.status);
+      await deps.wait?.(Number.isFinite(seconds) && seconds > 0 ? Math.min(60000, seconds * 1000) : limited ? 10000 * count : 250 * count);
     }
   }
 }

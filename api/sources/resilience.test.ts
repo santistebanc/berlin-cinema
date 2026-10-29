@@ -48,6 +48,16 @@ async function main() {
   const permanent = await registry.collect(deps(async () => { permanentAttempts++; throw { response: { status: 404 } }; }));
   assert.equal(permanentAttempts, 1, 'Nonretryable failures are not retried');
   assert.equal(permanent[0].diagnostics.find((diagnostic: any) => diagnostic.code === 'source-failed')?.retryable, false);
+  const waits: number[] = [];
+  let paced = 0;
+  const pacedResult = await new SourceRegistry([adapter], [instance('paced', { requestIntervalMs: 6000 })]).collect({ ...deps(async () => {
+    if (++paced < 3) throw { response: { status: 425, headers: {} } };
+    return { status: 200, headers: {}, body: 'Confirmed empty' };
+  }), wait: async milliseconds => { waits.push(milliseconds); } });
+  assert.equal(pacedResult[0].status, 'fresh', 'Rate-limited acquisition recovers after pausing');
+  assert.deepEqual(waits.filter(wait => wait >= 10000), [10000, 20000], 'Rate limits without Retry-After back off for seconds');
+  const spacing = waits.filter(wait => wait < 10000);
+  assert.ok(spacing.length === 2 && spacing.every(wait => wait > 0 && wait <= 6000), 'Retries are spaced by the source interval');
   console.log('source acquisition resilience acceptance tests passed');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
