@@ -18,6 +18,10 @@ export function sourceDiagnostic(sourceInstanceId: string, code: string, reason:
 }
 
 /** Explicit legacy compatibility: missing/null fields remain unknown; never infer absence. */
+// Built once: a listing has thousands of showing rows.
+const SHOWING_SHAPE = { url: VenueDataSchema.shape.url, variant: z.string().nullable().optional(),
+  sessionId: z.union([z.string(), z.number()]).nullable().optional(), auditorium: z.string().nullable().optional() };
+
 export function validateLegacyBatch(input: unknown): { batch: SourceBatch | null; source: string; diagnostics: Diagnostic[] } {
   const source = typeof (input as any)?.source === 'string' ? (input as any).source : 'unknown';
   const diagnostics: Diagnostic[] = [];
@@ -55,8 +59,7 @@ export function validateLegacyBatch(input: unknown): { batch: SourceBatch | null
         return true;
       }).map((row: any, rowIndex: number) => {
         const valid = { ...row };
-        const shape = key === 'cinemas' ? VenueDataSchema.shape : { url: VenueDataSchema.shape.url,
-          variant: z.string().nullable().optional(), sessionId: z.union([z.string(), z.number()]).nullable().optional(), auditorium: z.string().nullable().optional() };
+        const shape = key === 'cinemas' ? VenueDataSchema.shape : SHOWING_SHAPE;
         for (const [field, schema] of Object.entries(shape)) {
           if (field === 'name' || valid[field] === undefined) continue;
           const result = schema.safeParse(valid[field]);
