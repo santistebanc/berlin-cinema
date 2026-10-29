@@ -43,9 +43,12 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     && !sources.some(source => providerDerived(source, 'tmdb'));
   const identitySources = sources.filter(source => source.provenance?.upstreamLineage.length && !providerDerived(source, 'tmdb'));
   const independentFields = selectEvidence(sourceCandidates(identitySources, options.now)).selected;
-  const input = sources.length && identitySources.length !== sources.length && !retainedVerification
+  const identityInput = sources.length && identitySources.length !== sources.length && !retainedVerification
     ? { ...originalInput, year: independentFields.get('year')?.value ?? null, director: independentFields.get('director')?.value ?? null }
     : originalInput;
+  // Supplemental matching evidence must come from independent source fields, never prior provider enrichment.
+  const input = { ...identityInput, runtime: independentFields.get('runtime')?.value ?? null,
+    country: independentFields.get('country')?.value ?? null };
   const evidence = fingerprint(originalInput);
   const established = entity.data.tmdbId && entity.data.metadataEvidence === evidence;
   const retainedIdentitySources = retainedVerification
@@ -189,7 +192,11 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     const completeCredits = store.resource(`tmdb-detail:${acceptedId}`)?.data.credits;
     const verification = { ...metadata, year: metadata?.releaseYear,
       ...(completeCredits ? { cast: completeCredits.cast ?? [], directors: (completeCredits.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)) } : {}) };
-    if (metadata && peerSupported && !supportsFilmIdentity({ ...filmMetadataInput(peer!), cast: peer!.data.cast }, verification)
+    const peerSources = peer ? store.linkedObservations(peer.id).filter(source => source.kind === 'listing'
+      && source.provenance?.upstreamLineage.length && !providerDerived(source, 'tmdb')) : [];
+    const peerFields = selectEvidence(sourceCandidates(peerSources, options.now)).selected;
+    if (metadata && peerSupported && !supportsFilmIdentity({ ...filmMetadataInput(peer!), cast: peerSources.flatMap(source => source.data.cast ?? []),
+      runtime: peerFields.get('runtime')?.value, country: peerFields.get('country')?.value }, verification)
       && !store.overrides(`metadata:${peer!.id}`).some(correction => correction.action === 'patch'
         && correction.patch?.tmdbId === acceptedId && correction.evidenceFingerprint === peer!.data.metadataEvidence)) {
       peerSupported = false;

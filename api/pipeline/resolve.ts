@@ -5,7 +5,7 @@ import { PipelineStore } from './store';
 import { OsmAddress, OsmCinema } from '../osm-client';
 import { parseVenueAddress, venueAddressesMatch, venueAddressTypoCompatible } from './addresses';
 import { GeoCandidate, GeoLookup, VenueGeocoder } from './geocoding';
-import { CachedFilmEvidence, creditNames, filmMetadataInput, supportsFilmIdentity } from './identity-evidence';
+import { CachedFilmEvidence, creditNames, filmMetadataInput, supportsFilmIdentity, corroboratedDirectorTransliteration } from './identity-evidence';
 import { providerDerived, independentObservations } from './lineage';
 
 export function linkEvidence(observation: Observation): string {
@@ -29,7 +29,7 @@ export function identityConflict(a: any, b: any): boolean {
   return !!(a.verifiedImdbId && b.verifiedImdbId && a.verifiedImdbId !== b.verifiedImdbId)
     || !!(a.tmdbId && b.tmdbId && a.tmdbId !== b.tmdbId)
     || !!(a.year && b.year && Math.abs(Number(a.year) - Number(b.year)) > 1)
-    || !!(leftDirectors.length && rightDirectors.length && !creditedDirector);
+    || !!(leftDirectors.length && rightDirectors.length && !creditedDirector && !corroboratedDirectorTransliteration(a, b));
 }
 export function venueAddressConflict(left: string, right: string): boolean {
   const a = parseVenueAddress(left); const b = parseVenueAddress(right);
@@ -257,6 +257,7 @@ export class IdentityResolver {
     const manual = this.manual(observation, parsed.kind);
     if (manual && manual !== 'conflict') return manual;
     const evidence = { title: parsed.title, titles: parsed.alternateTitles, year: parsed.year, director: observation.data.director ?? null,
+      runtime: parsed.modality.edition ? null : observation.data.runtime, country: observation.data.country,
       cast: observation.data.cast ?? [], verifiedImdbId: observation.data.verifiedImdbId, tmdbId: observation.data.verifiedTmdbId };
     const published = !manual && this.publishedSource(observation, parsed.kind);
     if (published && !identityConflict(evidence, published.data)) {
