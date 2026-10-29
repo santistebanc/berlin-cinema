@@ -79,6 +79,23 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     && entity.data.metadataEvidence === evidence && nowMs - Date.parse(field.observedAt) <= 365 * DAY)?.value;
   const searchTitles = [...new Set<string>([...explicitOriginalTitles, previousOriginal, ...rankedSources.map(source => source.data.altTitle), entity.name, ...(entity.data.titles ?? [])]
     .filter(Boolean).map(title => parseLabel(title).title))].slice(0, 3);
+  let personLookups = 0;
+  const directorAliasesFor = async (full: any, candidate: any): Promise<string[]> => {
+    const aliases = cachedDirectorAliases(store, full, options.now);
+    // Refresh aliases for accepted identities too, so cache expiry cannot erase a valid pen-name match.
+    if (!input.director || sharedDirector(input, { ...candidate, directorAliases: aliases }) || !fullTitleMatches(input, candidate)
+      || !input.year || !candidate.year || Math.abs(Number(input.year) - Number(candidate.year)) > 1) return aliases;
+    for (const credit of (full?.credits?.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)).slice(0, 2)) {
+      if (!Number.isInteger(credit.id) || credit.id <= 0) continue;
+      const key = `tmdb-person:${credit.id}`; const oldPerson = store.resource(key);
+      if (oldPerson && nowMs - Date.parse(oldPerson.fetchedAt) <= 7 * DAY) continue;
+      if (!options.tmdb?.getPersonAliases || personLookups >= 4) continue;
+      personLookups++;
+      const person = await options.tmdb.getPersonAliases(credit.id);
+      if (person?.id === credit.id) store.saveResource(key, person, options.now);
+    }
+    return cachedDirectorAliases(store, full, options.now);
+  };
   if (entity.kind === 'film' && !acceptedId && !override && !options.force) {
     const validated = options.identityEvidence?.match({ ...input, cast: identityCast });
     if (validated) {
@@ -113,7 +130,6 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       && Math.abs(Number(candidate.release_date.slice(0, 4)) - Number(input.year)) <= 1;
     candidates.sort((a, b) => Number(exactTitle(b)) - Number(exactTitle(a)) || Number(yearMatch(b)) - Number(yearMatch(a)));
     const details = [] as any[];
-    let personLookups = 0;
     for (const candidate of candidates) {
       if (details.length >= 8) break;
       const year = Number(candidate.release_date?.slice(0, 4)) || null;
@@ -126,21 +142,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       if (!full) continue;
       if (!reused) store.saveResource(detailKey, full, options.now);
       const enriched = tmdbCandidate(full, candidate);
-      enriched.directorAliases = cachedDirectorAliases(store, full, options.now);
-      // Resolve explicit pen names only for a full-title/year-compatible candidate; never guess a personal alias.
-      if (input.director && !sharedDirector(input, enriched) && fullTitleMatches(input, enriched)
-        && input.year && year && Math.abs(Number(input.year) - year) <= 1) {
-        for (const credit of (full.credits?.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)).slice(0, 2)) {
-          if (!Number.isInteger(credit.id) || credit.id <= 0) continue;
-          const key = `tmdb-person:${credit.id}`; const oldPerson = store.resource(key);
-          if (oldPerson && nowMs - Date.parse(oldPerson.fetchedAt) <= 7 * DAY) continue;
-          if (!options.tmdb?.getPersonAliases || personLookups >= 4) continue;
-          personLookups++;
-          const person = await options.tmdb.getPersonAliases(credit.id);
-          if (person?.id === credit.id) store.saveResource(key, person, options.now);
-        }
-        enriched.directorAliases = cachedDirectorAliases(store, full, options.now);
-      }
+      enriched.directorAliases = await directorAliasesFor(full, enriched);
       if (identityConflict(input, enriched) && !sameFilmWithDifferentYear({ ...input, cast: identityCast }, enriched)) continue;
       details.push(enriched);
     }
@@ -210,6 +212,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     const verification = { ...metadata, year: metadata?.releaseYear,
       directorAliases: cachedDirectorAliases(store, store.resource(`tmdb-detail:${acceptedId}`)?.data, options.now),
       ...(completeCredits ? { cast: completeCredits.cast ?? [], directors: (completeCredits.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)) } : {}) };
+    if (metadata) verification.directorAliases = await directorAliasesFor(store.resource(`tmdb-detail:${acceptedId}`)?.data, verification);
     const peerSources = peer ? store.linkedObservations(peer.id).filter(source => source.kind === 'listing'
       && source.provenance?.upstreamLineage.length && !providerDerived(source, 'tmdb')) : [];
     const peerFields = selectEvidence(sourceCandidates(peerSources, options.now)).selected;
