@@ -19,8 +19,12 @@ export async function withinDeadline<T>(work: (signal: AbortSignal) => Promise<T
   } finally { clearTimeout(timer!); parent?.removeEventListener('abort', abort!); controller.abort(); }
 }
 
+/** berlin.de's Varnish answers rate-limited requests with a token that a later request must return. */
+const delayToken = (headers: any) => [headers?.['set-cookie'] ?? []].flat().some((cookie: string) => cookie.startsWith('bo_delay_token='));
+
 export function retryableRequest(error: any, purpose?: string): boolean {
   return !(error instanceof SourcePersistenceError) && ([408, 425, 429, 500, 502, 503, 504].includes(error?.response?.status)
+    || error?.response?.status === 403 && delayToken(error.response.headers)
     || purpose === 'film' && error?.response?.status === 307
     || ['ECONNRESET', 'EAI_AGAIN', 'ETIMEDOUT', 'ECONNABORTED'].includes(error?.code));
 }
@@ -46,7 +50,7 @@ export async function retryRequest(request: SourceRequest, instance: SourceInsta
       if (!retry) throw error;
       const seconds = Number(error?.response?.headers?.['retry-after']);
       // Rate limits without Retry-After need a real pause, not a quick retry.
-      const limited = [425, 429].includes(error?.response?.status);
+      const limited = [403, 425, 429].includes(error?.response?.status);
       await deps.wait?.(Number.isFinite(seconds) && seconds > 0 ? Math.min(60000, seconds * 1000) : limited ? 10000 * count : 250 * count);
     }
   }

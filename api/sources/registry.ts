@@ -31,6 +31,13 @@ export class SourceRegistry {
   }
   context(instance: SourceInstance, deps: SourceDependencies): SourceDependencies {
     let requests = 0, lastRequestAt = 0;
+    // Sources with config.cookies return cookies like a browser, e.g. berlin.de's rate-limit delay token.
+    const cookies = new Map<string, string>();
+    const remember = (headers: any) => { if (!instance.config.cookies) return;
+      for (const cookie of [headers?.['set-cookie'] ?? []].flat() as string[]) {
+        const [pair] = cookie.split(';'); const at = pair.indexOf('=');
+        if (at > 0) cookies.set(pair.slice(0, at).trim(), pair.slice(at + 1).trim());
+      } };
     const deadline = Date.now() + (instance.limits.collectionTimeoutMs ?? 120000);
     const check = () => { if (deps.signal?.aborted || Date.now() >= deadline) throw new SourceDeadlineError(); };
     const adapter = this.adapter(instance);
@@ -53,7 +60,12 @@ export class SourceRegistry {
           if (spacing > 0 && deps.wait) { await deps.wait(Math.min(spacing, deadline - Date.now())); check(); }
           lastRequestAt = Date.now();
           const timeout = Math.min(request.timeout ?? 20000, instance.limits.requestTimeoutMs ?? 20000, deadline - Date.now());
-          return withinDeadline(signal => deps.request({ ...request, timeout, signal }), timeout, deps.signal);
+          const cookie = [...cookies].map(([name, value]) => `${name}=${value}`).join('; ');
+          const headers = cookie ? { ...request.headers, Cookie: cookie } : request.headers;
+          try {
+            const response = await withinDeadline(signal => deps.request({ ...request, headers, timeout, signal }), timeout, deps.signal);
+            remember(response.headers); return response;
+          } catch (error: any) { remember(error?.response?.headers); throw error; }
         });
       } };
   }

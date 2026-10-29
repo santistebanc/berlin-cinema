@@ -58,6 +58,14 @@ async function main() {
   assert.deepEqual(waits.filter(wait => wait >= 10000), [10000, 20000], 'Rate limits without Retry-After back off for seconds');
   const spacing = waits.filter(wait => wait < 10000);
   assert.ok(spacing.length === 2 && spacing.every(wait => wait > 0 && wait <= 6000), 'Retries are spaced by the source interval');
+  const sentCookies: (string | undefined)[] = [];
+  const tokened = await new SourceRegistry([adapter], [{ ...instance('tokened'), config: { cookies: true } }]).collect(deps(async request => {
+    sentCookies.push(request.headers?.Cookie);
+    if (request.headers?.Cookie !== 'bo_delay_token=abc') throw { response: { status: 403, headers: { 'set-cookie': ['bo_delay_token=abc; HttpOnly; Max-Age=30'] } } };
+    return { status: 200, headers: {}, body: 'Confirmed empty' };
+  }));
+  assert.equal(tokened[0].status, 'fresh', 'A delay token is returned on the retry');
+  assert.deepEqual(sentCookies, [undefined, 'bo_delay_token=abc']);
   console.log('source acquisition resilience acceptance tests passed');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
