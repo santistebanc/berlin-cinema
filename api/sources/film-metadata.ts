@@ -34,3 +34,33 @@ export function parseFilmMetadata(html: string): Record<string, any> {
   });
   return fields;
 }
+
+/** Berlin's synopsis precedes Filmdaten; screening and sidebar paragraphs are not film metadata. */
+export function parseBerlinFilmMetadata(html: string): Record<string, any> {
+  const $ = cheerio.load(html);
+  const fields = parseFilmMetadata(html);
+  const attributes = $('.article-attributes').filter((_, element) => $(element).find('h2').text().trim() === 'Filmdaten').first();
+  if (!attributes.length) return fields;
+  const synopsis = attributes.prevUntil('h1').filter('p').toArray().reverse()
+    .map(element => $(element).text().replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n\n');
+  if (synopsis) fields.plot = synopsis;
+  attributes.find('dt').each((_, element) => {
+    const label = $(element).text().trim().replace(/:$/, '').toLowerCase();
+    const dd = $(element).next('dd'); const value = dd.text().trim();
+    if (label === 'genre' && value) fields.genres = value.split(',').map(genre => genre.trim()).filter(Boolean);
+    if (label === 'fsk' && /^(?:0|6|12|16|18)$/.test(value)) fields.ageRating = value;
+    if (label === 'filmstart') {
+      const parts = value.match(/^(\d{2})\.(\d{2})\.(\d{2}|\d{4})$/);
+      if (parts) {
+        const year = parts[3].length === 2 ? 2000 + Number(parts[3]) : Number(parts[3]);
+        const iso = `${year}-${parts[2]}-${parts[1]}`;
+        if (Number.isFinite(Date.parse(iso)) && new Date(iso).toISOString().slice(0, 10) === iso) fields.germanReleaseDate = iso;
+      }
+    }
+    if (label === 'filmwebsite') {
+      const href = dd.find('a').first().attr('href');
+      try { const url = new URL(href || ''); if (['https:', 'http:'].includes(url.protocol) && !url.username && !url.password) fields.homepage = url.href; } catch { /* No usable official URL. */ }
+    }
+  });
+  return fields;
+}

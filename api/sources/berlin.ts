@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { mergeBerlinPage, BerlinDeRawMovie } from './berlin-listings';
 import { parseVenueAddress } from '../pipeline/addresses';
-import { parseFilmMetadata } from './film-metadata';
+import { parseBerlinFilmMetadata } from './film-metadata';
 import { parseBerlinVenue } from './berlin-venue';
 import { legacyCollection, listingCollection, replayLegacy } from './legacy';
 import { SourcePersistenceError, type SourceAdapter } from './types';
@@ -12,7 +12,7 @@ const venue = (url: URL) => url.hostname === 'www.berlin.de' && /^\/kino\/_bin\/
 export const berlinAdapter: SourceAdapter = {
   id: 'berlin.de', extractionVersion: 'berlin-v1', upstreamLineage: ['berlin.de'], capabilities: ['screenings', 'film-details', 'venue-details'],
   allows: (url, purpose) => purpose === 'film' ? film(url) : purpose === 'venue' ? venue(url) : url.origin + url.pathname === listing,
-  film: { accepts: film, extract: html => { const fields = parseFilmMetadata(html); return { fields, creditsChecked: Object.keys(fields).length > 0 }; } },
+  film: { accepts: film, extract: html => { const fields = parseBerlinFilmMetadata(html); return { fields, creditsChecked: Object.keys(fields).length > 0 }; } },
   venue: { accepts: venue, extract: parseBerlinVenue, needsLookup: cinema => { const address = parseVenueAddress(cinema.address); return !address?.postalCode || !address.city; }, cacheUsable: () => true },
   replay: replayLegacy,
   async collect(instance, deps) {

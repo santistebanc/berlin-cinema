@@ -77,6 +77,24 @@ manual separations and location requirements take precedence over ranking or
 model confidence. Bounded model candidates, validation, caching, budget limits and
 abstention remain in the existing decision engine.
 
+Film metadata matching also accepts a complete matching title, exact year, at
+least one shared cast member, runtime within two minutes and a shared production
+country. Country codes allow comparison with German, English and French labels.
+Limited whole-name transliteration substitutions (`tch/ch`, `ou/u`, `gui/gi`,
+`ia/ya`) can corroborate a director only with a matching complete title, exact
+year and runtime within two minutes. These paths require a unique supported
+provider candidate; competing supported candidates remain in review. Runtime
+from an explicitly labelled edition is excluded. Supplemental runtime/country
+evidence comes from independent source observations, never previous provider
+enrichment. Conflicting years, unrelated directors and verified IDs retain the
+existing conflict checks.
+
+Berlin detail extraction retains the synopsis before the Filmdaten block,
+genres, FSK, German release date and official website as attributed source
+fields. A synopsis or website alone does not establish external identity; website
+links are recorded without fetching them. Existing detail caches keep their
+seven-day TTL, and berlin.de requests retain their six-second minimum spacing.
+
 ## Review lifecycle
 
 Operational failures and optional-data notices are cautions, separate from open

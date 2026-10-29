@@ -4,7 +4,8 @@ import { PipelineStore } from './store';
 import { parseLabel } from './labels';
 import { fieldEvidenceRole, isDetailValue } from './field-evidence';
 
-export const sourceFields = ['director', 'cast', 'country', 'year', 'posterUrl', 'originalTitle', 'altTitle', 'runtime'];
+export const sourceFields = ['director', 'cast', 'country', 'year', 'posterUrl', 'originalTitle', 'altTitle', 'runtime',
+  'plot', 'genres', 'ageRating', 'germanReleaseDate', 'homepage'];
 const present = (value: any) => value != null && value !== '' && (!Array.isArray(value) || value.length > 0);
 
 /** Authority belongs to a field/evidence role, never a configured source's name. */
