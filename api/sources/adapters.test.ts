@@ -156,6 +156,10 @@ async function main() {
     ? { status: 200, headers: {}, body: '<ul class="js-accordion"><li>Unsupported entry</li></ul>' } : deps.request(request)
   }, { selected: ['berlin.de'] });
   assert.equal(malformedPage[1].coverage[0].status, 'partial', 'An unparsed page is not equivalent to repeated valid pagination');
+  const formOnlyPage = await registry.collect({ ...deps, request: async request => request.url.includes('startat')
+    ? { status: 200, headers: {}, body: '<ul class="js-accordion"><li><span class="js-accordion__trigger">Zurücksetzen</span></li></ul>' } : deps.request(request)
+  }, { selected: ['berlin.de'] });
+  assert.equal(formOnlyPage[1].coverage[0].status, 'complete', 'A page holding only the search form ends pagination');
   await assert.rejects(registry.collect({ ...deps, request: async request => {
     if (request.url.includes('startat')) throw new SourcePersistenceError('Fixture storage failed');
     return deps.request(request);
