@@ -1,0 +1,9 @@
+[Unit]
+Description=OV Berlin publish when review corrections regenerate the dataset
+
+[Path]
+PathChanged=%h/ovberlin/prod/public/movies.json
+Unit=ovberlin-publish.service
+
+[Install]
+WantedBy=default.target

@@ -12,8 +12,10 @@ import { configuredModel } from '../api/pipeline/decision-model';
 import { sanitizeAudit } from '../api/audit-log';
 
 const ROOT = path.join(__dirname, '..');
-export function createAdminServer(store: PipelineStore, options: { port?: number; root?: string; rebuild?: () => Promise<any> } = {}) {
+export function createAdminServer(store: PipelineStore, options: { port?: number; root?: string; rebuild?: () => Promise<any>; origins?: string[] } = {}) {
   const root = options.root ?? ROOT;
+  // Extra origins reach the local server through a trusted proxy, e.g. Tailscale serve.
+  const origins = options.origins ?? [];
   let queue = Promise.resolve();
   const mutate = <T>(callback: () => T): T => {
     const owner = randomUUID();
@@ -36,7 +38,7 @@ export function createAdminServer(store: PipelineStore, options: { port?: number
   const enqueue = () => schedule(mutate(() => store.transaction(() => store.createJob('recalculate'))));
   const server = http.createServer(async (request, response) => {
     const address = server.address(); const port = typeof address === 'object' && address ? address.port : options.port;
-    const allowedHosts = [`127.0.0.1:${port}`, `localhost:${port}`];
+    const allowedHosts = [`127.0.0.1:${port}`, `localhost:${port}`, ...origins.map(origin => new URL(origin).host)];
     if (!allowedHosts.includes(request.headers.host ?? '')) return json(response, 403, { error: 'Local host required' });
     const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
     const api = url.pathname.startsWith('/api/');
@@ -44,7 +46,8 @@ export function createAdminServer(store: PipelineStore, options: { port?: number
       if (api) {
         response.setHeader('Cache-Control', 'no-store');
         if (request.method !== 'GET') {
-          if (request.method !== 'POST' || request.headers.origin !== `http://${request.headers.host}`
+          const origin = request.headers.origin ?? '';
+          if (request.method !== 'POST' || (origin !== `http://${request.headers.host}` && !origins.includes(origin))
             || !request.headers['content-type']?.startsWith('application/json')) return json(response, 403, { error: 'Local JSON request required' });
         }
         store.refresh();
@@ -181,7 +184,8 @@ async function readJson(request: http.IncomingMessage): Promise<any> {
 if (require.main === module) {
   const store = new PipelineStore(); const port = Number(process.env.ADMIN_PORT || 3003);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid ADMIN_PORT');
-  const server = createAdminServer(store, { port });
+  const origins = (process.env.ADMIN_ORIGINS ?? '').split(',').map(origin => origin.trim()).filter(Boolean);
+  const server = createAdminServer(store, { port, origins });
   server.listen(port, '127.0.0.1', () => console.log(`Local review: http://127.0.0.1:${port}/admin/review\nCorrections are saved in the selected pipeline state (default pipeline/state.json.gz). Production review runs on the Beelink; local corrections stay local.`));
   server.on('error', error => { console.error(error.message); process.exitCode = 1; });
   process.on('SIGINT', () => server.close(() => { store.close(); process.exit(0); }));

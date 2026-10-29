@@ -3,6 +3,7 @@
 #   ovberlin.sh prod              latest v* tag: scrape, build, publish to GitHub Pages
 #   ovberlin.sh staging           origin/main: build with production data, serve on :4174
 #   ovberlin.sh staging --scrape  origin/main: scrape a fresh copy of production state, build, serve
+#   ovberlin.sh publish           rebuild and publish production after review corrections, no scrape
 #   ovberlin.sh poll              start prod/staging once for each new tag or main commit
 set -Eeuo pipefail
 
@@ -69,6 +70,17 @@ run_prod() {
   log "Published $tag"
 }
 
+run_publish() {
+  local dir="$OVB_ROOT/prod"
+  # Review corrections regenerate public/movies.json; publish until the build matches it.
+  for _ in 1 2 3; do
+    if cmp -s "$dir/public/movies.json" "$dir/dist/movies.json"; then log "Published dataset is current"; return 0; fi
+    log "Publishing regenerated dataset"
+    build "$dir"
+    publish_prod
+  done
+}
+
 run_staging() {
   local dir="$OVB_ROOT/staging" prod_public="$OVB_ROOT/prod/public"
   git -C "$dir" fetch --quiet origin main
@@ -108,10 +120,10 @@ poll() {
 mode=${1:-}; shift || true
 case "$mode" in
   poll) poll ;;
-  prod|staging)
+  prod|staging|publish)
     # Production and staging share production state; never run them at the same time.
     exec 9>"$OVB_ROOT/run.lock"; flock 9
     trap 'notify "ovberlin $mode run failed; see journalctl --user -u ovberlin-$mode"' ERR
     "run_$mode" "$@" ;;
-  *) echo "Usage: $0 prod | staging [--scrape] | poll" >&2; exit 2 ;;
+  *) echo "Usage: $0 prod | staging [--scrape] | publish | poll" >&2; exit 2 ;;
 esac
