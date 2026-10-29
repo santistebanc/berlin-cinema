@@ -22,7 +22,7 @@ import { IdentityResolver, flag, identityConflict, interpret, linkEvidence } fro
 import { enrichEntity } from './enrichment';
 import { PublishedScreening, ScreeningInput, resolveScreenings, screeningModality } from './screenings';
 import { PipelineStore } from './store';
-import { configuredRegistry } from '../sources/defaults';
+import { configuredRegistry, disabledSources } from '../sources/defaults';
 import type { SourceRegistry } from '../sources/registry';
 import type { SourceDependencies } from '../sources/types';
 import { selectEvidence, sourceCandidates } from './evidence-policy';
@@ -101,7 +101,8 @@ export async function runPipeline(options: PipelineOptions): Promise<any> {
     }
     let active = store.observations(undefined, true);
     const freshEnough = (observation: Observation) => Date.parse(now) - Date.parse(observation.observedAt) <= DAY;
-    const screenings = active.filter(o => o.kind === 'screening' && freshEnough(o) && `${o.data.date}T${o.data.time}` >= berlinClock(now));
+    const withheld = new Set(disabledSources());
+    const screenings = active.filter(o => o.kind === 'screening' && !withheld.has(o.source) && freshEnough(o) && `${o.data.date}T${o.data.time}` >= berlinClock(now));
     const listingSubjects = new Set(screenings.map(o => o.data.listingSubject));
     const venueSubjects = new Set(screenings.map(o => o.data.venueSubject));
     await refreshListingObservations(store, active.filter(item => item.kind === 'listing' && listingSubjects.has(item.subject)), {

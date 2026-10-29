@@ -17,6 +17,10 @@ export const defaultRegistry = new SourceRegistry([criticAdapter, berlinAdapter]
 export function configuredRegistry(): SourceRegistry {
   const instances: SourceInstance[] = process.env.SOURCE_INSTANCES_FILE
     ? JSON.parse(fs.readFileSync(process.env.SOURCE_INSTANCES_FILE, 'utf8')) : defaultInstances;
-  const disabled = (process.env.SOURCE_DISABLED ?? '').split(',').map(id => id.trim());
-  return new SourceRegistry([criticAdapter, berlinAdapter], instances).withSelection({ disabled });
+  return new SourceRegistry([criticAdapter, berlinAdapter], instances).withSelection({ disabled: disabledSources() });
+}
+
+/** SOURCE_DISABLED also withholds a source's retained screenings from publication. */
+export function disabledSources(): string[] {
+  return (process.env.SOURCE_DISABLED ?? '').split(',').map(id => id.trim()).filter(Boolean);
 }
