@@ -189,7 +189,9 @@ async function main() {
     const migrated = await execute({ collections: retained });
     assert.equal(migrated.movies[0].id, legacy.movies[0].id);
     assert.equal(migrated.movies[0].slug, legacy.movies[0].slug);
-    assert.deepEqual(migrated.movies[0].showings, legacy.movies[0].showings);
+    // Replayed retained collections take the adapter's declared lineage; the direct legacy batch has none.
+    const withoutLineage = (showings: any) => JSON.parse(JSON.stringify(showings), (key, value) => key === 'upstreamLineage' ? undefined : value);
+    assert.deepEqual(withoutLineage(migrated.movies[0].showings), withoutLineage(legacy.movies[0].showings));
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
   console.log('captured critic.de and berlin.de adapter collections reach public snapshots');
 }

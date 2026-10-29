@@ -86,7 +86,11 @@ export class SourceRegistry {
       };
       if (options.retained || deps.network === false) {
         const cached = retained();
-        return cached ? { ...structuredClone(cached), status: 'cached', coverage: cached.coverage.map(scope => ({ ...scope, status: 'partial' })) } : empty('failed', 'No retained source collection is available');
+        if (!cached) return empty('failed', 'No retained source collection is available');
+        const replayed: SourceCollection = { ...structuredClone(cached), status: 'cached', coverage: cached.coverage.map(scope => ({ ...scope, status: 'partial' })) };
+        // Collections retained before adapters declared lineage take the adapter's declared origin.
+        for (const record of replayed.records) if (!record.provenance.upstreamLineage.length) record.provenance.upstreamLineage = [...(adapter.upstreamLineage ?? [])];
+        return replayed;
       }
       let collection: SourceCollection;
       const diagnostics: Diagnostic[] = [];
