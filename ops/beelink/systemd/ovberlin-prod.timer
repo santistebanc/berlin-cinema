@@ -1,0 +1,9 @@
+[Unit]
+Description=OV Berlin production refresh every six hours
+
+[Timer]
+OnCalendar=*-*-* 00/6:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

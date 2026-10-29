@@ -182,7 +182,7 @@ if (require.main === module) {
   const store = new PipelineStore(); const port = Number(process.env.ADMIN_PORT || 3003);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid ADMIN_PORT');
   const server = createAdminServer(store, { port });
-  server.listen(port, '127.0.0.1', () => console.log(`Local review: http://127.0.0.1:${port}/admin/review\nCorrections are saved in the selected pipeline state (default pipeline/state.json.gz). Commit and push that file to share them with scheduled refreshes.`));
+  server.listen(port, '127.0.0.1', () => console.log(`Local review: http://127.0.0.1:${port}/admin/review\nCorrections are saved in the selected pipeline state (default pipeline/state.json.gz). Production review runs on the Beelink; local corrections stay local.`));
   server.on('error', error => { console.error(error.message); process.exitCode = 1; });
   process.on('SIGINT', () => server.close(() => { store.close(); process.exit(0); }));
 }

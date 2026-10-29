@@ -10,9 +10,13 @@ dist/
 dist-ssr/
 dist-server/
 
-# Generated at build time
+# Pipeline data lives on the Beelink, never in git
 public/movies.json
 public/sitemap.xml
+public/audit/
+pipeline/state.json
+pipeline/state.json.gz
+.lock-hash
 
 # TypeScript
 *.tsbuildinfo

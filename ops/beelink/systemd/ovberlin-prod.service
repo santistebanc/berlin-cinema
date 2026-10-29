@@ -1,0 +1,8 @@
+[Unit]
+Description=OV Berlin production scrape and publish
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/ovberlin/ops/ovberlin.sh prod
+TimeoutStartSec=2h
