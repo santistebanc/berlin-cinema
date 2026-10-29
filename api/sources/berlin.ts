@@ -43,6 +43,8 @@ export const berlinAdapter: SourceAdapter = {
             reason: 'Some listing entries or screening rows could not be extracted; page coverage is incomplete.',
             retryable: false, evidence: { url, page: page + 1, rejected } });
         }
+        // Past the last result, berlin.de still renders the search form inside the accordion.
+        if (!pageMovies.size && !rejected.length) break;
         if (![...pageMovies.values()].some(movie => movie.showings.length)) throw new Error('The berlin.de page contained entries but no supported screenings');
         const before = [...movies.values()].reduce((sum, movie) => sum + movie.showings.length, 0);
         mergeBerlinPage(response.body, movies);
