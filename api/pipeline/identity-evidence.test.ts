@@ -120,6 +120,14 @@ async function main() {
     assert.equal(snapshot.movies[0].plot, 'An independently supplied synopsis.', 'Source descriptions survive without a provider match');
     if (scenario === 'provider-director-alias' && mode === 'retrieved' && lineage[0] === 'berlin.de')
       assert.deepEqual(aliasCalls, [1820858], 'Fetch only the mismatched credited person, once');
+    if (scenario === 'provider-director-alias' && mode === 'retrieved' && lineage[0] === 'berlin.de') {
+      pipelineStore.saveResource('tmdb-person:1820858', { id: 1820858, name: 'Caroline Kox', also_known_as: ['Koxi'] }, '2026-10-01T10:00:00Z');
+      const refreshed = await runPipeline({ store: pipelineStore, collections: [collection], now: NOW,
+        network: false, tmdb, model: null, publish: false, audit: false,
+        osm: [{ id: 'node/1', name: 'Example Cinema', address: 'Example Street 1, 10115 Berlin', insideBerlin: true, website: null }] });
+      assert.equal(refreshed.movies[0].identityStatus, 'verified', 'Refresh aliases on accepted matches when the person cache expires');
+      assert.deepEqual(aliasCalls, [1820858, 1820858]);
+    }
   }
   const duplicateStore = new PipelineStore(':memory:');
   duplicateStore.saveResource('tmdb-detail:1797226', { ...scenarios['hyphenated-korean-director'].data,
