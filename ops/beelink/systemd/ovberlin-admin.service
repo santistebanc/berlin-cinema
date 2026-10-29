@@ -1,5 +1,5 @@
 [Unit]
-Description=OV Berlin review UI on 127.0.0.1:3003 against production state
+Description=OV Berlin review UI against production state (Tailscale https port 3443)
 
 [Service]
 WorkingDirectory=%h/ovberlin/prod

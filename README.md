@@ -320,15 +320,17 @@ dataset, sitemap and audit live on the Beelink under `~/ovberlin`.
   which deploys GitHub Pages. Nothing is committed.
 - `npm run staging:scrape` scrapes with `main` against a fresh copy of production
   state, for testing pipeline changes on real data.
-- The production **review UI** runs on the Beelink:
-  `ssh -L 3003:127.0.0.1:3003 beelink`, then open http://127.0.0.1:3003/admin/review.
-  Corrections publish with the next refresh.
+- The production **review UI** runs on the Beelink at
+  https://beelink-home.tail705655.ts.net:3443/admin/review (Tailscale only). When a
+  correction regenerates the dataset, the Beelink rebuilds and publishes the live site
+  within a few minutes, without scraping.
 
 On the Beelink, read logs with `journalctl --user -u ovberlin-prod` (or `-staging`,
 `-poll`) and run immediately with `systemctl --user start ovberlin-prod`. The last 20
 pre-run states are in `~/ovberlin/backups`. `ops/beelink/install.sh` sets up the
 machine and installs runner updates. Set `NOTIFY_URL` in `~/ovberlin/secrets.env`
-to receive a JSON POST when a run fails.
+to receive a JSON POST when a run fails. `ADMIN_ORIGINS` there lists the proxy
+origins the review server accepts.
 
 ## Running locally
 

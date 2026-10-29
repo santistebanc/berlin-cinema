@@ -1,3 +1,4 @@
+import http from 'http';
 import assert from 'assert/strict';
 import fs from 'fs';
 import os from 'os';
@@ -1255,7 +1256,8 @@ async function main() {
     const httpStore = new PipelineStore(':memory:');
     httpStore.saveEntity({ id: 'http-film', kind: 'film', name: 'A Film', data: {} });
     const httpIssue = flag(httpStore, 'metadata-match', 'metadata:http-film', 'Resolve metadata: A Film', { entityId: 'http-film', candidates: [], listing: { title: 'A Film' } });
-    const server = createAdminServer(httpStore, { rebuild: async () => ({ total: 0, scrapedAt: NOW }) });
+    const proxied = 'https://review.example:3443';
+    const server = createAdminServer(httpStore, { rebuild: async () => ({ total: 0, scrapedAt: NOW }), origins: [proxied] });
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
     try {
       const port = (server.address() as any).port; const base = `http://127.0.0.1:${port}`;
@@ -1286,7 +1288,13 @@ async function main() {
       } finally { axios.get = previousGet; if (previousKey === undefined) delete process.env.TMDB_API_KEY; else process.env.TMDB_API_KEY = previousKey; }
       assert.equal((await fetch(`${base}/api/review/recalculate`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' }, body: '{}' })).status, 403);
       assert.equal((await fetch(`${base}/api/review/recalculate`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base }, body: '{}' })).status, 202);
-      checks += 3;
+      assert.equal((await fetch(`${base}/api/review/recalculate`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: proxied }, body: '{}' })).status, 202,
+        'A configured proxy origin may write');
+      const statusFor = (host: string) => new Promise<number>((resolve, reject) => http.get({ host: '127.0.0.1', port, path: '/api/review/state',
+        headers: { Host: host } }, response => { response.resume(); resolve(response.statusCode!); }).on('error', reject));
+      assert.equal(await statusFor('review.example:3443'), 200, 'A configured proxy host may read');
+      assert.equal(await statusFor('evil.example'), 403, 'Unlisted hosts stay rejected');
+      checks += 6;
     } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
     console.log(`Pipeline tests passed (${checks} scenario checks plus invariant assertions).`);
   } finally {

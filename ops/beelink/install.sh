@@ -46,6 +46,12 @@ gh release view site-live -R "$REPO" >/dev/null 2>&1 || gh release create site-l
 mkdir -p "$HOME/.config/systemd/user"
 cp "$HERE"/systemd/* "$HOME/.config/systemd/user/"
 systemctl --user daemon-reload
-systemctl --user enable --now ovberlin-prod.timer ovberlin-poll.timer
+systemctl --user enable --now ovberlin-prod.timer ovberlin-poll.timer ovberlin-publish.path
 systemctl --user enable ovberlin-admin.service ovberlin-staging-web.service
+# Review UI over HTTPS for the tailnet only (serve, not funnel).
+host=$(tailscale status --json | grep -m1 -o '"DNSName": *"[^"]*"' | cut -d'"' -f4 | sed 's/.$//')
+tailscale serve --bg --https=3443 http://127.0.0.1:3003 >/dev/null
+grep -q '^ADMIN_ORIGINS=' "$OVB_ROOT/secrets.env" || echo "ADMIN_ORIGINS=https://$host:3443" >> "$OVB_ROOT/secrets.env"
+systemctl --user restart ovberlin-admin.service
+echo "Review UI: https://$host:3443/admin/review"
 echo "Installed. Fill $OVB_ROOT/secrets.env, then: systemctl --user start ovberlin-prod.service"

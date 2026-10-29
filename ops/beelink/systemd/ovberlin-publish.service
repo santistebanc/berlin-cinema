@@ -1,0 +1,7 @@
+[Unit]
+Description=OV Berlin rebuild and publish production without scraping
+
+[Service]
+Type=oneshot
+ExecStart=%h/ovberlin/ops/ovberlin.sh publish
+TimeoutStartSec=1h
