@@ -57,7 +57,9 @@ async function main() {
     assert.deepEqual(migrated.resource('tmdb-detail:123'), store.resource('tmdb-detail:123'));
     assert.deepEqual(migrated.observations().map(o => [o.id, o.subject, o.sourceKey, o.observedAt, o.fetchedAt, o.data]),
       store.observations().map(o => [o.id, o.subject, o.sourceKey, o.observedAt, o.fetchedAt, o.data]));
-    assert.ok(migrated.observations().every(o => o.provenance?.upstreamLineage.length === 0), 'Unknown origins stay unknown');
+    assert.ok(migrated.observations().every(o => JSON.stringify(o.provenance?.upstreamLineage)
+      === JSON.stringify(defaultRegistry.instance(o.source) ? defaultRegistry.adapter(defaultRegistry.instance(o.source)!).upstreamLineage ?? [] : [])),
+      'Retained observations take their adapter\'s declared origin; unconfigured origins stay unknown');
     const replay = await defaultRegistry.collect(retainedDependencies(migrated, defaultRegistry,
       { network: false, now: '2026-10-15T11:00:00Z', dataDir: path.join(output, 'data') }), { retained: true });
     assert.equal(replay[0].observedAt, NOW);
@@ -132,10 +134,12 @@ async function main() {
       const { provenance, fields, ...converted } = convertedState.observations[id];
       const { provenance: _oldProvenance, fields: _oldFields, ...originalObservation } = old;
       assert.deepEqual(converted, originalObservation, `Representative observation ${id} remains immutable`);
-      assert.deepEqual(provenance.upstreamLineage, old.provenance?.upstreamLineage ?? []);
+      const instance = defaultRegistry.instance(old.source);
+      const declared = instance ? [...defaultRegistry.adapter(instance).upstreamLineage ?? []] : [];
+      assert.deepEqual(provenance.upstreamLineage, old.provenance?.upstreamLineage?.length ? old.provenance.upstreamLineage : declared);
     }
     console.log(`representative retained state migrated losslessly: ${Object.keys(retainedState.observations).length} observations, ${retainedState.overrides.length} corrections`);
-    console.log('migration preserves identity/corrections/provider evidence, freshness and unknown lineage; repeat and recovery passed');
+    console.log('migration preserves identity/corrections/provider evidence, freshness and lineage; repeat and recovery passed');
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

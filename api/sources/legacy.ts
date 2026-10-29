@@ -28,7 +28,10 @@ export function listingCollection(movies: any[], complete: boolean, instance: So
   adapter: SourceAdapter, observedAt: string, diagnostics: Diagnostic[] = []): SourceCollection {
   const collection = translateLegacyBatch({ source: instance.id, movies, observedAt, complete, status: 'fresh' }) as SourceCollection;
   collection.adapterId = adapter.id; collection.extractionVersion = adapter.extractionVersion;
-  for (const record of collection.records) record.provenance.extractionVersion = adapter.extractionVersion;
+  for (const record of collection.records) {
+    record.provenance.extractionVersion = adapter.extractionVersion;
+    record.provenance.upstreamLineage = [...(adapter.upstreamLineage ?? [])];
+  }
   collection.diagnostics.push(...diagnostics);
   return collection;
 }

@@ -32,7 +32,8 @@ async function main() {
   try {
     const collected = await registry.collect(deps);
     assert.ok(collected.every(c => c.status === 'fresh'));
-    assert.ok(collected.flatMap(c => c.records).every(r => r.provenance.upstreamLineage.length === 0), 'Actual adapters retain unknown lineage');
+    assert.ok(collected.every(c => c.records.every(r => JSON.stringify(r.provenance.upstreamLineage)
+      === JSON.stringify(registry.adapter(registry.instance(c.sourceInstanceId)!).upstreamLineage ?? []))), 'Actual adapters record their declared origin');
     const first = await execute(collected, { operation: 'acquisition' });
     assert.equal(first.outcome, 'published');
     const movie = first.snapshot.movies[0];
