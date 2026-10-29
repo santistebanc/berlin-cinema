@@ -5,6 +5,7 @@ import { PipelineStore } from './store';
 import { runPipeline } from './pipeline';
 import { translateLegacyBatch } from './observations';
 import { tmdbMovieData } from '../tmdb-client';
+import { normalize } from './domain';
 
 const NOW = '2026-10-29T10:00:00Z';
 const listing = { title: 'Ghostbusters', year: 1984, cast: ['Bill Murray'], runtime: 105, country: 'USA' };
@@ -19,6 +20,9 @@ function bundle(id: number, values: any = {}) {
     credits: { cast: [{ name: 'Bill Murray' }], crew: [{ name: 'Ivan Reitman', job: 'Director' }] } };
 }
 async function main() {
+  assert.equal(normalize('Catli 2'), normalize('Çatlı 2'), 'Turkish dotless i is transliterated, never deleted');
+  assert.equal(normalize('ÇATLI 2'), normalize('Çatlı 2'));
+  assert.notEqual(normalize('Catli 2'), normalize('Çatlı'), 'Sequel numbers remain part of identity');
   assert.equal(supportsFilmIdentity(listing, provider), true);
   for (const patch of [{ runtime: null }, { runtime: 115 }, { edition: 'Extended cut' }, { country: null }, { country: 'Japan' },
     { cast: ['Dan Aykroyd'] }, { year: 2016 }, { year: 1985 }, { title: 'Ghostbusters II' }]) {
@@ -42,11 +46,16 @@ async function main() {
   store.saveResource('tmdb-detail:621', bundle(621), NOW);
   assert.equal(new CachedFilmEvidence(store, NOW).match(listing), null, 'Two supported candidates require review');
 
-  for (const scenario of ['one-actor', 'transliterated-director'] as const) for (const mode of ['cached', 'retrieved', 'ambiguous'] as const)
+  for (const scenario of ['one-actor', 'transliterated-director', 'turkish-title'] as const) for (const mode of ['cached', 'retrieved', 'ambiguous'] as const)
     for (const lineage of [['berlin.de'], ['TMDb:620'], []]) {
     const pipelineStore = new PipelineStore(':memory:');
-    const raw = scenario === 'one-actor' ? listing : minotaurus;
-    const data = scenario === 'one-actor' ? bundle(620) : { details: { id: 620, title: 'Minotaurus', original_title: 'Minotaurus',
+    const raw = scenario === 'one-actor' ? listing : scenario === 'turkish-title'
+      ? { title: 'Catli 2', year: 2026, director: 'Deniz Enyüksek', runtime: 118, country: 'Türkei', cast: ['Vedat Inceefe', 'Eren Vurdem', 'Ömer Kurt'] }
+      : minotaurus;
+    const data = scenario === 'one-actor' ? bundle(620) : scenario === 'turkish-title'
+      ? { details: { id: 620, title: 'Çatlı 2', original_title: 'Çatlı 2', release_date: '2026-10-29', runtime: 118, poster_path: '/catli-2.jpg' },
+        credits: { cast: [{ name: 'Vedat İnceefe' }, { name: 'Eren Vurdem' }, { name: 'Ömer Kurt' }], crew: [{ name: 'Deniz Enyüksek', job: 'Director' }] } }
+      : { details: { id: 620, title: 'Minotaurus', original_title: 'Minotaurus',
       release_date: '2026-11-05', runtime: 141 }, credits: { cast: [], crew: [{ name: 'Andrei Zvyagintsev', job: 'Director' }] } };
     const candidates = mode === 'ambiguous' ? [data, { ...data, details: { ...data.details, id: 621 } }] : [data];
     if (mode !== 'retrieved') for (const candidate of candidates)
