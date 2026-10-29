@@ -65,6 +65,8 @@
     "screenshots:local": "ts-node --project tsconfig.server.json scripts/screenshot.ts http://localhost:4173",
     "prepreview": "npm run build",
     "preview": "vite preview",
+    "release": "node scripts/release.mjs",
+    "staging:scrape": "ssh beelink \"systemd-run --user --no-block --unit=ovberlin-staging-scrape ~/ovberlin/ops/ovberlin.sh staging --scrape\"",
     "test:sources": "ts-node --project tsconfig.server.json api/sources/registry.test.ts && ts-node --project tsconfig.server.json api/sources/adapters.test.ts && ts-node --project tsconfig.server.json api/sources/progress.test.ts && ts-node --project tsconfig.server.json api/sources/detail-cache.test.ts",
     "test:resilience": "ts-node --project tsconfig.server.json api/pipeline/rejected-scope.test.ts && ts-node --project tsconfig.server.json api/pipeline/scoped-refresh.test.ts && ts-node --project tsconfig.server.json api/pipeline/run-recovery.test.ts && ts-node --project tsconfig.server.json api/pipeline/publication-root.test.ts && ts-node --project tsconfig.server.json api/sources/resilience.test.ts",
     "pipeline:export-state": "ts-node --project tsconfig.server.json scripts/export-release-state.ts",

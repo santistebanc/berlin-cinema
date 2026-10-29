@@ -1,0 +1,11 @@
+[Unit]
+Description=OV Berlin staging site on port 4174
+
+[Service]
+WorkingDirectory=%h/ovberlin/staging
+Environment=PATH=%h/ovberlin/node/bin:/usr/bin:/bin
+ExecStart=%h/ovberlin/staging/node_modules/.bin/vite preview --host 0.0.0.0 --port 4174 --strictPort
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,6 @@
+[Unit]
+Description=OV Berlin check for new releases and main commits
+
+[Service]
+Type=oneshot
+ExecStart=%h/ovberlin/ops/ovberlin.sh poll

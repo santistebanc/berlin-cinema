@@ -1,0 +1,38 @@
+name: Publish site
+
+# The Beelink runner builds the release and uploads dist/ to the site-live release,
+# then dispatches this workflow. Nothing is committed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download built site
+        run: |
+          gh release download site-live -R "$GITHUB_REPOSITORY" -p site.tar.gz
+          mkdir site && tar -xzf site.tar.gz -C site
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

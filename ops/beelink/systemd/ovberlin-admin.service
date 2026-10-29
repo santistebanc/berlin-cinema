@@ -1,0 +1,14 @@
+[Unit]
+Description=OV Berlin review UI on 127.0.0.1:3003 against production state
+
+[Service]
+WorkingDirectory=%h/ovberlin/prod
+Environment=PATH=%h/ovberlin/node/bin:/usr/bin:/bin
+Environment=PIPELINE_STATE=%h/ovberlin/state/prod/state.json.gz
+Environment=PIPELINE_DATA_DIR=%h/ovberlin/state/prod/data
+EnvironmentFile=%h/ovberlin/secrets.env
+ExecStart=%h/ovberlin/node/bin/npm run admin:serve
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

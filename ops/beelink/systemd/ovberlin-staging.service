@@ -1,0 +1,8 @@
+[Unit]
+Description=OV Berlin staging build of main
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/ovberlin/ops/ovberlin.sh staging
+TimeoutStartSec=1h

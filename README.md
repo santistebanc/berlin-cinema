@@ -43,8 +43,8 @@ Source configuration: [adapters](docs/source-adapters.md),
 [contracts](docs/source-contracts.md), [failure recovery](docs/source-recovery.md),
 [migration and offline shadow rollout](docs/ingestion-rollout.md).
 
-The public site remains static. GitHub Actions refreshes observations every six
-hours; manual review runs only on your computer with `npm run admin`.
+The public site remains static. An always-on Beelink refreshes observations every
+six hours and hosts the production review UI; see [Releases and hosting](#releases-and-hosting).
 
 1. **Observe** — source adapters retain original labels, source URLs, distinct records and screening observations. Bounded detail-page requests retrieve explicit missing year/director data; cached details retain their original timestamps.
 2. **Interpret** — tested rules recognize explicit language/format/year markers. Unknown parentheticals survive. A decision model classifies ambiguous source segments into bounded roles; it cannot invent an extracted name.
@@ -302,7 +302,33 @@ snapshots. Dates/times are evaluated in Europe/Berlin. Absence is not cancellati
 | Ratings | OMDb API |
 | Cinema data | OpenStreetMap / Overpass API |
 | Hosting | GitHub Pages |
-| CI/CD | GitHub Actions (every 6 hours) |
+| CI | GitHub Actions (type checks and tests) |
+| Data refresh | Beelink systemd timers (every 6 hours) |
+
+## Releases and hosting
+
+Code and data are separate. Git holds code only; pipeline state, the published
+dataset, sitemap and audit live on the Beelink under `~/ovberlin`.
+
+- **`main`** is development. Every push runs type checks and tests in GitHub Actions,
+  and within five minutes the Beelink serves a staging build of `main` with production
+  data at http://beelink-home:4174 (Tailscale). Staging never touches production.
+- **Releases** are `v*` tags. `npm run release` (or `npm run release -- minor`) tags
+  the current `main` and pushes it. The Beelink deploys the newest tag within five
+  minutes, then refreshes it every six hours: back up state, scrape, build, upload
+  `dist/` to the `site-live` GitHub release and run the *Publish site* workflow,
+  which deploys GitHub Pages. Nothing is committed.
+- `npm run staging:scrape` scrapes with `main` against a fresh copy of production
+  state, for testing pipeline changes on real data.
+- The production **review UI** runs on the Beelink:
+  `ssh -L 3003:127.0.0.1:3003 beelink`, then open http://127.0.0.1:3003/admin/review.
+  Corrections publish with the next refresh.
+
+On the Beelink, read logs with `journalctl --user -u ovberlin-prod` (or `-staging`,
+`-poll`) and run immediately with `systemctl --user start ovberlin-prod`. The last 20
+pre-run states are in `~/ovberlin/backups`. `ops/beelink/install.sh` sets up the
+machine and installs runner updates. Set `NOTIFY_URL` in `~/ovberlin/secrets.env`
+to receive a JSON POST when a run fails.
 
 ## Running locally
 
@@ -381,19 +407,12 @@ changes flagged for another review. Applying/undoing a correction queues local
 regeneration, with saved/processing/published/failed status. No source scrape is
 needed. Unchanged decisions and resource lookups are reused.
 
-Commit and push the selected `pipeline/state.json.gz` to propagate local corrections to Actions.
 Custom `PIPELINE_STATE` paths remain explicit; migrate/export deliberately before replacing the scheduled state.
-Pull the latest state before reviewing; if Git reports a state-file conflict,
-keep both versions and reconcile the corrections rather than accepting a
-whole-file replacement blindly. Git supplies the historical archive; current
-state is loaded into memory. Partition the store if history grows substantially.
+Local state is your own copy; production corrections belong in the Beelink review UI.
+Current state is loaded into memory. Partition the store if history grows substantially.
 
-Pushing to `main` runs the production workflow: Node 24, `npm ci`, type checks,
-tests, a fresh scrape, and the production build. Successful runs commit the
-dataset, sitemap, public audit and `pipeline/state.json.gz`, then deploy GitHub Pages.
-The workflow exports the successful isolated run as gzip and stages removal of an obsolete tracked plain state, avoiding GitHub's 100 MiB per-file limit.
-Scheduled runs refresh the same data every six hours. The existing `TMDB_API_KEY`
-and `OMDB_API_KEY` secrets are reused; optional `GEOAPIFY_API_KEY` enables extra
+The production runner reads `TMDB_API_KEY` and `OMDB_API_KEY` from
+`~/ovberlin/secrets.env` on the Beelink; optional `GEOAPIFY_API_KEY` enables extra
 venue verification. No decision-model credentials are required: deterministic
 rules run normally and ambiguous evidence stays available for local review.
 
@@ -505,11 +524,11 @@ published dataset cannot reconstruct the original extraction or API search
 decisions; those are labeled unavailable rather than inferred from a URL.
 
 Each full scrape writes `public/audit/index.json` and an immutable report in
-`public/audit/runs/`. The deployment workflow commits these alongside the movie
+`public/audit/runs/`. The Beelink keeps these alongside the movie
 data, including failed-refresh reports, so history survives deployments.
 Do not delete these files to refresh data. Run a single scraper/writer at a time.
-No database or running backend is needed: Git is the durable store, Actions is
-a scheduled writer, local review writes corrections, and Pages serves static files. A per-record report index lets
+No database is needed: the Beelink state file is the durable store and scheduled
+writer, its review UI writes corrections, and Pages serves static files. A per-record report index lets
 the browser fetch only relevant history rather than every historical run.
 Builds upgrade older indexes from their existing reports without inventing
 events. No automatic retention policy is applied. For a much larger archive,
