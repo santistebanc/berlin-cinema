@@ -396,10 +396,11 @@ export function publishWithRollback(store: PipelineStore, data: any, revision: n
   }
 }
 
+// Built once: constructing Intl formatters is expensive and this runs per screening observation.
+const BERLIN_CLOCK = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 export function berlinClock(iso: string): string {
-  const parts = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso));
-  return parts.replace(' ', 'T');
+  return BERLIN_CLOCK.format(new Date(iso)).replace(' ', 'T');
 }
 export function slugify(title: string): string { return normalize(title).replace(/\s+/g, '-'); }
 function sourceAlias(observation: Observation, entityId?: string) {

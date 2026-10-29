@@ -3,6 +3,8 @@ import HttpClient from '../http-client';
 import { parseTitle } from '../title-utils';
 import { parseLabel, modalityTags } from '../pipeline/labels';
 
+// Constructing Intl formatters is expensive; parsing a listing formats thousands of dates.
+const BERLIN_DAY = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' });
 class MovieParser {
   private httpClient: Pick<HttpClient, 'ensureAbsoluteUrl'>;
 
@@ -211,7 +213,7 @@ class MovieParser {
   }
 
   private berlinDate(): string {
-    return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(this.now()));
+    return BERLIN_DAY.format(new Date(this.now()));
   }
 
   getDayOfWeek(dateStr: string): string {

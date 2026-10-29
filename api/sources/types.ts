@@ -27,8 +27,9 @@ export interface SourceDependencies {
   filmDetailIdentities?(source: string, details: { url: string; fetchedAt: string; fields: Record<string, any> }): FilmDetailIdentity[];
   wait?(milliseconds: number): Promise<void>;
   network?: boolean; force?: boolean; signal?: AbortSignal;
-  /** Hand off usable acquisition progress before optional work or another page can fail. */
-  progress?(collection: SourceCollection): void;
+  /** Hand off usable acquisition progress before optional work or another page can fail.
+   *  A function is built only if acquisition stops early, for progress that is expensive to snapshot. */
+  progress?(collection: SourceCollection | (() => SourceCollection)): void;
 }
 export class SourcePersistenceError extends Error {}
 export interface FilmDetailExtractor {

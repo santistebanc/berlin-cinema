@@ -91,14 +91,19 @@ export class SourceRegistry {
       let collection: SourceCollection;
       const diagnostics: Diagnostic[] = [];
       let progress: SourceCollection | undefined;
+      let pending: (() => SourceCollection) | undefined;
+      const accept = (value: SourceCollection) => {
+        CollectionEnvelopeSchema.parse(value);
+        if (value.sourceInstanceId !== instance.id || value.status !== 'fresh') throw new Error('Invalid acquisition progress');
+        // Own a snapshot: timed-out work must not mutate the returned records later.
+        progress = structuredClone(value);
+      };
       try {
         const collected = await withinDeadline(signal => adapter.collect(instance, this.context(instance, { ...deps, signal,
           progress: value => {
             if (signal.aborted) return;
-            CollectionEnvelopeSchema.parse(value);
-            if (value.sourceInstanceId !== instance.id || value.status !== 'fresh') throw new Error('Invalid acquisition progress');
-            // Own a snapshot: timed-out work must not mutate the returned records later.
-            progress = structuredClone(value);
+            if (typeof value === 'function') pending = value;
+            else { pending = undefined; accept(value); }
           },
           diagnostic: diagnostic => { diagnostics.push(diagnostic); deps.diagnostic(diagnostic); } })), instance.limits.collectionTimeoutMs ?? 120000);
         CollectionEnvelopeSchema.parse(collected);
@@ -107,6 +112,8 @@ export class SourceRegistry {
           diagnostics: [...collected.diagnostics, ...diagnostics] };
       } catch (error) {
         if (error instanceof SourcePersistenceError) throw error;
+        // Lazy progress is built now, between the adapter's awaits, so it reflects all evidence applied so far.
+        if (pending) { const build = pending; pending = undefined; try { accept(build()); } catch { /* Keep the last accepted snapshot. */ } }
         const message = sanitizeAudit(error instanceof Error ? error.message : 'Source acquisition failed.');
         const diagnostic: Diagnostic = { schemaVersion: 1, category: 'recovery', stage: 'collection',
           code: progress ? 'collection-incomplete' : 'source-failed',
