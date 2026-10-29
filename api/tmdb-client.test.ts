@@ -54,6 +54,12 @@ async function main() {
     ] } });
     const lowRankedExact = await new TmdbClient('test-only').candidates(['Monsters, Inc.']);
     assert.ok(lowRankedExact.some(candidate => candidate.id === 2001), 'A whole-title match below the top five must remain a candidate');
+    (axios as any).get = async () => ({ data: { results: [
+      ...Array.from({ length: 6 }, (_, index) => ({ id: index + 1, title: `Other Film ${index}`, original_title: `Other Film ${index}` })),
+      { id: 1786633, title: 'Çatlı 2', original_title: 'Çatlı 2' },
+    ] } });
+    assert.ok((await new TmdbClient('test-only').candidates(['Catli 2'])).some(candidate => candidate.id === 1786633),
+      'Turkish dotless i must not hide an exact title below the top five');
     (axios as any).get = async () => { throw { response: { status: 503 } }; };
     const unavailable = new TmdbClient('test-only');
     assert.deepEqual(await unavailable.candidates(['Unreachable']), []);

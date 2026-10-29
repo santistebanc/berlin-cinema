@@ -106,7 +106,7 @@ export default class TmdbClient {
     for (const title of [...new Set(titles.filter(Boolean))].slice(0, 3)) {
       for (const language of ['en-US', 'de-DE']) {
         const response = await this.get('/search/movie', { query: title, language, page: 1 });
-        const normalizeTitle = (value: string) => value.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+        const normalizeTitle = (value: string) => value.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/\u0131/g, 'i').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
         const exact = (response?.results ?? []).filter((result: any) => [result.title, result.original_title]
           .some(label => typeof label === 'string' && normalizeTitle(label) === normalizeTitle(title)));
         for (const result of [...exact, ...(response?.results?.slice(0, 5) ?? [])]) if (Number.isInteger(result.id)) results.set(result.id, result);
