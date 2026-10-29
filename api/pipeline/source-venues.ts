@@ -13,7 +13,8 @@ export async function fillVenueDetails(movies: any[], store: PipelineStore, maxL
   const deps = options.dependencies ?? sourceDependencies(store, options);
   const fetched = new Map<string, any>();
   for (const instance of registry.instances.filter(item => !options.sourceInstanceId || item.id === options.sourceInstanceId)) {
-    const context = registry.context(instance, { ...deps, network: options.network === false || !instance.enabled ? false : deps.network });
+    const context = registry.context(instance, { ...deps, network: options.network === false || !instance.enabled ? false : deps.network },
+      { cacheAfterDeadline: true });
     const selected = options.sourceFor ? movies.map(movie => ({ ...movie,
       cinemas: (movie.cinemas ?? []).filter((cinema: any) => options.sourceFor!(cinema) === instance.id) })) : movies;
     const resources = await collectVenueDetails(selected, instance, registry.adapter(instance), context,

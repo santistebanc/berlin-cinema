@@ -29,7 +29,8 @@ export class SourceRegistry {
     return new SourceRegistry([...this.adapters.values()], this.instances.map(instance => ({ ...instance,
       enabled: instance.enabled && !options.disabled?.includes(instance.id) && (!options.selected || options.selected.includes(instance.id)) })));
   }
-  context(instance: SourceInstance, deps: SourceDependencies): SourceDependencies {
+  /** Detail lookups after collection pass cacheAfterDeadline: the deadline then stops only network requests. */
+  context(instance: SourceInstance, deps: SourceDependencies, options: { cacheAfterDeadline?: boolean } = {}): SourceDependencies {
     let requests = 0, lastRequestAt = 0;
     // Sources with config.cookies return cookies like a browser, e.g. berlin.de's rate-limit delay token.
     const cookies = new Map<string, string>();
@@ -42,9 +43,11 @@ export class SourceRegistry {
     const check = () => { if (deps.signal?.aborted || Date.now() >= deadline) throw new SourceDeadlineError(); };
     const adapter = this.adapter(instance);
     const key = (value: string) => this.cacheKey(instance, value);
+    // During collection a deadline also ends cache work, so it cannot report complete coverage.
+    const checkCache = options.cacheAfterDeadline ? () => { if (deps.signal?.aborted) throw new SourceDeadlineError(); } : check;
     return { ...deps, cache: {
-      get: value => { check(); try { return deps.cache.get(key(value)); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
-      set: (value, data, at) => { check(); try { deps.cache.set(key(value), data, at); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
+      get: value => { checkCache(); try { return deps.cache.get(key(value)); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
+      set: (value, data, at) => { checkCache(); try { deps.cache.set(key(value), data, at); } catch (error) { throw new SourcePersistenceError((error as Error).message); } },
     },
       diagnostic: diagnostic => { if (!deps.signal?.aborted) deps.diagnostic({ ...diagnostic, sourceInstanceId: instance.id }); },
       request: async request => {

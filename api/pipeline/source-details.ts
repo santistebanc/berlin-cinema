@@ -7,7 +7,7 @@ import { configuredRegistry } from '../sources/defaults';
 import { sourceDependencies } from '../sources/dependencies';
 import { collectFilmDetails } from '../sources/details';
 import type { SourceRegistry } from '../sources/registry';
-import type { SourceDependencies } from '../sources/types';
+import type { SourceDependencies, SourceInstance } from '../sources/types';
 import type { FilmDetailIdentity } from '../../shared/contracts';
 export interface SourceDetails { url: string; fetchedAt: string; fields: Record<string, any>; listingIdentity?: FilmDetailIdentity;
   failed?: boolean; parserVersion?: number; creditsChecked?: boolean; reason?: string }
@@ -36,18 +36,23 @@ export async function fillSourceDetails(movies: any[], store: PipelineStore, max
     network: options.network === false ? false : deps.network,
     cache: { get: (key: string) => local.get(key) ?? deps.cache.get(key),
       set: (key: string, data: any, fetchedAt: string) => { local.set(key, { data, fetchedAt }); } } };
-  const contexts = new Map(registry.instances.map(instance => [instance.id, registry.context(instance,
-    { ...base, network: instance.enabled ? base.network : false })]));
+  // Contexts start their acquisition deadline on first use, so a paced source cannot exhaust another's.
+  const contexts = new Map<string, SourceDependencies>();
+  const contextFor = (instance: SourceInstance) => contexts.get(instance.id) ?? contexts.set(instance.id,
+    registry.context(instance, { ...base, network: instance.enabled ? base.network : false }, { cacheAfterDeadline: true })).get(instance.id)!;
   const fetched = new Map<string, SourceDetails>(); const unresolved = reviewSourceUrls(store);
   const instanceLookups = new Map<string, number>();
   let lookups = 0;
-  for (const movie of [...movies].sort((a, b) => Number(unresolved.has(b.url)) - Number(unresolved.has(a.url)))) {
-    let url: URL; try { url = new URL(movie.url); } catch { continue; }
+  const instanceFor = (movie: any) => {
+    let url: URL; try { url = new URL(movie.url); } catch { return undefined; }
     const source = options.sourceFor?.(movie) ?? options.sourceInstanceId;
-    const instance = registry.instances.find(item => (!source || item.id === source)
-      && registry.adapter(item).film?.accepts(url));
-    if (!instance) continue;
-    const context = contexts.get(instance.id)!;
+    return registry.instances.find(item => (!source || item.id === source) && registry.adapter(item).film?.accepts(url));
+  };
+  const paced = (instance?: SourceInstance) => Number(Boolean(instance?.limits.requestIntervalMs));
+  const ordered = movies.map(movie => ({ movie, instance: instanceFor(movie) })).filter(item => item.instance)
+    .sort((a, b) => Number(unresolved.has(b.movie.url)) - Number(unresolved.has(a.movie.url)) || paced(a.instance) - paced(b.instance));
+  for (const { movie, instance } of ordered as { movie: any; instance: SourceInstance }[]) {
+    const context = contextFor(instance);
     const resources = await collectFilmDetails([movie], instance, registry.adapter(instance), context,
       { maxLookups: Math.min(maxLookups - lookups, instance.limits.filmDetails - (instanceLookups.get(instance.id) ?? 0)), force: options.force });
     for (const [key, details] of resources) {
