@@ -24,7 +24,7 @@ export function extractCriticFilm(html: string, sourceUrl: string) {
   return { fields, creditsChecked };
 }
 export const criticAdapter: SourceAdapter = {
-  id: 'critic.de', extractionVersion: 'critic-v1', capabilities: ['screenings', 'film-details', 'venue-details'],
+  id: 'critic.de', extractionVersion: 'critic-v1', upstreamLineage: ['critic.de'], capabilities: ['screenings', 'film-details', 'venue-details'],
   allows: (url, purpose) => purpose === 'film' ? film(url) : purpose === 'venue' ? venue(url) : url.href === listing,
   film: { accepts: film, extract: extractCriticFilm },
   venue: { accepts: venue, extract: parseCriticVenue, needsLookup: () => true, cacheUsable: data => data.parserVersion >= 2 },

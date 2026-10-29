@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 import { gzipSync, gunzipSync } from 'zlib';
 import { createHash } from 'crypto';
-import { migrateIngestion, restoreIngestion } from './migrate-ingestion';
+import { attributeSourceLineage, migrateIngestion, restoreIngestion } from './migrate-ingestion';
 import { exportReleaseState } from './export-release-state';
 import { defaultRegistry } from '../api/sources/defaults';
 import { defaultStateFile, decodeState, loadStateFile } from '../api/pipeline/state-file';
@@ -19,7 +19,7 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cinema-release-state-'));
 try {
   const source = fs.readFileSync(input);
   const original = decodeState(source, input);
-  const expected = Buffer.from(JSON.stringify(migrateState(original)) + '\n');
+  const expected = Buffer.from(JSON.stringify(attributeSourceLineage(migrateState(original), defaultRegistry)) + '\n');
   const output = path.join(root, 'migration');
   const options = { stateFile: input, dataDir: path.join(root, 'no-raw'), output, registry: defaultRegistry };
   const manifest = migrateIngestion(options);

@@ -44,6 +44,8 @@ export interface VenueDetailExtractor {
 }
 export interface SourceAdapter {
   id: string; extractionVersion: string; capabilities: readonly SourceCapability[];
+  /** Where the source's own data originates; undeclared lineage can never corroborate a provider match. */
+  upstreamLineage?: readonly string[];
   allows(url: URL, purpose: RequestPurpose, instance: SourceInstance): boolean;
   collect(instance: SourceInstance, dependencies: SourceDependencies): Promise<SourceCollection>;
   replay?(raw: unknown, instance: SourceInstance): SourceCollection;

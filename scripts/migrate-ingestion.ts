@@ -31,11 +31,20 @@ function createBundle(output: string, action: (staging: string) => void) {
   finally { if (fs.existsSync(staging)) fs.rmSync(staging, { recursive: true }); }
 }
 
+/** Observations retained before adapters declared lineage take their adapter's declared origin. */
+export function attributeSourceLineage(state: any, registry: SourceRegistry): any {
+  for (const item of Object.values(state.observations) as any[]) {
+    const instance = registry.instance(item.source); const lineage = instance && registry.adapter(instance).upstreamLineage;
+    if (lineage?.length && item.provenance && !item.provenance.upstreamLineage?.length) item.provenance.upstreamLineage = [...lineage];
+  }
+  return state;
+}
+
 /** Explicit copy migration. Inputs and the previous publication are never written. */
 export function migrateIngestion(options: MigrationOptions): Manifest {
   const { stateFile, dataDir, registry } = options; const output = path.resolve(options.output);
   if (fs.existsSync(`${stateFile}.lock`)) throw new Error('Pipeline writer lock exists; stop writers before migration');
-  const stateBytes = fs.readFileSync(stateFile); const state = migrateState(decodeState(stateBytes, stateFile));
+  const stateBytes = fs.readFileSync(stateFile); const state = attributeSourceLineage(migrateState(decodeState(stateBytes, stateFile)), registry);
   const originalName = stateFile.endsWith('.gz') ? STATE_NAME : 'state.json';
   const prior = fs.existsSync(output) ? JSON.parse(fs.readFileSync(path.join(output, 'manifest.json'), 'utf8')) : undefined;
   // Existing plain migration bundles remain repeatable; newly prepared bundles use gzip.

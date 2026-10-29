@@ -69,7 +69,7 @@ async function acquisition(roleless: boolean, zeroLookups: boolean, bound = fals
     const published = JSON.parse(fs.readFileSync(path.join(publicationRoot, 'public/movies.json'), 'utf8'));
     assert.equal(published.movies[0].runtime, compatible ? 120 : null, 'Actual public file withholds incompatible cache evidence');
     assert.ok(movie.showings['2026-10-17']['20:00']);
-    assert.deepEqual(movie.sourceAliases[0].provenance.upstreamLineage, []);
+    assert.deepEqual(movie.sourceAliases[0].provenance.upstreamLineage, ['critic.de']);
     assert.equal(JSON.stringify(store.resource(KEY)), originalBytes, 'Cache bytes, original fetch time and binding are unchanged');
     if (compatible) assert.equal(movie.provenance.runtime.observedAt, START);
     else {

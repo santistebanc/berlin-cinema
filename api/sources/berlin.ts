@@ -10,7 +10,7 @@ const listing = 'https://www.berlin.de/kino/_bin/trefferliste.php';
 const film = (url: URL) => url.hostname === 'www.berlin.de' && url.pathname.startsWith('/kino/_bin/filmdetail.php/');
 const venue = (url: URL) => url.hostname === 'www.berlin.de' && /^\/kino\/_bin\/kinodetail\.php\/\d+$/.test(url.pathname);
 export const berlinAdapter: SourceAdapter = {
-  id: 'berlin.de', extractionVersion: 'berlin-v1', capabilities: ['screenings', 'film-details', 'venue-details'],
+  id: 'berlin.de', extractionVersion: 'berlin-v1', upstreamLineage: ['berlin.de'], capabilities: ['screenings', 'film-details', 'venue-details'],
   allows: (url, purpose) => purpose === 'film' ? film(url) : purpose === 'venue' ? venue(url) : url.origin + url.pathname === listing,
   film: { accepts: film, extract: html => { const fields = parseFilmMetadata(html); return { fields, creditsChecked: Object.keys(fields).length > 0 }; } },
   venue: { accepts: venue, extract: parseBerlinVenue, needsLookup: cinema => { const address = parseVenueAddress(cinema.address); return !address?.postalCode || !address.city; }, cacheUsable: () => true },
