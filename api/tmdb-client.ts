@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { normalizeComparisonText } from '../shared/text-normalization';
 import type { AuditDecision } from '../src/types/audit';
 
 const BASE = 'https://api.themoviedb.org/3';
@@ -106,9 +107,8 @@ export default class TmdbClient {
     for (const title of [...new Set(titles.filter(Boolean))].slice(0, 3)) {
       for (const language of ['en-US', 'de-DE']) {
         const response = await this.get('/search/movie', { query: title, language, page: 1 });
-        const normalizeTitle = (value: string) => value.normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/\u0131/g, 'i').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
         const exact = (response?.results ?? []).filter((result: any) => [result.title, result.original_title]
-          .some(label => typeof label === 'string' && normalizeTitle(label) === normalizeTitle(title)));
+          .some(label => typeof label === 'string' && normalizeComparisonText(label) === normalizeComparisonText(title)));
         for (const result of [...exact, ...(response?.results?.slice(0, 5) ?? [])]) if (Number.isInteger(result.id)) results.set(result.id, result);
         this.onDecision?.({ entity: 'movie', subject: title, provider: 'TMDb', action: 'candidate-retrieval',
           details: { query: title, language, candidates: response?.results?.slice(0, 5) ?? [], selection: 'Retrieval only; no candidate automatically selected.' } });
@@ -124,6 +124,12 @@ export default class TmdbClient {
       externalIds: data.external_ids ?? {}, releaseDates: data.release_dates?.results ?? [],
       keywords: (data.keywords?.keywords ?? []).map((k: any) => k.name), translations: data.translations ?? null,
       alternativeTitles: data.alternative_titles?.titles ?? [], images: data.images ?? {} };
+  }
+  async getPersonAliases(id: number): Promise<any | null> {
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid TMDb person identity');
+    const person = await this.get(`/person/${id}`, {});
+    return person?.id === id && typeof person.name === 'string' && Array.isArray(person.also_known_as)
+      ? { id, name: person.name, also_known_as: person.also_known_as.filter((name: any) => typeof name === 'string') } : null;
   }
   buildPosterUrl(image: string | null, size = 'w342'): string | null { return image ? `https://image.tmdb.org/t/p/${size}${image}` : null; }
   async enrichSelected(id: number, originalTitle?: string, _sourceTitle = '', bundle?: any): Promise<TmdbMovieData | null> {

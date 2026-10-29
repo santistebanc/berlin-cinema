@@ -54,12 +54,17 @@ async function main() {
     ] } });
     const lowRankedExact = await new TmdbClient('test-only').candidates(['Monsters, Inc.']);
     assert.ok(lowRankedExact.some(candidate => candidate.id === 2001), 'A whole-title match below the top five must remain a candidate');
-    (axios as any).get = async () => ({ data: { results: [
-      ...Array.from({ length: 6 }, (_, index) => ({ id: index + 1, title: `Other Film ${index}`, original_title: `Other Film ${index}` })),
-      { id: 1786633, title: 'Çatlı 2', original_title: 'Çatlı 2' },
-    ] } });
-    assert.ok((await new TmdbClient('test-only').candidates(['Catli 2'])).some(candidate => candidate.id === 1786633),
-      'Turkish dotless i must not hide an exact title below the top five');
+    for (const [query, title] of [['Catli 2', 'Çatlı 2'], ['Aeon Flux', 'Æon Flux'], ['Coeur', 'Cœur'], ['東京', '東京']]) {
+      (axios as any).get = async () => ({ data: { results: [
+        ...Array.from({ length: 6 }, (_, index) => ({ id: index + 1, title: `Other Film ${index}`, original_title: `Other Film ${index}` })),
+        { id: 1786633, title, original_title: title },
+      ] } });
+      assert.ok((await new TmdbClient('test-only').candidates([query])).some(candidate => candidate.id === 1786633),
+        `Normalized exact titles below the top five must remain candidates: ${query} / ${title}`);
+    }
+    (axios as any).get = async () => ({ data: { id: 1820858, name: 'Caroline Kox', also_known_as: ['Koxi', null] } });
+    assert.deepEqual(await new TmdbClient('test-only').getPersonAliases(1820858), { id: 1820858, name: 'Caroline Kox', also_known_as: ['Koxi'] });
+    assert.equal(await new TmdbClient('test-only').getPersonAliases(123), null, 'Reject aliases returned for a different person ID');
     (axios as any).get = async () => { throw { response: { status: 503 } }; };
     const unavailable = new TmdbClient('test-only');
     assert.deepEqual(await unavailable.candidates(['Unreachable']), []);

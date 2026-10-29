@@ -5,7 +5,8 @@ import { Entity, FieldValue, Observation, fingerprint, normalize } from './domai
 import { flag, identityConflict, similarity } from './resolve';
 import { PipelineStore } from './store';
 import { parseLabel } from './labels';
-import { CachedFilmEvidence, creditNames, filmMetadataInput, sameFilmWithDifferentYear, sharedCast, sharedDirector, supportsFilmIdentity } from './identity-evidence';
+import { CachedFilmEvidence, creditNames, filmMetadataInput, fullTitleMatches, sameFilmWithDifferentYear, sharedCast, sharedDirector, supportsFilmIdentity } from './identity-evidence';
+import { cachedDirectorAliases } from './person-aliases';
 import type { FilmScreeningMatch } from './film-screening-evidence';
 import { sourceCandidates, selectEvidence } from './evidence-policy';
 import { providerDerived } from './lineage';
@@ -112,6 +113,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       && Math.abs(Number(candidate.release_date.slice(0, 4)) - Number(input.year)) <= 1;
     candidates.sort((a, b) => Number(exactTitle(b)) - Number(exactTitle(a)) || Number(yearMatch(b)) - Number(yearMatch(a)));
     const details = [] as any[];
+    let personLookups = 0;
     for (const candidate of candidates) {
       if (details.length >= 8) break;
       const year = Number(candidate.release_date?.slice(0, 4)) || null;
@@ -124,6 +126,21 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       if (!full) continue;
       if (!reused) store.saveResource(detailKey, full, options.now);
       const enriched = tmdbCandidate(full, candidate);
+      enriched.directorAliases = cachedDirectorAliases(store, full, options.now);
+      // Resolve explicit pen names only for a full-title/year-compatible candidate; never guess a personal alias.
+      if (input.director && !sharedDirector(input, enriched) && fullTitleMatches(input, enriched)
+        && input.year && year && Math.abs(Number(input.year) - year) <= 1) {
+        for (const credit of (full.credits?.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)).slice(0, 2)) {
+          if (!Number.isInteger(credit.id) || credit.id <= 0) continue;
+          const key = `tmdb-person:${credit.id}`; const oldPerson = store.resource(key);
+          if (oldPerson && nowMs - Date.parse(oldPerson.fetchedAt) <= 7 * DAY) continue;
+          if (!options.tmdb?.getPersonAliases || personLookups >= 4) continue;
+          personLookups++;
+          const person = await options.tmdb.getPersonAliases(credit.id);
+          if (person?.id === credit.id) store.saveResource(key, person, options.now);
+        }
+        enriched.directorAliases = cachedDirectorAliases(store, full, options.now);
+      }
       if (identityConflict(input, enriched) && !sameFilmWithDifferentYear({ ...input, cast: identityCast }, enriched)) continue;
       details.push(enriched);
     }
@@ -191,6 +208,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     }
     const completeCredits = store.resource(`tmdb-detail:${acceptedId}`)?.data.credits;
     const verification = { ...metadata, year: metadata?.releaseYear,
+      directorAliases: cachedDirectorAliases(store, store.resource(`tmdb-detail:${acceptedId}`)?.data, options.now),
       ...(completeCredits ? { cast: completeCredits.cast ?? [], directors: (completeCredits.crew ?? []).filter((person: any) => ['Director', 'Co-Director'].includes(person.job)) } : {}) };
     const peerSources = peer ? store.linkedObservations(peer.id).filter(source => source.kind === 'listing'
       && source.provenance?.upstreamLineage.length && !providerDerived(source, 'tmdb')) : [];
@@ -213,11 +231,20 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       metadata = null; acceptedId = undefined;
     }
     const verifiedYearDifference = metadata && sameFilmWithDifferentYear({ ...input, cast: identityCast }, verification);
-    if (metadata && identityConflict(input, verification) && !peerSupported && !verifiedYearDifference) {
+    // A reviewed database identity can explicitly settle a source's misspelled director,
+    // while changed source evidence, unrelated titles and larger year conflicts still stop it.
+    const reviewedNameDifference = metadata && override?.evidenceFingerprint === evidence && override.patch?.tmdbId === acceptedId
+      && fullTitleMatches(input, verification) && input.year && verification.year
+      && Math.abs(Number(input.year) - Number(verification.year)) <= 1;
+    if (metadata && identityConflict(input, verification) && !peerSupported && !verifiedYearDifference && !reviewedNameDifference) {
       flag(store, 'metadata-conflict', metadataSubject, `Metadata contradicts source identity: ${entity.name}`,
         { entityId: entity.id, listing: input, tmdbId: acceptedId, metadata }, 'open', 100, evidence);
       metadata = null; acceptedId = undefined;
     }
+    if (metadata && reviewedNameDifference && identityConflict(input, verification)) flag(store, 'metadata-conflict', metadataSubject,
+      `Reviewed source/provider credit difference: ${entity.name}`, { entityId: entity.id, listing: input, tmdbId: acceptedId,
+        reportedDirector: input.director, providerDirector: metadata.director, correctionId: override.id,
+        resolutionCode: 'reviewed-provider-credit-difference', resolution: override.reason }, 'caution', 40, evidence);
     if (verifiedYearDifference) flag(store, 'metadata-conflict', metadataSubject, `Source/provider year difference retained: ${entity.name}`,
       { entityId: entity.id, listing: input, tmdbId: acceptedId, reportedYear: input.year, establishedYear: metadata.releaseYear,
         resolutionCode: 'full-title-director-cast-year-difference',
