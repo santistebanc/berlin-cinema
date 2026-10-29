@@ -23,10 +23,13 @@ export const berlinAdapter: SourceAdapter = {
     for (let page = 0; page < 20; page++) {
       const url = `${listing}?ovomu=on&suche=1${page ? `&startat=${page * 300}` : ''}`;
       try {
+        // berlin.de rejects listing requests without the navigation headers a browser sends.
         const response = await deps.request({ url, headers: {
             'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
             accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none', 'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
           } });
         const $ = cheerio.load(response.body);
         if (!$('ul.js-accordion').length) throw new Error('Unsupported berlin.de listing page structure');

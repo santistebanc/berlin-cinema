@@ -8,7 +8,7 @@ const limit = z.number().int().nonnegative();
 export const SourceInstanceSchema = z.object({ id: label, adapterId: label, enabled: z.boolean(), cacheIdentity: label,
   config: z.record(z.string(), z.any()), limits: z.object({ requests: limit, filmDetails: limit, venueDetails: limit,
     attempts: z.number().int().min(1).max(5).optional(), requestTimeoutMs: z.number().int().positive().optional(),
-    collectionTimeoutMs: z.number().int().positive().optional() }),
+    collectionTimeoutMs: z.number().int().positive().optional(), requestIntervalMs: z.number().int().nonnegative().optional() }),
   legacyCache: z.boolean().optional(), retainedFile: label.optional() });
 export type SourceInstance = z.infer<typeof SourceInstanceSchema>;
 export interface SourceRequest {

@@ -30,7 +30,7 @@ export class SourceRegistry {
       enabled: instance.enabled && !options.disabled?.includes(instance.id) && (!options.selected || options.selected.includes(instance.id)) })));
   }
   context(instance: SourceInstance, deps: SourceDependencies): SourceDependencies {
-    let requests = 0;
+    let requests = 0, lastRequestAt = 0;
     const deadline = Date.now() + (instance.limits.collectionTimeoutMs ?? 120000);
     const check = () => { if (deps.signal?.aborted || Date.now() >= deadline) throw new SourceDeadlineError(); };
     const adapter = this.adapter(instance);
@@ -48,6 +48,10 @@ export class SourceRegistry {
         return retryRequest(request, instance, deps, async request => {
           check();
           if (++requests > instance.limits.requests) throw new Error('Source request limit reached');
+          // Space every attempt, including retries, for sources that rate-limit bursts.
+          const spacing = lastRequestAt + (instance.limits.requestIntervalMs ?? 0) - Date.now();
+          if (spacing > 0 && deps.wait) { await deps.wait(Math.min(spacing, deadline - Date.now())); check(); }
+          lastRequestAt = Date.now();
           const timeout = Math.min(request.timeout ?? 20000, instance.limits.requestTimeoutMs ?? 20000, deadline - Date.now());
           return withinDeadline(signal => deps.request({ ...request, timeout, signal }), timeout, deps.signal);
         });
