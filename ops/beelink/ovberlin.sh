@@ -41,7 +41,7 @@ migrate_prod() { # run the release's state migration with the review UI stopped
   systemctl --user stop ovberlin-admin.service || true
   (cd "$OVB_ROOT/prod" && npm run pipeline:migrate -- --state "$PIPELINE_STATE" --data "$PIPELINE_DATA_DIR" --output "$out")
   cp "$out/state.json.gz" "$PIPELINE_STATE.tmp" && mv "$PIPELINE_STATE.tmp" "$PIPELINE_STATE"
-  rm -rf "$PIPELINE_DATA_DIR" && cp -r "$out/data" "$PIPELINE_DATA_DIR"
+  if [ -d "$out/data" ]; then rm -rf "$PIPELINE_DATA_DIR" && cp -r "$out/data" "$PIPELINE_DATA_DIR"; fi
 }
 
 publish_prod() { # upload the built site and let the publish workflow deploy it to Pages
