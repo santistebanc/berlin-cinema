@@ -1,6 +1,6 @@
 {
   "name": "berlin-cinema-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Frontend app for Berlin Cinema API",
   "private": true,
   "engines": {
