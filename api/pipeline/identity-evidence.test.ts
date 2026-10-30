@@ -1,5 +1,5 @@
 import assert from 'assert/strict';
-import { CachedFilmEvidence, supportsFilmIdentity } from './identity-evidence';
+import { CachedFilmEvidence, corroboratedTitleExtension, supportsFilmIdentity } from './identity-evidence';
 import { identityConflict } from './resolve';
 import { PipelineStore } from './store';
 import { runPipeline } from './pipeline';
@@ -26,6 +26,10 @@ async function main() {
   assert.equal(normalize('ÇATLI 2'), normalize('Çatlı 2'));
   assert.notEqual(normalize('Catli 2'), normalize('Çatlı'), 'Sequel numbers remain part of identity');
   assert.equal(supportsFilmIdentity(listing, provider), true);
+  assert.equal(supportsFilmIdentity({ title: 'GUTS - A female Expedition through Africa + Her Wave',
+    year: 2026, director: 'Patrizia Bruno, Luigi Rapanelli' },
+  { title: 'GUTS: A Female Expedition Through Africa', year: 2026, director: 'Patrizia Bruno' }), false,
+  'A component film must not supply the identity of a combined screening');
   for (const patch of [{ runtime: null }, { runtime: 115 }, { edition: 'Extended cut' }, { country: null }, { country: 'Japan' },
     { cast: ['Dan Aykroyd'] }, { year: 2016 }, { year: 1985 }, { title: 'Ghostbusters II' }]) {
     assert.equal(supportsFilmIdentity({ ...listing, ...patch }, provider), false, JSON.stringify(patch));
@@ -56,6 +60,24 @@ async function main() {
   assert.deepEqual(cachedDirectorAliases(aliasStore, aliasBundle, NOW), [], 'Expired alias evidence is withheld');
 
   const scenarios = {
+    'omitted-title-article': {
+      raw: { title: 'Texas Chainsaw Massacre', year: 1974, director: 'Tobe Hooper' },
+      data: { details: { id: 620, title: 'The Texas Chainsaw Massacre', release_date: '1974-10-11' },
+        credits: { cast: [], crew: [{ name: 'Tobe Hooper', job: 'Director' }] } },
+    },
+    'descriptive-subtitle': {
+      raw: { title: 'Mein neues altes Ich - Eine Reise in das Mysterium der Menopause', year: 2026,
+        director: 'Louise Unmack Kjeldsen', runtime: 75, country: 'Dänemark' },
+      data: { details: { id: 620, title: 'Menopause Mystery', original_title: 'Mysteriet om Menopausen',
+        release_date: '2026-03-12', runtime: 74, production_countries: [{ iso_3166_1: 'DK', name: 'Denmark' }] },
+        translations: { translations: [{ iso_639_1: 'de', data: { title: 'Mein neues altes Ich' } }] },
+        credits: { cast: [], crew: [{ name: 'Louise Unmack Kjeldsen', job: 'Director' }] } },
+    },
+    'live-viewing-suffix': {
+      raw: { title: "BTS World Tour 'ARIRANG' in São Paulo: Live Viewing", year: 2026, director: 'Jungjae Ha', runtime: 195 },
+      data: { details: { id: 620, title: 'BTS WORLD TOUR [ARIRANG] in São Paulo', release_date: '2026-10-30', runtime: 195 },
+        credits: { cast: [], crew: [{ name: 'Ha Jung-jae', job: 'Director' }] } },
+    },
     'one-actor': { raw: listing, data: bundle(620) },
     'transliterated-director': { raw: minotaurus,
       data: { details: { id: 620, title: 'Minotaurus', original_title: 'Minotaurus', release_date: '2026-11-05', runtime: 141 },
@@ -92,6 +114,17 @@ async function main() {
         credits: { cast: [], crew: [{ name: 'Ken Russell', job: 'Director' }] } },
     },
   };
+  const subtitle = scenarios['descriptive-subtitle'];
+  const projected = { ...tmdbMovieData(subtitle.data), year: 2026, title: 'Menopause Mystery' };
+  assert.equal(corroboratedTitleExtension(subtitle.raw, projected), true);
+  for (const patch of [{ director: 'Another Director' }, { runtime: 95 }, { year: 2025 }, { country: 'Japan' }, { runtime: null }])
+    assert.equal(corroboratedTitleExtension({ ...subtitle.raw, ...patch }, projected), false, JSON.stringify(patch));
+  const subtitleStore = new PipelineStore(':memory:');
+  subtitleStore.saveResource('tmdb-detail:620', subtitle.data, NOW);
+  const subtitleCache = new CachedFilmEvidence(subtitleStore, NOW);
+  assert.equal(subtitleCache.match(subtitle.raw)?.id, 620);
+  for (const patch of [{ runtime: 95 }, { year: 2025 }, { country: 'Japan' }, { runtime: null }])
+    assert.equal(subtitleCache.match({ ...subtitle.raw, ...patch }), null, 'Cached title extensions require the same corroboration: ' + JSON.stringify(patch));
   for (const [scenario, { raw, data }] of Object.entries(scenarios)) for (const mode of ['cached', 'retrieved', 'ambiguous'] as const)
     for (const lineage of [['berlin.de'], ['TMDb:620'], []]) {
     const pipelineStore = new PipelineStore(':memory:');
@@ -173,6 +206,27 @@ async function main() {
     record.data.year = 2023; record.fields.year = { state: 'known', value: 2023 };
   }
   assert.equal((await replayReviewed()).movies[0].identityStatus, 'source-only', 'A changed source year cannot reuse the earlier review');
+  const originalStore = new PipelineStore(':memory:');
+  originalStore.saveResource('tmdb-detail:162505', { details: { id: 162505, title: 'One Way or Another',
+    original_title: 'De cierta manera', release_date: '1977-06-01', runtime: 73 },
+  credits: { cast: [{ name: 'Mario Balmaseda' }, { name: 'Yolanda Cuéllar' }], crew: [{ job: 'Director', name: 'Sara Gómez' }] } }, NOW);
+  const originalCollection: any = translateLegacyBatch({ source: 'berlin.de', status: 'fresh', complete: true, observedAt: NOW,
+    movies: [{ title: 'In gewisser Hinsicht', year: 1974, director: 'Sara Gomez', cast: ['Mario Balmaseda', 'Yolanda Cuellar'],
+      cinemas: [{ name: 'Example Cinema', address: 'Example Street 1, 10115 Berlin' }],
+      showings: [{ cinema: 'Example Cinema', date: '2026-10-30', time: '20:00' }] }] });
+  for (const record of originalCollection.records) record.provenance.upstreamLineage = ['berlin.de'];
+  const replayOriginal = () => runPipeline({ store: originalStore, collections: [originalCollection], now: NOW,
+    network: false, tmdb: null, model: null, publish: false, audit: false,
+    osm: [{ id: 'node/1', name: 'Example Cinema', address: 'Example Street 1, 10115 Berlin', insideBerlin: true, website: null }] });
+  const originalBefore = await replayOriginal();
+  assert.equal(originalBefore.movies[0].identityStatus, 'source-only');
+  originalStore.addOverride({ subject: `entity:${originalBefore.movies[0].id}`, action: 'patch',
+    patch: { fields: { originalTitle: 'De cierta manera' } }, actor: 'test reviewer',
+    evidenceFingerprint: 'reviewed-source-original-title',
+    reason: 'Original title confirmed against the screening institution' });
+  const originalAfter = await replayOriginal();
+  assert.equal(originalAfter.movies[0].identityStatus, 'verified', 'A reviewed original title corroborates the independently supplied director and two actors');
+  assert.equal(originalAfter.movies[0].year, 1977);
   console.log('identity-evidence tests passed');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -26,6 +26,8 @@ export function canonicalEdition(value: string): string {
 
 /** Explicit programme labels establish listing type, never the identity of their constituent films. */
 export function programmeRule(title: string): string | null {
+  if (/^(?:double\s+(?:feature|bill)\s*:\s*\S.+|.+\s+double\s+(?:feature|bill))$/i.test(title)) return 'double-feature';
+  if (/^[\p{L}\p{N}][\p{L}\p{N} '&’.-]*\s+cinema\s+days(?:\s+[\p{L}][\p{L} .-]*)?(?:\s+\d{4})?$/iu.test(title)) return 'named-film-festival';
   if (/^überraschungsfilm$/i.test(title)) return 'unidentified-sneak';
   if (/^shorts\s+attack!?\s*[-–:]\s*\S.+$/i.test(title)) return 'shorts-programme';
   if (/^[\p{L}\p{N}][\p{L}\p{N} '&’.-]*\s+filmtage(?:\s+\d{4})?$/iu.test(title)) return 'named-film-festival';

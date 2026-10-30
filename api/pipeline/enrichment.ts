@@ -5,7 +5,8 @@ import { Entity, FieldValue, Observation, fingerprint, normalize } from './domai
 import { flag, identityConflict, similarity } from './resolve';
 import { PipelineStore } from './store';
 import { parseLabel } from './labels';
-import { CachedFilmEvidence, creditNames, filmMetadataInput, fullTitleMatches, sameFilmWithDifferentYear, sharedCast, sharedDirector, supportsFilmIdentity } from './identity-evidence';
+import { CachedFilmEvidence, corroboratedTitleExtension, creditNames, filmMetadataInput, fullTitleMatches, sameFilmWithDifferentYear, sharedCast, sharedDirector, supportsFilmIdentity } from './identity-evidence';
+import { filmSearchTitles } from '../../shared/film-title-search';
 import { cachedDirectorAliases } from './person-aliases';
 import type { FilmScreeningMatch } from './film-screening-evidence';
 import { sourceCandidates, selectEvidence } from './evidence-policy';
@@ -49,7 +50,8 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
     : originalInput;
   // Supplemental matching evidence must come from independent source fields, never prior provider enrichment.
   const input = { ...identityInput, runtime: independentFields.get('runtime')?.value ?? null,
-    country: independentFields.get('country')?.value ?? null };
+    country: independentFields.get('country')?.value ?? null,
+    originalTitle: independentFields.get('originalTitle')?.value ?? null };
   const evidence = fingerprint(originalInput);
   const established = entity.data.tmdbId && entity.data.metadataEvidence === evidence;
   const retainedIdentitySources = retainedVerification
@@ -74,11 +76,14 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
   if (!acceptedId && peerSupported) acceptedId = peer!.data.tmdbId;
   const correctedOriginal = store.overrides(`entity:${entity.id}`).filter(correction => correction.action === 'patch'
     && Object.hasOwn(correction.patch?.fields ?? {}, 'originalTitle')).slice(-1)[0]?.patch?.fields.originalTitle;
+  // A reviewed original title is independent evidence, not just a search hint.
+  // Provider-derived historic titles remain excluded from identity corroboration.
+  if (correctedOriginal) input.originalTitle = correctedOriginal;
   const explicitOriginalTitles = [correctedOriginal, ...rankedSources.map(source => source.data.originalTitle), entity.data.originalTitle].filter(Boolean);
   const previousOriginal = prior.find(field => field.field === 'originalTitle' && field.identityVerified
     && entity.data.metadataEvidence === evidence && nowMs - Date.parse(field.observedAt) <= 365 * DAY)?.value;
-  const searchTitles = [...new Set<string>([...explicitOriginalTitles, previousOriginal, ...rankedSources.map(source => source.data.altTitle), entity.name, ...(entity.data.titles ?? [])]
-    .filter(Boolean).map(title => parseLabel(title).title))].slice(0, 3);
+  const searchTitles = filmSearchTitles([...new Set<string>([...explicitOriginalTitles, previousOriginal, ...rankedSources.map(source => source.data.altTitle), entity.name, ...(entity.data.titles ?? [])]
+    .filter(Boolean).map(title => parseLabel(title).title))]);
   let personLookups = 0;
   const directorAliasesFor = async (full: any, candidate: any): Promise<string[]> => {
     const aliases = cachedDirectorAliases(store, full, options.now);
@@ -105,7 +110,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
           resolutionCode: 'independent-provider-evidence', resolution: 'The source credits/year independently identify one retained provider detail bundle. Its accepted identity can consolidate duplicate source records.' }, 'caution', 40, evidence);
     }
   }
-  const searchEvidence = fingerprint({ identity: evidence, queries: searchTitles, retrieval: 'whole-title-v2' });
+  const searchEvidence = fingerprint({ identity: evidence, queries: searchTitles, retrieval: 'year-assisted-v4' });
   const searchKey = 'tmdb-search:' + searchEvidence;
   const previousPending = store.issues().find(issue => issue.subject === metadataSubject && issue.type === 'metadata-match' && issue.status === 'open');
   if (!options.providerUnavailable && entity.kind === 'film' && (options.tmdb || store.resource(searchKey)) && !acceptedId && !(override?.patch && override.patch.tmdbId === null)) {
@@ -118,7 +123,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       candidates = cached.data; retrievalErrors = [...(store.resource(errorKey)?.data ?? [])];
     }
     else if (options.tmdb) {
-      candidates = await options.tmdb.candidates(searchTitles);
+      candidates = await options.tmdb.candidates(searchTitles, { year: input.year });
       store.saveResource(searchKey, candidates, options.now);
       store.saveResource(errorKey, options.tmdb.retrievalErrors?.().slice(errorsBefore) ?? [], options.now);
     }
@@ -152,9 +157,7 @@ export async function enrichEntity(store: PipelineStore, engine: DecisionEngine,
       .some(title => [candidate.title, candidate.originalTitle, ...(candidate.alternativeTitles ?? [])].filter(Boolean).some(t => normalize(t) === normalize(title)))
       && input.year && candidate.year === input.year && input.director && candidate.director
       && [candidate.director, ...(candidate.directors ?? [])].some(director => normalize(input.director) === normalize(director)));
-    const sourceTitleKeys = new Set([entity.name, ...(entity.data.titles ?? [])].map(normalize).filter(Boolean));
-    const corroborated = details.filter(candidate => [candidate.title, candidate.originalTitle, ...(candidate.alternativeTitles ?? [])]
-      .filter(Boolean).some(title => sourceTitleKeys.has(normalize(title)))
+    const corroborated = details.filter(candidate => (fullTitleMatches(input, candidate) || corroboratedTitleExtension(input, candidate))
       && supportsFilmIdentity({ ...input, cast: identityCast }, candidate));
     if (corroborated.length === 1) acceptedId = corroborated[0].id;
     else if (exact.length === 1) acceptedId = exact[0].id;

@@ -3,6 +3,7 @@ import { PipelineStore } from './store';
 import { parseLabel } from './labels';
 import { normalizePersonComparison } from '../../shared/text-normalization';
 import { cachedDirectorAliases } from './person-aliases';
+import { filmSearchTitles, filmTitleKeys } from '../../shared/film-title-search';
 
 export function filmMetadataInput(entity: Entity) {
   return { title: entity.name, titles: entity.data.titles, year: entity.data.year, director: entity.data.director };
@@ -29,7 +30,7 @@ export function sharedDirector(a: any, b: any): boolean {
 function filmTitles(value: any): string[] {
   return [value.title, value.rawTitle, value.originalTitle, value.tmdbTitle,
     ...(value.titles ?? []), ...(value.alternativeTitles ?? [])].filter(Boolean)
-    .map(title => normalize(parseLabel(title).title)).filter(Boolean);
+    .flatMap(title => filmTitleKeys(parseLabel(title).title)).filter(Boolean);
 }
 export function fullTitleMatches(a: any, b: any): boolean {
   const right = new Set(filmTitles(b));
@@ -40,6 +41,13 @@ function sameYearAndRuntime(a: any, b: any): boolean {
   return !!a.year && Number(a.year) === Number(b.year)
     && Number(a.runtime) > 0 && Number(b.runtime) > 0
     && Math.abs(Number(a.runtime) - Number(b.runtime)) <= 2;
+}
+
+/** A shortened descriptive subtitle needs independent full credits, date, duration and country. */
+export function corroboratedTitleExtension(a: any, b: any): boolean {
+  if (!sharedDirector(a, b) || !sameYearAndRuntime(a, b) || !sharedCountry(a, b)) return false;
+  const right = new Set(filmTitles(b));
+  return filmSearchTitles([a.title, ...(a.titles ?? [])].filter(Boolean)).some(title => filmTitleKeys(title).some(key => right.has(key)));
 }
 
 /** Limited transliteration equivalence is usable only with independent title/year/runtime evidence. */
@@ -68,21 +76,19 @@ function sharedCountry(a: any, b: any): boolean {
 }
 export function sameFilmWithDifferentYear(a: any, b: any): boolean {
   if (!a.year || !b.year || Math.abs(Number(a.year) - Number(b.year)) <= 1 || !sharedDirector(a, b) || sharedCast(a, b) < 2) return false;
-  const titles = (value: any) => [value.title, value.rawTitle, value.originalTitle, value.tmdbTitle,
-    ...(value.titles ?? []), ...(value.alternativeTitles ?? [])].filter(Boolean).map(title => normalize(parseLabel(title).title)).filter(Boolean);
-  const right = new Set(titles(b));
-  return titles(a).some(title => right.has(title));
+  return fullTitleMatches(a, b);
 }
 /** Names retrieve candidates; independent credits/years or accepted IDs support identity. */
 export function supportsFilmIdentity(a: any, b: any): boolean {
+  // A combined screening is not one constituent work, even when their credits overlap.
+  const combined = (value: any) => [value.title, value.rawTitle, ...(value.titles ?? [])]
+    .some(title => typeof title === 'string' && /\s\+\s/.test(title));
+  if ((combined(a) || combined(b)) && !fullTitleMatches(a, b)) return false;
   if (a.verifiedImdbId && b.verifiedImdbId && a.verifiedImdbId === b.verifiedImdbId) return true;
   if (a.tmdbId && b.tmdbId && a.tmdbId === b.tmdbId) return true;
   const year = a.year && b.year && Math.abs(Number(a.year) - Number(b.year)) <= 1;
   const cast = sharedCast(a, b) >= 2;
-  const titles = (value: any) => [value.title, value.rawTitle, value.originalTitle, value.tmdbTitle,
-    ...(value.titles ?? []), ...(value.alternativeTitles ?? [])].filter(Boolean).map(title => normalize(parseLabel(title).title)).filter(Boolean);
-  const rightTitles = new Set(titles(b));
-  const fullTitle = titles(a).some(title => rightTitles.has(title));
+  const fullTitle = fullTitleMatches(a, b);
   const compatibleYear = !a.year || !b.year || !!year;
   const singleCastWithDetails = fullTitle && sameYearAndRuntime(a, b) && sharedCast(a, b) >= 1 && sharedCountry(a, b);
   return sharedDirector(a, b) && (!!year || cast || fullTitle && compatibleYear) || !!year && cast
@@ -119,7 +125,7 @@ export class CachedFilmEvidence {
           productionCountries: (movie.production_countries ?? []).map((country: any) => ({ code: country.iso_3166_1, name: country.name })),
           imdbId: data.externalIds?.imdb_id || movie.imdb_id || null }];
       });
-    for (const candidate of this.candidates) candidate.titleKeys = candidate.titles.map((title: string) => normalize(title));
+    for (const candidate of this.candidates) candidate.titleKeys = candidate.titles.flatMap((title: string) => filmTitleKeys(title));
   }
   match(input: any): { provider: 'TMDb'; id: number; imdbId: string | null; fetchedAt: string } | null {
     if (!creditNames(input.directors?.length ? input.directors : input.director).length && !creditNames(input.cast).length
@@ -127,14 +133,18 @@ export class CachedFilmEvidence {
     // This bounded annotation can broaden retrieval; independent credits/year still establish identity.
     const titles: string[] = [input.originalTitle, input.title, ...(input.titles ?? [])].filter(Boolean)
       .flatMap(title => [normalize(title), normalize(title.replace(/\s*\(live\s+action\)\s*$/i, ''))]).filter(Boolean);
+    const expandedTitle = filmSearchTitles([input.title, ...(input.titles ?? [])].filter(Boolean))
+      .some(title => !titles.includes(normalize(title)));
     const key = fingerprint({ titles, year: input.year, director: input.directors ?? input.director, cast: creditNames(input.cast).sort(),
       runtime: input.runtime, country: input.country, tmdbId: input.tmdbId, verifiedImdbId: input.verifiedImdbId });
     if (this.matches.has(key)) return this.matches.get(key)!;
-    const candidates = this.candidates.filter(candidate => titles.some(title => candidate.titleKeys.some((label: string) => {
+    const candidates = this.candidates.filter(candidate => (fullTitleMatches(input, candidate) || corroboratedTitleExtension(input, candidate)
+      || titles.some(title => candidate.titleKeys.some((label: string) => {
       if (title === label) return true;
       const tokens = new Set(title.split(' ').filter(token => token.length > 2));
-      return new Set(label.split(' ').filter(token => tokens.has(token))).size >= 2;
-    })) && supportsFilmIdentity(input, candidate)
+      return (!expandedTitle || sharedDirector(input, candidate) && sharedCast(input, candidate) >= 2)
+        && new Set(label.split(' ').filter(token => tokens.has(token))).size >= 2;
+    }))) && supportsFilmIdentity(input, candidate)
       && !(input.year && candidate.year && Math.abs(Number(input.year) - candidate.year) > 1 && !sameFilmWithDifferentYear(input, candidate))
       && !(creditNames(input.directors?.length ? input.directors : input.director).length && candidate.directors.length
         && !sharedDirector(input, candidate) && !corroboratedDirectorTransliteration(input, candidate))
