@@ -102,14 +102,24 @@ export default class TmdbClient {
       return null;
     }
   }
-  async candidates(titles: string[]): Promise<TmdbSearchResult[]> {
+  async candidates(titles: string[], hints: { year?: number | null } = {}): Promise<TmdbSearchResult[]> {
     const results = new Map<number, TmdbSearchResult>();
     for (const title of [...new Set(titles.filter(Boolean))].slice(0, 3)) {
       for (const language of ['en-US', 'de-DE']) {
         const response = await this.get('/search/movie', { query: title, language, page: 1 });
         const exact = (response?.results ?? []).filter((result: any) => [result.title, result.original_title]
           .some(label => typeof label === 'string' && normalizeComparisonText(label) === normalizeComparisonText(title)));
-        for (const result of [...exact, ...(response?.results?.slice(0, 5) ?? [])]) if (Number.isInteger(result.id)) results.set(result.id, result);
+        const validYear = Number.isInteger(hints.year) && Number(hints.year) >= 1800 && Number(hints.year) <= 2200;
+        const compatibleYear = (result: any) => validYear && result.release_date
+          && Math.abs(Number(result.release_date.slice(0, 4)) - Number(hints.year)) <= 1;
+        const retain = (items: any[]) => { for (const result of items) if (Number.isInteger(result.id)) results.set(result.id, result); };
+        retain([...exact, ...(response?.results ?? []).filter(compatibleYear), ...(response?.results?.slice(0, 5) ?? [])]);
+        // A popular remake or a translated alias can hide the original below page one.
+        // This is additional retrieval only; year hints never establish identity.
+        if (validYear && !(response?.results ?? []).some(compatibleYear)) {
+          const dated = await this.get('/search/movie', { query: title, language, page: 1, primary_release_year: hints.year });
+          retain(dated?.results ?? []);
+        }
         this.onDecision?.({ entity: 'movie', subject: title, provider: 'TMDb', action: 'candidate-retrieval',
           details: { query: title, language, candidates: response?.results?.slice(0, 5) ?? [], selection: 'Retrieval only; no candidate automatically selected.' } });
       }

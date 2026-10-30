@@ -97,6 +97,29 @@ seven-day TTL, and berlin.de requests retain their six-second minimum spacing.
 
 ### Text comparison rules
 
+Candidate retrieval retains year-compatible results even below the usual top-five
+cutoff. When a result page contains no compatible year, a bounded additional query
+uses the reported year. Unfiltered results remain available; a year hint alone
+never verifies identity or changes the existing one-year tolerance.
+
+Queries may omit an explicit `: Live Viewing` suffix, an `Encore YYYY` screening
+annotation, or a long descriptive subtitle. These expansions do not rewrite source
+titles. An omitted English `The` and the live-viewing suffix can be compared as
+title variants. Without independent cast corroboration, a shortened descriptive title requires matching
+director, exact year, runtime within two minutes, and country. Sequel numbers,
+edition qualifiers and combined bills are retained.
+
+A combined `A + B` listing cannot inherit the identity of component A simply
+because its director and year overlap. Explicit double-feature and Cinema Days
+labels identify programmes. Individual source-backed classification reviews may
+also identify live performances and curated programmes without adding their names
+to parsing rules.
+
+An independently sourced or explicitly reviewed original title participates in
+identity corroboration as well as candidate retrieval. Prior provider enrichment
+does not become independent title evidence. Documented data reviews belong in the
+review store and remain separate from generally applicable matching rules.
+
 Title retrieval, film identity comparison and person credits use the same
 `shared/text-normalization.ts` comparison keys. Source labels remain unchanged
 in display data and audit evidence. Keys use Unicode compatibility decomposition,

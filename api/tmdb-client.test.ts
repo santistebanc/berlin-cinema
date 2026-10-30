@@ -54,6 +54,23 @@ async function main() {
     ] } });
     const lowRankedExact = await new TmdbClient('test-only').candidates(['Monsters, Inc.']);
     assert.ok(lowRankedExact.some(candidate => candidate.id === 2001), 'A whole-title match below the top five must remain a candidate');
+    const yearQueries: any[] = [];
+    (axios as any).get = async (_url: string, options: any) => {
+      yearQueries.push(options.params);
+      return { data: { results: options.params.primary_release_year === 1974
+        ? [{ id: 30497, title: 'The Texas Chain Saw Massacre', original_title: 'The Texas Chain Saw Massacre', release_date: '1974-10-11' }]
+        : [{ id: 632727, title: 'Texas Chainsaw Massacre', original_title: 'Texas Chainsaw Massacre', release_date: '2022-02-18' }] } };
+    };
+    const yearCandidates = await new TmdbClient('test-only').candidates(['Texas Chainsaw Massacre'], { year: 1974 });
+    assert.ok(yearCandidates.some(candidate => candidate.id === 30497), 'Retrieve the source year as well as popular remakes');
+    assert.ok(yearCandidates.some(candidate => candidate.id === 632727), 'A year hint must not discard the unfiltered candidates');
+    assert.ok(yearQueries.length <= 8, 'Year-assisted retrieval is bounded');
+    (axios as any).get = async () => ({ data: { results: [
+      ...Array.from({ length: 7 }, (_, i) => ({ id: i + 1, title: 'Sonnenfinsternis', release_date: '1989-01-01' })),
+      { id: 21135, title: "L'Eclisse", original_title: "L'eclisse", release_date: '1962-04-13' },
+    ] } });
+    assert.ok((await new TmdbClient('test-only').candidates(['Sonnenfinsternis'], { year: 1962 }))
+      .some(candidate => candidate.id === 21135), 'A year-compatible translated alias below the top five must be retained');
     for (const [query, title] of [['Catli 2', 'Çatlı 2'], ['Aeon Flux', 'Æon Flux'], ['Coeur', 'Cœur'], ['東京', '東京']]) {
       (axios as any).get = async () => ({ data: { results: [
         ...Array.from({ length: 6 }, (_, index) => ({ id: index + 1, title: `Other Film ${index}`, original_title: `Other Film ${index}` })),
