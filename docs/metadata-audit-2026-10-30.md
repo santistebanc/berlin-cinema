@@ -45,3 +45,5 @@ The code changes are general. Named films and selected IDs below are audit evide
 | Pornfilmfestival Berlin 2026 | Programme | No single identity selected | Festival umbrella listing; individual films are not inferred from the programme name. [Source](https://www.berlin.de/kino/_bin/filmdetail.php/317055) |
 
 Validation: typecheck, TMDB retrieval regressions, identity/resolution tests and 509 pipeline scenarios passed. Full Linux CI: https://github.com/santistebanc/berlin-cinema/actions/runs/41003648748 .
+
+Final validation: 25 confirmed films now have posters and descriptions; 11 listings are programmes; one contradictory film record remains unresolved. All original source listings and screening observations (with venue, date and time) are preserved. Consolidating a duplicate leaves 189 public entries. Released as v1.0.10 without a new Berlin scrape.
