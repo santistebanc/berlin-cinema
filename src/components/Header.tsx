@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({ movies, onSearch }) => {
   }).format(now);
   return (
     <header className="site-header">
-      <div className={isHome ? 'px-3 sm:px-6 lg:px-8' : 'px-4 sm:px-6 lg:px-9'}>
+      <div className="px-3 sm:px-6 lg:px-8">
         <div className="header-layout">
           <Link
             to="/"
