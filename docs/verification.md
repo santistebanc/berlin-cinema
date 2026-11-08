@@ -5,7 +5,8 @@ checks. `doctor` checks Node 24, installed dependencies, source identity and the
 pinned baseline commit. Run `npm ci` first. Nothing selects operational data.
 
 - `npm run verify -- run offline-shadow` creates a clean local clone at
-  `1641dedd018422721b53d22e767598da0e1e60d2`, supplies a synthetic v1 retained
+  `885cb1bc030fbe7373cd931a9528ef5373da705e` (published main's code-identical
+  rewrite of the original `1641dedd`), supplies a synthetic v1 retained
   state, and uses the existing comparison engine at a fixed clock. It checks
   retained identities, routes, aliases and viewings across five replay modes.
 - `npm run verify -- run metadata-incidents` exercises four separately named

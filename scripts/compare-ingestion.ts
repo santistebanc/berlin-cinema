@@ -18,7 +18,8 @@ import https from 'https';
 import net from 'net';
 import { fingerprint } from '../api/pipeline/domain';
 
-export const ORIGINAL_BASE = '1641dedd018422721b53d22e767598da0e1e60d2';
+// Published main's rewrite of the original 1641dedd: identical code, generated data removed. Must stay reachable from origin.
+export const ORIGINAL_BASE = '885cb1bc030fbe7373cd931a9528ef5373da705e';
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const metadataExclusions = new Set(['id', 'slug', 'slugAliases', 'sourceAliases', 'resolution', 'provenance', 'cinemas', 'showings']);
 async function fixedClock<T>(now: string, run: () => Promise<T>): Promise<T> {
