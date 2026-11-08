@@ -44,8 +44,9 @@ async function shadow(run: any, corrupt: boolean) {
   fs.mkdirSync(scratch);
   try {
     await proof.check(run, 'pinned-clean-baseline', () => {
-      execFileSync('git', ['clone', '--shared', '--no-checkout', process.cwd(), baseline], { stdio: 'pipe' });
-      execFileSync('git', ['-C', baseline, 'checkout', '--detach', ORIGINAL_BASE], { stdio: 'pipe' });
+      const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+      execFileSync('git', ['clone', '--shared', '--no-checkout', process.cwd(), baseline], { stdio: 'pipe', env });
+      execFileSync('git', ['-C', baseline, 'checkout', '--detach', ORIGINAL_BASE], { stdio: 'pipe', env });
       fs.symlinkSync(path.resolve('node_modules'), path.join(baseline, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
     });
     const raw = { scrapedAt: ROLLOUT_NOW, movies: [{ title: 'Verification Film', year: '2026', director: 'Fixture Director',

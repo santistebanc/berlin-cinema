@@ -24,6 +24,9 @@ test('evidence rejects zero checks, source changes and stale results while retai
     const passed = proof.begin('recorded', {}, []);
     await proof.finish(passed, async () => { await proof.check(passed, 'observable-result', () => assert.equal(2 + 2, 4)); passed.record.cleanup = 'completed'; });
     assert.equal(proof.evidence(passed.record.id).sourceMatches, true);
+    process.env.GIT_DIR = path.join(root, 'wrong-hook-directory');
+    assert.equal(proof.evidence(passed.record.id).sourceMatches, true, 'hook paths cannot redirect source identity');
+    delete process.env.GIT_DIR;
     const changed = proof.begin('changed', {}, []);
     await proof.finish(changed, async () => { await proof.check(changed, 'changed-source', () => fs.writeFileSync('source.txt', 'after')); changed.record.cleanup = 'completed'; });
     assert.equal(changed.record.status, 'failed');

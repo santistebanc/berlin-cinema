@@ -4,7 +4,8 @@ const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
 const { execFileSync, spawnSync } = require('node:child_process');
 const digest = value => createHash('sha256').update(value).digest('hex');
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trimEnd();
+const gitEnvironment = () => Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8', env: gitEnvironment() }).trimEnd();
 function identity() {
   const files = [...new Set(git('ls-files', '--cached', '--others', '--exclude-standard', '-z').split('\0').filter(Boolean))].sort();
   const hashes = Object.fromEntries(files.map(file => [file, fs.existsSync(file) ? digest(fs.readFileSync(file)) : 'deleted']));
