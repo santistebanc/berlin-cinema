@@ -89,9 +89,10 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
   const nativeGit = process.platform === 'win32' || fs.existsSync(path.join(baselineRoot, '.git', 'HEAD'));
   const git = nativeGit ? 'git' : '/mnt/c/Program Files/Git/cmd/git.exe';
   const gitRoot = nativeGit ? baselineRoot : execFileSync('wslpath', ['-w', baselineRoot], { encoding: 'utf8' }).trim();
-  const commit = execFileSync(git, ['-C', gitRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+  const commit = execFileSync(git, ['-C', gitRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: gitEnv }).trim();
   if (commit !== ORIGINAL_BASE) throw new Error(`Shadow requires pinned original base ${ORIGINAL_BASE}; got ${commit}`);
-  if (execFileSync(git, ['-C', gitRoot, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }).trim())
+  if (execFileSync(git, ['-C', gitRoot, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8', env: gitEnv }).trim())
     throw new Error('Pinned baseline has tracked changes; comparison refused');
   const baseline = require(path.join(baselineRoot, 'api/pipeline/pipeline'));
   const BaselineStore = require(path.join(baselineRoot, 'api/pipeline/store')).PipelineStore;
