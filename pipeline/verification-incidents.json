@@ -1,0 +1,6 @@
+[
+  {"id":"unrelated-remake","same":false,"a":{"title":"The Lantern","year":1981,"director":"Ada North"},"b":{"title":"The Lantern","year":2026,"director":"Ben South"}},
+  {"id":"matching-independent-credits","same":true,"a":{"title":"The Quiet Harbour","year":2025,"director":"Cam West"},"b":{"title":"The Quiet Harbour","year":2025,"director":"Cam West"}},
+  {"id":"conflicting-verified-identifiers","same":false,"a":{"title":"Same Name","verifiedImdbId":"tt1000001"},"b":{"title":"Same Name","verifiedImdbId":"tt1000002"}},
+  {"id":"title-alone-is-insufficient","same":false,"a":{"title":"Night Train"},"b":{"title":"Night Train"}}
+]

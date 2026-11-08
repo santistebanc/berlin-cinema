@@ -86,8 +86,9 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
   if (fs.existsSync(options.output)) throw new Error('Comparison output must be a new directory');
   const baselineRoot = path.resolve(options.baselineRoot);
   // Worktree pointers belong to Windows Git in this environment, including when Node runs in WSL.
-  const git = process.platform === 'win32' ? 'git' : '/mnt/c/Program Files/Git/cmd/git.exe';
-  const gitRoot = process.platform === 'win32' ? baselineRoot : execFileSync('wslpath', ['-w', baselineRoot], { encoding: 'utf8' }).trim();
+  const nativeGit = process.platform === 'win32' || fs.existsSync(path.join(baselineRoot, '.git', 'HEAD'));
+  const git = nativeGit ? 'git' : '/mnt/c/Program Files/Git/cmd/git.exe';
+  const gitRoot = nativeGit ? baselineRoot : execFileSync('wslpath', ['-w', baselineRoot], { encoding: 'utf8' }).trim();
   const commit = execFileSync(git, ['-C', gitRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   if (commit !== ORIGINAL_BASE) throw new Error(`Shadow requires pinned original base ${ORIGINAL_BASE}; got ${commit}`);
   if (execFileSync(git, ['-C', gitRoot, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }).trim())

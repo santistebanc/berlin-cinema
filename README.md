@@ -542,3 +542,8 @@ Cached observations retain their extraction timestamp; repeated observations
 do not count as content updates. Re-importing identical published data does not
 create a synthetic refresh. Failed refreshes preserve the last successful audit
 entity snapshot.
+
+## Verification
+
+Run `npm run verify -- discover` for offline scenarios and source-bound evidence.
+See [the verification guide](docs/verification.md) for commands, controls and limits.
