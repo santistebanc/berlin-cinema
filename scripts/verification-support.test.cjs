@@ -9,10 +9,14 @@ const proof = require('./verification-support.cjs');
 test('evidence rejects zero checks, source changes and stale results while retaining failed controls', async () => {
   const previous = process.cwd();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'verification-contract-'));
+  const inherited = Object.entries(process.env).filter(([name]) => name.startsWith('GIT_'));
   try {
+    // Git hooks export paths into the enclosing checkout; fixtures must own their repository.
+    for (const [name] of inherited) delete process.env[name];
     process.chdir(root);
     const git = (...args) => execFileSync('git', args, { stdio: 'pipe' });
     git('init');
+    assert.equal(fs.realpathSync(execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()), fs.realpathSync(root));
     fs.writeFileSync('.gitignore', 'tmp/\n'); fs.writeFileSync('source.txt', 'before');
     git('add', '.'); git('-c', 'user.name=Verification fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture');
     const empty = proof.begin('empty', {}, []); empty.record.cleanup = 'completed';
@@ -31,6 +35,7 @@ test('evidence rejects zero checks, source changes and stale results while retai
     assert.throws(() => proof.evidence('../../source.txt'), /invalid_run_id/);
   } finally {
     process.chdir(previous);
+    for (const [name, value] of inherited) process.env[name] = value;
     assert.equal(path.dirname(root), fs.realpathSync(os.tmpdir()));
     fs.rmSync(root, { recursive: true, force: true });
   }
