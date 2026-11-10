@@ -11,6 +11,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          # The offline-shadow check checks out a pinned baseline commit,
+          # which a depth-1 clone does not contain.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
