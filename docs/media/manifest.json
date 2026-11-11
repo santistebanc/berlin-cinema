@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "tool": "project-showcase/capture.mjs",
+  "project": "OV Berlin",
+  "source": "https://ovberlin.online",
+  "commit": "fcf676fe",
+  "capturedAt": "2026-11-11T13:04:16.507Z",
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 900,
+      "scale": 1
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "scale": 2,
+      "mobile": true
+    }
+  },
+  "warnings": [],
+  "items": [
+    {
+      "id": "listing",
+      "kind": "screenshot",
+      "file": "screens/listing-desktop-dark.png",
+      "viewport": "desktop",
+      "theme": "dark",
+      "caption": "Films showing in original version across Berlin, sorted by upcoming showings",
+      "path": "/",
+      "hero": false,
+      "width": 1440,
+      "bytes": 1336262
+    },
+    {
+      "id": "listing",
+      "kind": "screenshot",
+      "file": "screens/listing-mobile-dark.png",
+      "viewport": "mobile",
+      "theme": "dark",
+      "caption": "Films showing in original version across Berlin, sorted by upcoming showings",
+      "path": "/",
+      "hero": false,
+      "width": 780,
+      "bytes": 977442
+    },
+    {
+      "id": "film-detail",
+      "kind": "screenshot",
+      "file": "screens/film-detail-desktop-dark.png",
+      "viewport": "desktop",
+      "theme": "dark",
+      "caption": "Film page with ratings, plot and every showtime by cinema",
+      "path": "/",
+      "hero": false,
+      "width": 1440,
+      "bytes": 576850
+    },
+    {
+      "id": "film-detail",
+      "kind": "screenshot",
+      "file": "screens/film-detail-mobile-dark.png",
+      "viewport": "mobile",
+      "theme": "dark",
+      "caption": "Film page with ratings, plot and every showtime by cinema",
+      "path": "/",
+      "hero": false,
+      "width": 780,
+      "bytes": 612194
+    },
+    {
+      "id": "search",
+      "kind": "screenshot",
+      "file": "screens/search-mobile-dark.png",
+      "viewport": "mobile",
+      "theme": "dark",
+      "caption": "Fuzzy search across titles, directors, cast and genres",
+      "path": "/",
+      "hero": false,
+      "width": 780,
+      "bytes": 1017434
+    },
+    {
+      "id": "find-a-film",
+      "kind": "clip",
+      "files": {
+        "gif": "clips/find-a-film.gif",
+        "poster": "clips/find-a-film.png",
+        "webm": "clips/find-a-film.webm"
+      },
+      "viewport": "desktop",
+      "theme": "dark",
+      "caption": "Search for a film, open it and switch the showtimes to the grid view",
+      "path": "/",
+      "hero": true,
+      "durationS": 7.5,
+      "gifWidth": 800,
+      "videoWidth": 1440,
+      "bytes": {
+        "gif": 1045653,
+        "poster": 647663,
+        "webm": 765580
+      }
+    },
+    {
+      "id": "cinema-map",
+      "kind": "clip",
+      "files": {
+        "gif": "clips/cinema-map.gif",
+        "poster": "clips/cinema-map.png",
+        "webm": "clips/cinema-map.webm"
+      },
+      "viewport": "mobile",
+      "theme": "dark",
+      "caption": "Open a film on a phone and tap a cinema to see it on the map",
+      "path": "/",
+      "hero": false,
+      "durationS": 7.8,
+      "gifWidth": 320,
+      "videoWidth": 390,
+      "bytes": {
+        "gif": 884950,
+        "poster": 469750,
+        "webm": 342285
+      }
+    }
+  ]
+}
