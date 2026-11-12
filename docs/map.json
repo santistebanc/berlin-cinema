@@ -1,0 +1,13 @@
+{
+  "parts": [
+    {"id": "site", "name": "Website screens", "about": "Film list, film page, search and map", "paths": ["src", "index.html", "public", "tailwind.config.js", "postcss.config.js", "vite.config.ts"], "links": ["site-data", "shared"]},
+    {"id": "site-data", "name": "Site data loading", "about": "Gets films and showtimes from the API", "paths": ["src/services"], "links": ["api"]},
+    {"id": "api", "name": "Web API", "about": "Serves films and showtimes to the site", "paths": ["api"], "links": ["pipeline", "shared"]},
+    {"id": "pipeline", "name": "Showtime pipeline", "about": "Collects, merges and checks programmes", "paths": ["api/pipeline", "pipeline"], "links": ["sources"]},
+    {"id": "sources", "name": "Cinema sources", "about": "Readers for each cinema and rating site", "paths": ["api/sources"], "links": []},
+    {"id": "shared", "name": "Shared types", "about": "Types used by the site and the API", "paths": ["shared"], "links": []},
+    {"id": "scripts", "name": "Data scripts", "about": "Scraping, merging and release helpers", "paths": ["scripts"], "links": ["pipeline"]},
+    {"id": "ops", "name": "Server setup", "about": "Docker image and server files", "paths": ["ops", "Dockerfile", "package.json", "tsconfig.app.json", "tsconfig.server.json"], "links": []},
+    {"id": "docs", "name": "Docs", "about": "README, product and design notes, research", "paths": ["README.md", "docs", "PRODUCT.md", "DESIGN.md", "DESIGN.json", "AGENTS.md", "research_notes"], "links": []}
+  ]
+}
