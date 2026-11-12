@@ -1,6 +1,5 @@
 # How the data pipeline works
 
-Moved from the README.
 
 Source configuration: [adapters](source-adapters.md),
 [contracts](source-contracts.md), [failure recovery](source-recovery.md),

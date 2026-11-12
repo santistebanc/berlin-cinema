@@ -186,10 +186,8 @@ Details and examples: [adapters](source-adapters.md), [contracts](source-contrac
 
 ## Verified evidence and limitations
 
-The committed [comparison baseline](ingestion-rollout-baseline.json) and
-[observations](ingestion-rollout-observations.md) record the original-base run,
-input hashes, actual unknown-lineage behavior, intentional field differences and
-workload metrics. `npm run test:rollout` adds representative-state migration,
+The committed [comparison baseline](ingestion-rollout-baseline.json) records the
+original-base run and input hashes. `npm run test:rollout` adds representative-state migration,
 recovery and combined collection/review/publication acceptance to `npm test`.
 All earlier pipeline, adapter, public-data and review tests remain enabled.
 

@@ -1,6 +1,5 @@
 # Development, hosting and verification
 
-Moved from the README.
 
 ## Running locally
 
