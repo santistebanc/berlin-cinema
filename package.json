@@ -73,5 +73,10 @@
     "test:state": "ts-node --project tsconfig.server.json api/pipeline/state-persistence.test.ts && ts-node --project tsconfig.server.json scripts/release-state.test.ts",
     "verify": "ts-node --project tsconfig.server.json scripts/verify.ts",
     "test:verification": "node --test scripts/verification-support.test.cjs && npm run verify -- run metadata-incidents && npm run verify -- controls metadata-incidents && npm run verify -- run offline-shadow && npm run verify -- controls offline-shadow"
+  },
+  "overrides": {
+    "glob": "14.0.6",
+    "minimatch": "11.0.8",
+    "deepmerge": "4.1.1"
   }
 }
