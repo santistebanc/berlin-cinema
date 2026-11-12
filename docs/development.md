@@ -80,11 +80,11 @@ regeneration, with saved/processing/published/failed status. No source scrape is
 needed. Unchanged decisions and resource lookups are reused.
 
 Custom `PIPELINE_STATE` paths remain explicit; migrate/export deliberately before replacing the scheduled state.
-Local state is your own copy; production corrections belong in the Beelink review UI.
+Local state is your own copy; production corrections belong in the production review UI.
 Current state is loaded into memory. Partition the store if history grows substantially.
 
 The production runner reads `TMDB_API_KEY` and `OMDB_API_KEY` from
-`~/ovberlin/secrets.env` on the Beelink; optional `GEOAPIFY_API_KEY` enables extra
+`$OVB_ROOT/secrets.env` on the server; optional `GEOAPIFY_API_KEY` enables extra
 venue verification. No decision-model credentials are required: deterministic
 rules run normally and ambiguous evidence stays available for local review.
 
@@ -167,30 +167,16 @@ An exhausted allowance defers new decisions to review while extraction continues
 
 ## Releases and hosting
 
-Code and data are separate. Git holds code only; pipeline state, the published
-dataset, sitemap and audit live on the Beelink under `~/ovberlin`.
+Git holds code only. Pipeline state, the published dataset, the sitemap and the audit live on an always-on Linux server under `$OVB_ROOT` (default `~/ovberlin`). `ops/server/install.sh` sets it up and installs runner updates.
 
-- **`main`** is development. Every push runs type checks and tests in GitHub Actions,
-  and within five minutes the Beelink serves a staging build of `main` with production
-  data at http://home-server:4174 (Tailscale). Staging never touches production.
-- **Releases** are `v*` tags. `npm run release` (or `npm run release -- minor`) tags
-  the current `main` and pushes it. The Beelink deploys the newest tag within five
-  minutes, then refreshes it every six hours: back up state, scrape, build, upload
-  `dist/` to the `site-live` GitHub release and run the *Publish site* workflow,
-  which deploys GitHub Pages. Nothing is committed.
-- `npm run staging:scrape` scrapes with `main` against a fresh copy of production
-  state, for testing pipeline changes on real data.
-- The production **review UI** runs on the Beelink at
-  https://home-server.example.ts.net:3443/admin/review (Tailscale only). When a
-  correction regenerates the dataset, the Beelink rebuilds and publishes the live site
-  within a few minutes, without scraping.
+| Flow | What happens |
+|---|---|
+| Push to `main` | GitHub Actions runs checks. Within five minutes the server serves a staging build of `main` with production data on port 4174, on its private network. Staging never touches production. |
+| `npm run release` (`-- minor`) | Tags `main` as `v*`. The server deploys the newest tag within five minutes, then refreshes every six hours: back up state, scrape, build, upload `dist/` to the `site-live` release and run *Publish site* (GitHub Pages). Nothing is committed. |
+| `npm run staging:scrape` | Scrapes with `main` against a copy of production state (needs an SSH host alias `ovberlin`). |
+| Review UI | Runs on the server, reachable only on its private network over HTTPS (port 3443). A correction rebuilds and publishes the site within minutes, without scraping. |
 
-On the Beelink, read logs with `journalctl --user -u ovberlin-prod` (or `-staging`,
-`-poll`) and run immediately with `systemctl --user start ovberlin-prod`. The last 20
-pre-run states are in `~/ovberlin/backups`. `ops/beelink/install.sh` sets up the
-machine and installs runner updates. Set `NOTIFY_URL` in `~/ovberlin/secrets.env`
-to receive a JSON POST when a run fails. `ADMIN_ORIGINS` there lists the proxy
-origins the review server accepts.
+On the server: logs with `journalctl --user -u ovberlin-prod` (or `-staging`, `-poll`), run now with `systemctl --user start ovberlin-prod`, and the last 20 pre-run states are in `$OVB_ROOT/backups`. In `$OVB_ROOT/secrets.env`, `NOTIFY_URL` gets a JSON POST when a run fails and `ADMIN_ORIGINS` lists the proxy origins the review server accepts.
 
 ## Public data audit
 
@@ -223,10 +209,10 @@ published dataset cannot reconstruct the original extraction or API search
 decisions; those are labeled unavailable rather than inferred from a URL.
 
 Each full scrape writes `public/audit/index.json` and an immutable report in
-`public/audit/runs/`. The Beelink keeps these alongside the movie
+`public/audit/runs/`. The server keeps these alongside the movie
 data, including failed-refresh reports, so history survives deployments.
 Do not delete these files to refresh data. Run a single scraper/writer at a time.
-No database is needed: the Beelink state file is the durable store and scheduled
+No database is needed: the server's state file is the durable store and scheduled
 writer, its review UI writes corrections, and Pages serves static files. A per-record report index lets
 the browser fetch only relevant history rather than every historical run.
 Builds upgrade older indexes from their existing reports without inventing

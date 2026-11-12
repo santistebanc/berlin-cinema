@@ -1,4 +1,4 @@
-// Tag the current main as a release. The Beelink deploys the newest v* tag within five minutes.
+// Tag the current main as a release. The pipeline server deploys the newest v* tag within five minutes.
 // Usage: npm run release [-- patch|minor|major]
 import { execSync } from 'child_process';
 
@@ -14,4 +14,4 @@ if (read('git rev-parse HEAD') !== read('git rev-parse origin/main')) throw new 
 
 run(`npm version ${bump} -m "Release v%s"`);
 run('git push --follow-tags origin main');
-console.log(`Released ${read('git describe --tags --abbrev=0')}. The Beelink deploys it within five minutes.`);
+console.log(`Released ${read('git describe --tags --abbrev=0')}. The pipeline server deploys it within five minutes.`);

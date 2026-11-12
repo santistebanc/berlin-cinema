@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time Beelink setup, safe to re-run. Usage: ops/beelink/install.sh [SEED_COMMIT]
+# One-time pipeline server setup, safe to re-run. Usage: ops/server/install.sh [SEED_COMMIT]
 # SEED_COMMIT is the last commit that still tracked pipeline state and public data.
 set -euo pipefail
 
@@ -41,7 +41,7 @@ cp "$HERE/ovberlin.sh" "$OVB_ROOT/ops/ovberlin.sh" && chmod +x "$OVB_ROOT/ops/ov
 [ -f "$OVB_ROOT/secrets.env" ] || { printf 'TMDB_API_KEY=\nOMDB_API_KEY=\nGEOAPIFY_API_KEY=\n# NOTIFY_URL=\n' > "$OVB_ROOT/secrets.env"; chmod 600 "$OVB_ROOT/secrets.env"; }
 
 gh release view site-live -R "$REPO" >/dev/null 2>&1 || gh release create site-live -R "$REPO" --prerelease \
-  --title "Live site build" --notes "Built site uploaded by the Beelink runner. Not a code release."
+  --title "Live site build" --notes "Built site uploaded by the pipeline server. Not a code release."
 
 mkdir -p "$HOME/.config/systemd/user"
 cp "$HERE"/systemd/* "$HOME/.config/systemd/user/"

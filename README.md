@@ -43,7 +43,7 @@ The dev server downloads the published dataset; it never starts a scrape. Runnin
 - **Frontend:** React 19, TypeScript, Vite and Tailwind CSS; Fuse.js searches in the browser; an installable PWA that works offline after the first load.
 - **Data pipeline:** scrapers for critic.de and berlin.de keep every source observation; tested rules and a decision model resolve films, and nothing merges on similarity alone.
 - **Metadata:** TMDb for films, OMDb for ratings, OpenStreetMap for cinemas; each value records its source and why it was chosen.
-- **Hosting:** a static site on GitHub Pages; a Beelink server refreshes the data every six hours and hosts the review UI.
+- **Hosting:** a static site on GitHub Pages; a home server refreshes the data every six hours and hosts the review UI.
 
 ## More
 

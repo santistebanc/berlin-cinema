@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Beelink pipeline runner. Code comes from git; data lives under $OVB_ROOT and never in git.
+# Pipeline runner. Code comes from git; data lives under $OVB_ROOT and never in git.
 #   ovberlin.sh prod              latest v* tag: scrape, build, publish to GitHub Pages
 #   ovberlin.sh staging           origin/main: build with production data, serve on :4174
 #   ovberlin.sh staging --scrape  origin/main: scrape a fresh copy of production state, build, serve

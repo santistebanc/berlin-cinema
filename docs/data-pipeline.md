@@ -6,7 +6,7 @@ Source configuration: [adapters](source-adapters.md),
 [contracts](source-contracts.md), [failure recovery](source-recovery.md),
 [migration and offline shadow rollout](ingestion-rollout.md).
 
-The public site remains static. An always-on Beelink refreshes observations every
+The public site remains static. An always-on server refreshes observations every
 six hours and hosts the production review UI; see [Releases and hosting](development.md#releases-and-hosting).
 
 1. **Observe** — source adapters retain original labels, source URLs, distinct records and screening observations. Bounded detail-page requests retrieve explicit missing year/director data; cached details retain their original timestamps.

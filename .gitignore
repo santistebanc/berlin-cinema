@@ -10,7 +10,7 @@ dist/
 dist-ssr/
 dist-server/
 
-# Pipeline data lives on the Beelink, never in git
+# Pipeline data lives on the pipeline server, never in git
 public/movies.json
 public/sitemap.xml
 public/audit/

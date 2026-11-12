@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'child_process'
+import { hostname } from 'os'
 
 const gitHash = (() => {
   try { return execSync('git rev-parse --short HEAD').toString().trim(); }
@@ -71,9 +72,9 @@ export default defineConfig({
   server: {
     port: 3000,
   },
-  // Staging is served from the Beelink over Tailscale.
+  // Staging is previewed on the pipeline server and opened by its host name.
   preview: {
-    allowedHosts: ['home-server'],
+    allowedHosts: [hostname()],
   },
   build: {
     outDir: 'dist',
