@@ -1,12 +1,13 @@
 # Offline verification
 
 `npm run verify -- discover` lists the available scenarios and required repository
-checks. `doctor` checks Node 24, installed dependencies, source identity and the
-pinned baseline commit. Run `npm ci` first. Nothing selects operational data.
+checks. `doctor` checks Node 24, installed dependencies, source identity and that
+main has the pinned baseline. Run `npm ci` first. Nothing selects operational data.
 
-- `npm run verify -- run offline-shadow` creates a clean local clone at
-  `885cb1bc030fbe7373cd931a9528ef5373da705e` (published main's code-identical
-  rewrite of the original `1641dedd`), supplies a synthetic v1 retained
+- `npm run verify -- run offline-shadow` creates a clean local clone at the main
+  commit whose git tree is `41b4cb135e0ce7dbb3e23b10d15164a337fc54bb` (the code of
+  the original `1641dedd`; pinned by tree because history rewrites change commit
+  hashes), supplies a synthetic v1 retained
   state, and uses the existing comparison engine at a fixed clock. It checks
   retained identities, routes, aliases and viewings across five replay modes.
 - `npm run verify -- run metadata-incidents` exercises four separately named

@@ -18,8 +18,16 @@ import https from 'https';
 import net from 'net';
 import { fingerprint } from '../api/pipeline/domain';
 
-// Published main's rewrite of the original 1641dedd: identical code, generated data removed. Must stay reachable from origin.
-export const ORIGINAL_BASE = '885cb1bc030fbe7373cd931a9528ef5373da705e';
+// The original baseline (1641dedd), pinned by its git tree, not its commit. History rewrites of main
+// (1641dedd -> 885cb1bc -> 8be2a3bf) change the commit hash but keep this tree. A commit with it must stay on main.
+export const ORIGINAL_BASE_TREE = '41b4cb135e0ce7dbb3e23b10d15164a337fc54bb';
+/** Commit on HEAD's history whose tree is the pinned baseline tree. */
+export function findOriginalBase(repo: string, git = 'git', env: NodeJS.ProcessEnv = process.env): string {
+  const log = execFileSync(git, ['-C', repo, 'log', '--format=%H %T', 'HEAD'], { encoding: 'utf8', env, maxBuffer: 64 * 1024 * 1024 });
+  const match = log.split('\n').find(line => line.trim().endsWith(` ${ORIGINAL_BASE_TREE}`));
+  if (!match) throw new Error(`No commit with baseline tree ${ORIGINAL_BASE_TREE} on HEAD's history (shallow clone?)`);
+  return match.trim().split(' ')[0];
+}
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const metadataExclusions = new Set(['id', 'slug', 'slugAliases', 'sourceAliases', 'resolution', 'provenance', 'cinemas', 'showings']);
 async function fixedClock<T>(now: string, run: () => Promise<T>): Promise<T> {
@@ -92,7 +100,8 @@ export async function compareIngestion(options: { baselineRoot: string; stateFil
   const gitRoot = nativeGit ? baselineRoot : execFileSync('wslpath', ['-w', baselineRoot], { encoding: 'utf8' }).trim();
   const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
   const commit = execFileSync(git, ['-C', gitRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: gitEnv }).trim();
-  if (commit !== ORIGINAL_BASE) throw new Error(`Shadow requires pinned original base ${ORIGINAL_BASE}; got ${commit}`);
+  const tree = execFileSync(git, ['-C', gitRoot, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8', env: gitEnv }).trim();
+  if (tree !== ORIGINAL_BASE_TREE) throw new Error(`Shadow requires pinned original base tree ${ORIGINAL_BASE_TREE}; got ${tree}`);
   if (execFileSync(git, ['-C', gitRoot, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8', env: gitEnv }).trim())
     throw new Error('Pinned baseline has tracked changes; comparison refused');
   const baseline = require(path.join(baselineRoot, 'api/pipeline/pipeline'));

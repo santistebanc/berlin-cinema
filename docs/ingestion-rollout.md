@@ -79,10 +79,10 @@ and restores the immutable `original/` backup. Keep that directory and manifest.
 
 ## Controlled comparison and activation
 
-Create a **separate detached** baseline worktree at original commit
-`885cb1bc030fbe7373cd931a9528ef5373da705e` (the published, code-identical rewrite of
-`1641dedd`, which is no longer on any remote) using Windows Git. Give it Node 24
-dependencies. The comparison checks the actual baseline HEAD and refuses tracked
+Create a **separate detached** baseline worktree at the main commit whose git tree is
+`41b4cb135e0ce7dbb3e23b10d15164a337fc54bb` (the code of the original `1641dedd`; pinned
+by tree because history rewrites change commit hashes) using Windows Git. Give it Node 24
+dependencies. The comparison checks the tree of the actual baseline HEAD and refuses tracked
 baseline changes. It does not compare against the integration branch as a proxy.
 
 ```sh

@@ -5,7 +5,7 @@ import { execFileSync } from 'child_process';
 import http from 'http';
 import https from 'https';
 import net from 'net';
-import { compareIngestion, ORIGINAL_BASE } from './compare-ingestion';
+import { compareIngestion, findOriginalBase, ORIGINAL_BASE_TREE } from './compare-ingestion';
 import { ROLLOUT_NOW } from '../pipeline/rollout-fixtures';
 import { supportsFilmIdentity } from '../api/pipeline/identity-evidence';
 import { identityConflict } from '../api/pipeline/resolve';
@@ -15,7 +15,7 @@ const limits = ['Synthetic retained-state fixture and captured adapters; no clai
   'No live source, metadata provider, model, publication, or operational pipeline state is used.',
   'Metadata cases are a small source-inspired regression set, not a production precision estimate.'];
 const catalog = { scenarios: ['offline-shadow', 'metadata-incidents'], commands: ['discover', 'doctor', 'run', 'controls', 'evidence'],
-  requiredChecks: ['npm run typecheck', 'npm test'], baseline: ORIGINAL_BASE, now: ROLLOUT_NOW, limits };
+  requiredChecks: ['npm run typecheck', 'npm test'], baselineTree: ORIGINAL_BASE_TREE, now: ROLLOUT_NOW, limits };
 
 function forbidNetwork() {
   const saved = [http.request, https.request, http.get, https.get, net.Socket.prototype.connect, globalThis.fetch];
@@ -46,7 +46,7 @@ async function shadow(run: any, corrupt: boolean) {
     await proof.check(run, 'pinned-clean-baseline', () => {
       const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
       execFileSync('git', ['clone', '--shared', '--no-checkout', process.cwd(), baseline], { stdio: 'pipe', env });
-      execFileSync('git', ['-C', baseline, 'checkout', '--detach', ORIGINAL_BASE], { stdio: 'pipe', env });
+      execFileSync('git', ['-C', baseline, 'checkout', '--detach', findOriginalBase(process.cwd(), 'git', env)], { stdio: 'pipe', env });
       fs.symlinkSync(path.resolve('node_modules'), path.join(baseline, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
     });
     const raw = { scrapedAt: ROLLOUT_NOW, movies: [{ title: 'Verification Film', year: '2026', director: 'Fixture Director',
@@ -92,7 +92,7 @@ async function main() {
   if (command === 'doctor' && !target) {
     const ready = Number(process.versions.node.split('.')[0]) === 24 && fs.existsSync('node_modules/ts-node/register/index.js');
     console.log(JSON.stringify({ status: ready ? 'ready' : 'blocked', node: process.version, source: proof.identity(), baselineAvailable:
-      execFileSync('git', ['cat-file', '-t', ORIGINAL_BASE], { encoding: 'utf8' }).trim() === 'commit', remedy: 'Use Node 24 and npm ci. No operational data is required.' }));
+      (() => { try { return Boolean(findOriginalBase(process.cwd())); } catch { return false; } })(), remedy: 'Use Node 24 and npm ci. No operational data is required.' }));
     if (!ready) process.exitCode = 1;
     return;
   }
@@ -103,7 +103,7 @@ async function main() {
   }
   if (!['run', 'controls'].includes(command) || !catalog.scenarios.includes(target)) throw new Error('unknown_scenario');
   const run = proof.begin(target, { incidents: proof.digest(fs.readFileSync('pipeline/verification-incidents.json')),
-    capturedAdapters: proof.digest(fs.readFileSync('pipeline/rollout-fixtures.ts')), baseline: ORIGINAL_BASE, now: ROLLOUT_NOW }, limits);
+    capturedAdapters: proof.digest(fs.readFileSync('pipeline/rollout-fixtures.ts')), baselineTree: ORIGINAL_BASE_TREE, now: ROLLOUT_NOW }, limits);
   const record = await proof.finish(run, () => target === 'offline-shadow' ? shadow(run, command === 'controls') : metadata(run, command === 'controls'));
   if (command === 'controls') {
     const expected = target === 'offline-shadow' ? 'retained-identity-and-viewing-continuity' : 'unrelated-remake';
