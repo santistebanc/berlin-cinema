@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, Check, ExternalLink, Play, Share2 } from 'lucide-react';
 import { Movie } from '../types';
 import MoviePoster from './ui/MoviePoster';
+import { differentOriginalTitle, englishTitle } from '../utils/movieTitle';
 
 interface Props {
   movie: Movie;
@@ -12,7 +13,8 @@ interface Props {
 }
 
 const MovieHeader: React.FC<Props> = ({ movie, plot, onBack, onShare, shared }) => {
-  const displayTitle = movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title;
+  const displayTitle = englishTitle(movie);
+  const originalTitle = differentOriginalTitle(movie);
   const rating = movie.imdbRating ?? movie.rating;
   const votes = movie.imdbVotes ?? movie.voteCount;
   const subBits = [movie.director, movie.country].filter(Boolean);
@@ -59,7 +61,7 @@ const MovieHeader: React.FC<Props> = ({ movie, plot, onBack, onShare, shared }) 
             <MoviePoster
               src={movie.posterUrl}
               alt={movie.title}
-              title={movie.tmdbTitle || movie.altTitle || movie.title}
+              title={displayTitle}
               loading="eager"
               className="movie-poster-transition h-[150px] w-[100px] shrink-0 rounded-[8px] object-cover shadow-2xl sm:h-[258px] sm:w-[172px]"
               style={{ border: '1px solid rgba(255,255,255,.08)' }}
@@ -71,6 +73,11 @@ const MovieHeader: React.FC<Props> = ({ movie, plot, onBack, onShare, shared }) 
               >
                 {displayTitle}
               </h1>
+              {originalTitle && (
+                <div className="serif mt-1 text-base italic sm:text-lg" lang={movie.originalLanguage ?? undefined} style={{ color: 'rgb(var(--text-soft))' }}>
+                  {originalTitle}
+                </div>
+              )}
               {subBits.length > 0 && (
                 <div className="mt-1.5 text-sm" style={{ color: 'rgb(var(--text-soft))' }}>
                   {subBits.join(' · ')}

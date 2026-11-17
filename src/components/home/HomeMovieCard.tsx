@@ -5,6 +5,7 @@ import { Movie } from '../../types';
 import MoviePoster from '../ui/MoviePoster';
 import { getCardTags } from '../../utils/movieTags';
 import { navigateWithPosterTransition } from '../../utils/posterTransition';
+import { englishTitle } from '../../utils/movieTitle';
 
 interface HomeMovieCardProps {
   movie: Movie;
@@ -42,7 +43,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
           <MoviePoster
             src={movie.posterUrl}
             alt={movie.title}
-            title={movie.tmdbTitle || movie.altTitle || movie.title}
+            title={englishTitle(movie)}
             loading="lazy"
             className="h-full w-full"
           />
@@ -92,7 +93,7 @@ const HomeMovieCard: React.FC<HomeMovieCardProps> = ({ movie }) => {
           className="serif truncate text-[19px] leading-tight transition-colors group-hover:text-[rgb(var(--accent))]"
           style={{ color: 'rgb(var(--text))' }}
         >
-          {movie.originalTitle || movie.tmdbTitle || movie.altTitle || movie.title}
+          {englishTitle(movie)}
         </h3>
         {metaBits.length > 0 && (
           <p className="tabular mt-1 truncate text-xs" style={{ color: 'rgb(var(--text-soft))' }}>

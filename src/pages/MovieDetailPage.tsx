@@ -9,6 +9,7 @@ import ShowtimesTable from '../components/ShowtimesTable';
 import CinemaPopup, { CinemaPopupInfo } from '../components/CinemaPopup';
 import DetailPageState from '../components/detail/DetailPageState';
 import { homePathWithSearch } from '../utils/homeSearch';
+import { englishTitle } from '../utils/movieTitle';
 import { navigateHomeWithPosterTransition, useBackToHomePosterTransition } from '../utils/posterTransition';
 
 const MovieDetailPage: React.FC = () => {
@@ -84,7 +85,7 @@ const MovieDetailPage: React.FC = () => {
     );
   }
 
-  const displayTitle = movie.tmdbTitle || movie.altTitle || movie.title;
+  const displayTitle = englishTitle(movie);
   const metaTitle = `${displayTitle} — OV Berlin`;
   const metaParts = [
     movie.year && `${movie.year}`,
