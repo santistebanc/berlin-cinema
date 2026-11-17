@@ -2,9 +2,9 @@
   "schema": 1,
   "tool": "project-showcase/capture.mjs",
   "project": "OV Berlin",
-  "source": "https://ovberlin.online",
-  "commit": "fcf676fe",
-  "capturedAt": "2026-11-11T13:04:16.507Z",
+  "source": "http://localhost:4173",
+  "commit": "e0fccf36",
+  "capturedAt": "2026-11-17T19:13:42.071Z",
   "viewports": {
     "desktop": {
       "width": 1440,
@@ -30,7 +30,7 @@
       "path": "/",
       "hero": false,
       "width": 1440,
-      "bytes": 1336262
+      "bytes": 1198743
     },
     {
       "id": "listing",
@@ -42,7 +42,7 @@
       "path": "/",
       "hero": false,
       "width": 780,
-      "bytes": 977442
+      "bytes": 1152748
     },
     {
       "id": "film-detail",
@@ -54,7 +54,7 @@
       "path": "/",
       "hero": false,
       "width": 1440,
-      "bytes": 576850
+      "bytes": 576747
     },
     {
       "id": "film-detail",
@@ -66,7 +66,7 @@
       "path": "/",
       "hero": false,
       "width": 780,
-      "bytes": 612194
+      "bytes": 613217
     },
     {
       "id": "search",
@@ -78,7 +78,7 @@
       "path": "/",
       "hero": false,
       "width": 780,
-      "bytes": 1017434
+      "bytes": 1019948
     },
     {
       "id": "find-a-film",
@@ -93,13 +93,13 @@
       "caption": "Search for a film, open it and switch the showtimes to the grid view",
       "path": "/",
       "hero": true,
-      "durationS": 7.5,
+      "durationS": 13.7,
       "gifWidth": 800,
       "videoWidth": 1440,
       "bytes": {
-        "gif": 1045653,
-        "poster": 647663,
-        "webm": 765580
+        "gif": 1162535,
+        "poster": 647554,
+        "webm": 867279
       }
     },
     {
@@ -115,13 +115,13 @@
       "caption": "Open a film on a phone and tap a cinema to see it on the map",
       "path": "/",
       "hero": false,
-      "durationS": 7.8,
+      "durationS": 8.5,
       "gifWidth": 320,
       "videoWidth": 390,
       "bytes": {
-        "gif": 884950,
-        "poster": 469750,
-        "webm": 342285
+        "gif": 1004340,
+        "poster": 456160,
+        "webm": 319207
       }
     }
   ]
